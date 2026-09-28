@@ -545,9 +545,6 @@ internal fun resolveHomeTopSearchIconTextGap(
 internal fun resolveHomeTopSearchContainerShape(
     chromePolicy: AppTopChromePolicy,
 ): Shape {
-    if (chromePolicy.tabPresentation == AppTopTabPresentation.MOVING_CAPSULE) {
-        return resolveSharedBottomBarCapsuleShape()
-    }
     return RoundedCornerShape(chromePolicy.compactChromeSpec.primaryCornerRadiusDp.dp)
 }
 
