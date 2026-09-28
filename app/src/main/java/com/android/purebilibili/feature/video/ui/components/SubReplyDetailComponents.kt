@@ -1406,7 +1406,7 @@ private fun SubReplyDetailItem(
                             style = MaterialTheme.typography.labelMedium,
                             color = appearance.actionTint,
                             modifier = Modifier
-                                .sizeIn(minHeight = 48.dp)
+                                .sizeIn(minHeight = 32.dp)
                                 .testTag("$SUB_REPLY_DETAIL_CONVERSATION_TAG_PREFIX${item.rpid}")
                                 .clickable(enabled = onConversationClick != null) {
                                     onConversationClick?.invoke()
@@ -1418,13 +1418,15 @@ private fun SubReplyDetailItem(
                     Spacer(modifier = Modifier.weight(1f))
 
                     if (onDeleteClick != null) {
-                        AppIconButton(onClick = onDeleteClick) {
-                            AppIcon(
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = "删除",
-                                tint = appearance.actionTint,
-                                modifier = Modifier.size(16.dp),
-                            )
+                        Box(modifier = Modifier.height(32.dp)) {
+                            AppIconButton(onClick = onDeleteClick) {
+                                AppIcon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = "删除",
+                                    tint = appearance.actionTint,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                     }
@@ -1454,16 +1456,19 @@ private fun SubReplyDetailItem(
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
-                    AppIconButton(
-                        onClick = { onHateClick?.invoke() },
-                        enabled = onHateClick != null
-                    ) {
-                        AppIcon(
-                            imageVector = Icons.Filled.ThumbDown,
-                            contentDescription = if (isHated) "取消点踩" else "点踩评论",
-                            tint = if (isHated) MaterialTheme.colorScheme.error else appearance.actionTint,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    // Bound the visible container, not Compose's expanded touch target.
+                    Box(modifier = Modifier.height(32.dp)) {
+                        AppIconButton(
+                            onClick = { onHateClick?.invoke() },
+                            enabled = onHateClick != null
+                        ) {
+                            AppIcon(
+                                imageVector = Icons.Filled.ThumbDown,
+                                contentDescription = if (isHated) "取消点踩" else "点踩评论",
+                                tint = if (isHated) MaterialTheme.colorScheme.error else appearance.actionTint,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -1567,7 +1572,7 @@ private fun SubReplyTextAction(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .sizeIn(minWidth = 48.dp, minHeight = 32.dp)
             .clickable(role = Role.Button, onClick = onClick)
     ) {
         AppIcon(
