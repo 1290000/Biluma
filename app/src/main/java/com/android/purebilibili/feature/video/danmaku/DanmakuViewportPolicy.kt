@@ -14,19 +14,20 @@ data class DanmakuViewport(
     }
 }
 
+/** Use the same long-edge basis even when inline and fullscreen aspect ratios differ. */
 fun resolveDanmakuViewport(
     widthPx: Int,
     heightPx: Int,
     density: Float,
-    referenceShortSidePx: Float
+    referenceLongSidePx: Float
 ): DanmakuViewport? {
     if (widthPx <= 0 || heightPx <= 0 || !density.isFinite() || density <= 0f ||
-        !referenceShortSidePx.isFinite() || referenceShortSidePx <= 0f
+        !referenceLongSidePx.isFinite() || referenceLongSidePx <= 0f
     ) return null
     return DanmakuViewport(
         widthPx = widthPx,
         heightPx = heightPx,
         density = density,
-        scale = (minOf(widthPx, heightPx) / referenceShortSidePx).coerceAtMost(1f)
+        scale = (maxOf(widthPx, heightPx) / referenceLongSidePx).coerceAtMost(1f)
     )
 }

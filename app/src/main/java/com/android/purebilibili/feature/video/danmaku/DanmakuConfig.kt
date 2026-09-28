@@ -81,7 +81,7 @@ class DanmakuConfig {
         val viewHeight = viewport.heightPx
         val resolvedTextSize = resolveDanmakuTextSizePx(viewport, fontScale)
         val resolvedStrokeWidth = if (strokeEnabled) strokeWidth * viewport.scale else 0f
-        val resolvedLineMargin = DANMAKU_ENGINE_LINE_MARGIN_PX * viewport.scale
+        val resolvedLineMargin = resolveDanmakuLineMarginPx(resolvedTextSize)
         val layerLineHeightPx = resolveDanmakuLayerLineHeightPx(
             fontSize = resolvedTextSize,
             lineHeightMultiplier = lineHeight
@@ -178,7 +178,7 @@ internal fun resolveDanmakuTypeface(fontWeight: Int): Typeface {
 }
 
 internal fun resolveDanmakuTextSizePx(viewport: DanmakuViewport, fontScale: Float): Float =
-    20f * viewport.density * fontScale.coerceIn(0.3f, 2f) * viewport.scale
+    25f * viewport.density * fontScale.coerceIn(0.3f, 2f) * viewport.scale
 
 /** Converts Bilibili's 18/25/36 size grades into a renderer-independent multiplier. */
 internal fun resolveBilibiliDanmakuFontScale(fontSize: Float): Float {
@@ -208,6 +208,9 @@ internal fun resolveDanmakuLayerLineHeightPx(
 ): Float {
     return fontSize * lineHeightMultiplier.coerceIn(0.8f, 2.2f)
 }
+
+/** Keep interline spacing proportional to both the viewport and the user's text size. */
+internal fun resolveDanmakuLineMarginPx(fontSize: Float): Float = fontSize * 0.3f
 
 internal fun resolveDanmakuPinnedDurationMillis(staticDurationSeconds: Float): Long {
     return (staticDurationSeconds.coerceIn(2.0f, 15.0f) * 1000f).toLong()
@@ -248,7 +251,7 @@ internal fun resolveDanmakuVisibleLineCount(
         fontSize = fontSize,
         lineHeightMultiplier = lineHeightMultiplier
     )
-    val lineMargin = DANMAKU_ENGINE_LINE_MARGIN_PX * viewportScale
+    val lineMargin = resolveDanmakuLineMarginPx(fontSize)
     val lineStep = engineLineHeight + lineMargin
     val maxLinesByBudget = if (visibleHeightPx >= engineLineHeight && lineStep > 0f) {
         ((visibleHeightPx - engineLineHeight) / lineStep).toInt() + 1
@@ -266,8 +269,6 @@ internal fun resolveDanmakuVisibleLineCount(
         )
     }
 }
-
-internal const val DANMAKU_ENGINE_LINE_MARGIN_PX = 18f
 
 internal fun resolveDanmakuMinimumVisibleLines(displayAreaRatio: Float): Int {
     return when {

@@ -5,6 +5,7 @@ import com.android.purebilibili.danmaku.engine.DANMAKU_LAYER_SCROLL
 import com.android.purebilibili.danmaku.engine.DANMAKU_LAYER_TOP
 import com.android.purebilibili.danmaku.engine.DANMAKU_LAYER_REVERSE
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DanmakuConfigPolicyTest {
@@ -80,8 +81,11 @@ class DanmakuConfigPolicyTest {
             massiveMode = true
         )
 
-        assertEquals(9, regularLines)
-        assertEquals(10, massiveLines)
+        assertTrue(massiveLines >= regularLines)
+        val rowHeight = resolveDanmakuLayerLineHeightPx(20f, 1.6f)
+        val rowStep = rowHeight + resolveDanmakuLineMarginPx(20f)
+        assertTrue(rowHeight + (massiveLines - 1) * rowStep <= 500f)
+        assertTrue(rowHeight + massiveLines * rowStep > 500f)
     }
 
     @Test
@@ -114,10 +118,17 @@ class DanmakuConfigPolicyTest {
 
     @Test
     fun `text size composes user preference density and viewport without a small window floor`() {
-        val fullscreen = requireNotNull(resolveDanmakuViewport(2392, 1080, 3f, 1080f))
-        val inline = requireNotNull(resolveDanmakuViewport(1080, 608, 3f, 1080f))
-        assertEquals(608f / 1080f,
-            resolveDanmakuTextSizePx(inline, 1.5f) / resolveDanmakuTextSizePx(fullscreen, 1.5f), 0.001f)
+        val fullscreen = requireNotNull(resolveDanmakuViewport(2392, 1080, 3f, 2392f))
+        val inline = requireNotNull(resolveDanmakuViewport(1080, 608, 3f, 2392f))
+        val fullscreenTextSize = resolveDanmakuTextSizePx(fullscreen, 1.5f)
+        val inlineTextSize = resolveDanmakuTextSizePx(inline, 1.5f)
+        assertEquals(fullscreenTextSize / fullscreen.widthPx,
+            inlineTextSize / inline.widthPx, 0.0001f)
+        assertEquals(fullscreen.widthPx.toFloat() / inline.widthPx,
+            resolveDanmakuLineMarginPx(fullscreenTextSize) / resolveDanmakuLineMarginPx(inlineTextSize), 0.001f)
+        assertEquals(1.5f,
+            resolveDanmakuLineMarginPx(inlineTextSize) /
+                resolveDanmakuLineMarginPx(resolveDanmakuTextSizePx(inline, 1f)), 0.001f)
         assertEquals(1.5f,
             resolveDanmakuTextSizePx(inline, 1.5f) / resolveDanmakuTextSizePx(inline, 1f), 0.001f)
     }

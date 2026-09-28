@@ -34,12 +34,12 @@ internal fun DanmakuViewportHost(
             val metrics = context.getSystemService(WindowManager::class.java).maximumWindowMetrics
             // Fullscreen hides system bars; only the display cutout constrains this reference.
             val safe = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.displayCutout())
-            minOf(metrics.bounds.width() - safe.left - safe.right,
+            maxOf(metrics.bounds.width() - safe.left - safe.right,
                 metrics.bounds.height() - safe.top - safe.bottom).toFloat()
         } else {
             val width = display.maximumWindowWidthDp
             val height = display.maximumWindowHeightDp
-            if (width != null && height != null) minOf(width, height) * density.density else 0f
+            if (width != null && height != null) maxOf(width, height) * density.density else 0f
         }
     }
     BoxWithConstraints(modifier.clipToBounds(), contentAlignment = Alignment.Center) {
