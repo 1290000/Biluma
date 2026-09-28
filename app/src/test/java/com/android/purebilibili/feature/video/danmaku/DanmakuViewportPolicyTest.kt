@@ -11,6 +11,7 @@ class DanmakuViewportPolicyTest {
         assertNull(resolveDanmakuViewport(0, 608, 3f, 2392f))
         assertNull(resolveDanmakuViewport(1080, 608, 0f, 2392f))
         assertNull(resolveDanmakuViewport(1080, 608, 3f, Float.NaN))
+        assertNull(resolveDanmakuViewport(1080, 608, 3f, 2392f, 0f))
     }
 
     @Test

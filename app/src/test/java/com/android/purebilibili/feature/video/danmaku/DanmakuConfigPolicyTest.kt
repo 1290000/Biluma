@@ -134,6 +134,23 @@ class DanmakuConfigPolicyTest {
     }
 
     @Test
+    fun `inline font boost lifts text without changing viewport geometry`() {
+        val fullscreen = requireNotNull(
+            resolveDanmakuViewport(1080, 608, 3f, 2392f, resolveDanmakuFontSizeBoost(isFullscreen = true))
+        )
+        val inline = requireNotNull(
+            resolveDanmakuViewport(1080, 608, 3f, 2392f, resolveDanmakuFontSizeBoost(isFullscreen = false))
+        )
+
+        assertEquals(fullscreen.scale, inline.scale, 0f)
+        assertEquals(
+            1.5f,
+            resolveDanmakuTextSizePx(inline, 1f) / resolveDanmakuTextSizePx(fullscreen, 1f),
+            0.001f
+        )
+    }
+
+    @Test
     fun `unknown viewport should retain area based fallback line count`() {
         assertEquals(
             8,

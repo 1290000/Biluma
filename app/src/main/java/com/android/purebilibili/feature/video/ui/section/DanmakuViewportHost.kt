@@ -23,6 +23,7 @@ import com.android.purebilibili.feature.video.danmaku.resolveDanmakuViewport
 @Composable
 internal fun DanmakuViewportHost(
     modifier: Modifier,
+    fontSizeBoost: Float = 1f,
     content: @Composable BoxScope.(DanmakuViewport) -> Unit
 ) {
     val context = LocalContext.current
@@ -43,8 +44,14 @@ internal fun DanmakuViewportHost(
         }
     }
     BoxWithConstraints(modifier.clipToBounds(), contentAlignment = Alignment.Center) {
-        val viewport = remember(constraints.maxWidth, constraints.maxHeight, density.density, reference) {
-            resolveDanmakuViewport(constraints.maxWidth, constraints.maxHeight, density.density, reference)
+        val viewport = remember(constraints.maxWidth, constraints.maxHeight, density.density, reference, fontSizeBoost) {
+            resolveDanmakuViewport(
+                constraints.maxWidth,
+                constraints.maxHeight,
+                density.density,
+                reference,
+                fontSizeBoost
+            )
         }
         if (viewport != null) {
             Box(Modifier.size(with(density) { viewport.widthPx.toDp() },

@@ -178,7 +178,7 @@ internal fun resolveDanmakuTypeface(fontWeight: Int): Typeface {
 }
 
 internal fun resolveDanmakuTextSizePx(viewport: DanmakuViewport, fontScale: Float): Float =
-    25f * viewport.density * fontScale.coerceIn(0.3f, 2f) * viewport.scale
+    25f * viewport.density * fontScale.coerceIn(0.3f, 2f) * viewport.scale * viewport.fontSizeBoost
 
 /** Converts Bilibili's 18/25/36 size grades into a renderer-independent multiplier. */
 internal fun resolveBilibiliDanmakuFontScale(fontSize: Float): Float {

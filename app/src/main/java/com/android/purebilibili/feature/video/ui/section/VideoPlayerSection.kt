@@ -20,6 +20,7 @@ import com.android.purebilibili.core.ui.components.AppText
 import com.android.purebilibili.feature.video.danmaku.DanmakuManager
 import com.android.purebilibili.feature.video.danmaku.DanmakuCloudSyncUiState
 import com.android.purebilibili.feature.video.danmaku.rememberDanmakuManager
+import com.android.purebilibili.feature.video.danmaku.resolveDanmakuFontSizeBoost
 import com.android.purebilibili.feature.video.danmaku.resolveDanmakuCloudSyncStateAfterQueued
 import com.android.purebilibili.feature.video.danmaku.resolveDanmakuCloudSyncStateAfterResult
 import com.android.purebilibili.feature.video.danmaku.resolveDanmakuCloudSyncStateAfterStarted
@@ -4334,7 +4335,10 @@ private fun VideoPlayerSectionContent(
                         )
                     }
                 }
-                DanmakuViewportHost(danmakuSurfaceModifier) { viewport ->
+                DanmakuViewportHost(
+                    danmakuSurfaceModifier,
+                    fontSizeBoost = resolveDanmakuFontSizeBoost(isFullscreen)
+                ) { viewport ->
                 AndroidView(
                     factory = { ctx ->
                         DanmakuRenderView(ctx).apply {
