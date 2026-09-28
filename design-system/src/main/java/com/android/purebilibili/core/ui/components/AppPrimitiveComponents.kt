@@ -5,6 +5,7 @@ import com.android.purebilibili.core.theme.LocalAppUiStyle
 import com.android.purebilibili.core.ui.resolveFilledButtonContainerColor
 import com.android.purebilibili.core.ui.resolveFilledButtonContentColor
 import com.android.purebilibili.core.ui.AppChromeSizeTokens
+import com.android.purebilibili.core.ui.AppSpacingTokens
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixButton
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixChip
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixFloatingActionButton
@@ -135,17 +136,16 @@ internal fun TabPosition.toAppTabSlot(): AppTabSlot = AppTabSlot(
     contentWidth = contentWidth,
 )
 
-private fun resolveNonGlassButtonInsideMargin(
-    contentPadding: PaddingValues,
-    defaultMaterialPadding: PaddingValues,
-): PaddingValues = if (
-    shouldUseOfficialMiuixButtonPadding(
-        usesDefaultMaterialPadding = contentPadding == defaultMaterialPadding,
+/** Visual padding only; native button sizing and touch-target handling stay intact. */
+object AppButtonDefaults {
+    val ContentPadding = PaddingValues(
+        horizontal = AppSpacingTokens.Large,
+        vertical = AppSpacingTokens.Small,
     )
-) {
-    MiuixButtonDefaults.InsideMargin
-} else {
-    contentPadding
+    val TextButtonContentPadding = PaddingValues(
+        horizontal = AppSpacingTokens.Small,
+        vertical = AppSpacingTokens.ExtraSmall,
+    )
 }
 
 internal fun resolveElasticTabIndicatorBounds(
@@ -482,7 +482,7 @@ fun AppButton(
     border: BorderStroke? = null,
     defaultElevation: Dp = 0.dp,
     pressedElevation: Dp = defaultElevation,
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    contentPadding: PaddingValues = AppButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
 ) {
@@ -500,10 +500,7 @@ fun AppButton(
             modifier = interactionModifier,
             enabled = enabled,
             colors = miuixColors,
-            insideMargin = resolveNonGlassButtonInsideMargin(
-                contentPadding = contentPadding,
-                defaultMaterialPadding = ButtonDefaults.ContentPadding,
-            ),
+            insideMargin = contentPadding,
             interactionSource = resolvedInteractionSource,
             content = content,
         )
@@ -539,7 +536,7 @@ fun AppButton(
     colors: ButtonColors? = null,
     elevation: androidx.compose.material3.ButtonElevation? = ButtonDefaults.buttonElevation(),
     border: BorderStroke? = null,
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    contentPadding: PaddingValues = AppButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
 ) {
@@ -559,10 +556,7 @@ fun AppButton(
             modifier = interactionModifier,
             enabled = enabled,
             colors = miuixColors,
-            insideMargin = resolveNonGlassButtonInsideMargin(
-                contentPadding = contentPadding,
-                defaultMaterialPadding = ButtonDefaults.ContentPadding,
-            ),
+            insideMargin = contentPadding,
             interactionSource = resolvedInteractionSource,
             content = content,
         )
@@ -591,7 +585,7 @@ fun AppTextButton(
     enabled: Boolean = true,
     shape: Shape = ButtonDefaults.textShape,
     colors: androidx.compose.material3.ButtonColors = ButtonDefaults.textButtonColors(),
-    contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
+    contentPadding: PaddingValues = AppButtonDefaults.TextButtonContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
 ) {
@@ -609,10 +603,7 @@ fun AppTextButton(
             modifier = interactionModifier,
             enabled = enabled,
             colors = miuixColors,
-            insideMargin = resolveNonGlassButtonInsideMargin(
-                contentPadding = contentPadding,
-                defaultMaterialPadding = ButtonDefaults.TextButtonContentPadding,
-            ),
+            insideMargin = contentPadding,
             interactionSource = resolvedInteractionSource,
             content = content,
         )
@@ -860,7 +851,7 @@ fun AppOutlinedButton(
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(),
     elevation: androidx.compose.material3.ButtonElevation? = null,
     border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled),
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    contentPadding: PaddingValues = AppButtonDefaults.ContentPadding,
     interactionSource: MutableInteractionSource? = null,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
 ) {
@@ -872,10 +863,7 @@ fun AppOutlinedButton(
             modifier = interactionModifier,
             enabled = enabled,
             colors = MiuixButtonDefaults.buttonColors(),
-            insideMargin = resolveNonGlassButtonInsideMargin(
-                contentPadding = contentPadding,
-                defaultMaterialPadding = ButtonDefaults.ContentPadding,
-            ),
+            insideMargin = contentPadding,
             interactionSource = resolvedInteractionSource,
             content = content,
         )
