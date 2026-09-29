@@ -159,8 +159,8 @@ private fun CommandDanmakuCard(
         else -> 220
     }
     val density = LocalDensity.current
-    val visualDensity = remember(density.density, density.fontScale, viewport.scale, fontScale) {
-        Density(density.density * viewport.scale, density.fontScale * fontScale.coerceIn(0.3f, 2f))
+    val visualDensity = remember(density.density, density.fontScale, fontScale) {
+        Density(density.density, density.fontScale * fontScale.coerceIn(0.3f, 2f))
     }
     val requestedCardWidthPx = with(visualDensity) { requestedCardWidthDp.dp.roundToPx() }
     val cardWidthPx = resolveCommandDanmakuCardWidthPx(

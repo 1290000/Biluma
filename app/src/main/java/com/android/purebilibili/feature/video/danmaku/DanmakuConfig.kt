@@ -79,9 +79,8 @@ class DanmakuConfig {
     fun resolveRenderConfig(viewport: DanmakuViewport): DanmakuRenderConfig {
         val viewWidth = viewport.widthPx
         val viewHeight = viewport.heightPx
-        val resolvedTextSize = resolveDanmakuTextSizePx(viewport, fontScale)
-        val resolvedStrokeWidth = if (strokeEnabled) strokeWidth * viewport.scale else 0f
-        val resolvedLineMargin = resolveDanmakuLineMarginPx(resolvedTextSize)
+        val resolvedTextSize = resolveDanmakuTextSizePx(viewport.density, fontScale)
+        val resolvedStrokeWidth = if (strokeEnabled) strokeWidth else 0f
         val layerLineHeightPx = resolveDanmakuLayerLineHeightPx(
             fontSize = resolvedTextSize,
             lineHeightMultiplier = lineHeight
@@ -105,8 +104,7 @@ class DanmakuConfig {
             strokeWidth = resolvedStrokeWidth,
             strokeEnabled = strokeEnabled,
             lineHeight = lineHeight,
-            massiveMode = massiveMode,
-            viewportScale = viewport.scale
+            massiveMode = massiveMode
         )
         val topMargin = if (viewHeight > 0) viewHeight * activeBand.topRatio else 0f
         val bottomInset = if (viewHeight > 0) viewHeight * (1f - activeBand.bottomRatio) else 0f
@@ -121,8 +119,7 @@ class DanmakuConfig {
             strokeColor = android.graphics.Color.BLACK,
             scrollDurationMs = scrollDuration,
             lineHeightPx = layerLineHeightPx,
-            lineMarginPx = resolvedLineMargin,
-            viewportScale = viewport.scale,
+            lineMarginPx = 0f,
             lineCount = maxLines,
             topMarginPx = topMargin,
             bottomMarginPx = bottomInset,
@@ -177,8 +174,14 @@ internal fun resolveDanmakuTypeface(fontWeight: Int): Typeface {
     }
 }
 
-internal fun resolveDanmakuTextSizePx(viewport: DanmakuViewport, fontScale: Float): Float =
-    25f * viewport.density * fontScale.coerceIn(0.3f, 2f) * viewport.scale * viewport.fontSizeBoost
+/**
+ * Density-independent base size: the same physical size in inline, fullscreen and
+ * every other surface; the container only decides how many rows fit.
+ */
+internal const val DANMAKU_BASE_TEXT_SIZE_DP = 15f
+
+internal fun resolveDanmakuTextSizePx(density: Float, fontScale: Float): Float =
+    DANMAKU_BASE_TEXT_SIZE_DP * density * fontScale.coerceIn(0.3f, 2f)
 
 /** Converts Bilibili's 18/25/36 size grades into a renderer-independent multiplier. */
 internal fun resolveBilibiliDanmakuFontScale(fontSize: Float): Float {
@@ -209,9 +212,6 @@ internal fun resolveDanmakuLayerLineHeightPx(
     return fontSize * lineHeightMultiplier.coerceIn(0.8f, 2.2f)
 }
 
-/** Keep interline spacing proportional to both the viewport and the user's text size. */
-internal fun resolveDanmakuLineMarginPx(fontSize: Float): Float = fontSize * 0.3f
-
 internal fun resolveDanmakuPinnedDurationMillis(staticDurationSeconds: Float): Long {
     return (staticDurationSeconds.coerceIn(2.0f, 15.0f) * 1000f).toLong()
 }
@@ -223,8 +223,7 @@ internal fun resolveDanmakuVisibleLineCount(
     strokeWidth: Float,
     strokeEnabled: Boolean,
     lineHeight: Float,
-    massiveMode: Boolean,
-    viewportScale: Float = 1f
+    massiveMode: Boolean
 ): Int {
     if (visibleHeightPx <= 0f) {
         return resolveDanmakuFallbackMaxLines(areaRatioHint)
@@ -232,7 +231,7 @@ internal fun resolveDanmakuVisibleLineCount(
 
     val lineHeightMultiplier = lineHeight.coerceIn(0.8f, 2.2f)
     val estimatedLineHeight =
-        (fontSize + (if (strokeEnabled) strokeWidth else 0f) + 12f * viewportScale) * lineHeightMultiplier
+        (fontSize + (if (strokeEnabled) strokeWidth else 0f) + 12f) * lineHeightMultiplier
     val estimatedLines = if (estimatedLineHeight > 0f) {
         (visibleHeightPx / estimatedLineHeight).toInt()
     } else {
@@ -246,15 +245,13 @@ internal fun resolveDanmakuVisibleLineCount(
         resolvedLines
     }
 
-    // Budget against the same scaled spacing passed to every engine layer.
+    // The engine stacks rows on the line height alone; there is no extra interline margin.
     val engineLineHeight = resolveDanmakuLayerLineHeightPx(
         fontSize = fontSize,
         lineHeightMultiplier = lineHeightMultiplier
     )
-    val lineMargin = resolveDanmakuLineMarginPx(fontSize)
-    val lineStep = engineLineHeight + lineMargin
-    val maxLinesByBudget = if (visibleHeightPx >= engineLineHeight && lineStep > 0f) {
-        ((visibleHeightPx - engineLineHeight) / lineStep).toInt() + 1
+    val maxLinesByBudget = if (visibleHeightPx >= engineLineHeight && engineLineHeight > 0f) {
+        ((visibleHeightPx - engineLineHeight) / engineLineHeight).toInt() + 1
     } else {
         0
     }
@@ -264,7 +261,7 @@ internal fun resolveDanmakuVisibleLineCount(
         android.util.Log.i(
             "DanmakuConfig",
             "DisplayArea: visibleHeight=$visibleHeightPx, estimatedLineHeight=$estimatedLineHeight, " +
-                "lineHeight=$engineLineHeight, lineMargin=$lineMargin, " +
+                "lineHeight=$engineLineHeight, " +
                 "ratio=$areaRatioHint -> estimated=$estimatedLines, max=$maxLinesByBudget, visible=$it"
         )
     }
@@ -288,5 +285,4 @@ internal fun resolveDanmakuFallbackMaxLines(displayAreaRatio: Float): Int {
     }
 }
 
-internal const val DEFAULT_DANMAKU_TEXT_SIZE_PX = 42f
 private const val BILIBILI_STANDARD_DANMAKU_FONT_SIZE = 25f

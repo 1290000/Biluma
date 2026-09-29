@@ -83,9 +83,9 @@ class DanmakuConfigPolicyTest {
 
         assertTrue(massiveLines >= regularLines)
         val rowHeight = resolveDanmakuLayerLineHeightPx(20f, 1.6f)
-        val rowStep = rowHeight + resolveDanmakuLineMarginPx(20f)
-        assertTrue(rowHeight + (massiveLines - 1) * rowStep <= 500f)
-        assertTrue(rowHeight + massiveLines * rowStep > 500f)
+        // Row pitch is the line height alone; there is no extra interline margin.
+        assertTrue(rowHeight + (massiveLines - 1) * rowHeight <= 500f)
+        assertTrue(rowHeight + massiveLines * rowHeight > 500f)
     }
 
     @Test
@@ -117,36 +117,20 @@ class DanmakuConfigPolicyTest {
     }
 
     @Test
-    fun `text size composes user preference density and viewport without a small window floor`() {
-        val fullscreen = requireNotNull(resolveDanmakuViewport(2392, 1080, 3f, 2392f))
-        val inline = requireNotNull(resolveDanmakuViewport(1080, 608, 3f, 2392f))
-        val fullscreenTextSize = resolveDanmakuTextSizePx(fullscreen, 1.5f)
-        val inlineTextSize = resolveDanmakuTextSizePx(inline, 1.5f)
-        assertEquals(fullscreenTextSize / fullscreen.widthPx,
-            inlineTextSize / inline.widthPx, 0.0001f)
-        assertEquals(fullscreen.widthPx.toFloat() / inline.widthPx,
-            resolveDanmakuLineMarginPx(fullscreenTextSize) / resolveDanmakuLineMarginPx(inlineTextSize), 0.001f)
-        assertEquals(1.5f,
-            resolveDanmakuLineMarginPx(inlineTextSize) /
-                resolveDanmakuLineMarginPx(resolveDanmakuTextSizePx(inline, 1f)), 0.001f)
-        assertEquals(1.5f,
-            resolveDanmakuTextSizePx(inline, 1.5f) / resolveDanmakuTextSizePx(inline, 1f), 0.001f)
+    fun `text size follows the density independent base and the user preference`() {
+        assertEquals(45f, resolveDanmakuTextSizePx(density = 3f, fontScale = 1f), 0.0001f)
+        assertEquals(67.5f, resolveDanmakuTextSizePx(density = 3f, fontScale = 1.5f), 0.0001f)
+        assertEquals(24f, resolveDanmakuTextSizePx(density = 1.6f, fontScale = 1f), 0.0001f)
     }
 
     @Test
-    fun `inline font boost lifts text without changing viewport geometry`() {
-        val fullscreen = requireNotNull(
-            resolveDanmakuViewport(1080, 608, 3f, 2392f, resolveDanmakuFontSizeBoost(isFullscreen = true))
-        )
-        val inline = requireNotNull(
-            resolveDanmakuViewport(1080, 608, 3f, 2392f, resolveDanmakuFontSizeBoost(isFullscreen = false))
-        )
-
-        assertEquals(fullscreen.scale, inline.scale, 0f)
+    fun `text size ignores the container box so every surface renders the same`() {
+        val inline = requireNotNull(resolveDanmakuViewport(1080, 608, 3f))
+        val fullscreen = requireNotNull(resolveDanmakuViewport(2392, 1080, 3f))
         assertEquals(
-            1.25f,
-            resolveDanmakuTextSizePx(inline, 1f) / resolveDanmakuTextSizePx(fullscreen, 1f),
-            0.001f
+            resolveDanmakuTextSizePx(inline.density, 1f),
+            resolveDanmakuTextSizePx(fullscreen.density, 1f),
+            0f
         )
     }
 
