@@ -9,6 +9,9 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -88,6 +91,7 @@ import com.android.purebilibili.data.model.response.ReplyItem
 import com.android.purebilibili.data.repository.BlockedUpRelationSource
 import com.android.purebilibili.data.repository.BlockedUpRepository
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewTextContent
+import com.android.purebilibili.feature.dynamic.components.ImagePreviewSourceAnchor
 import com.android.purebilibili.core.ui.animation.MaybeDissolvableVideoCard
 import com.android.purebilibili.core.ui.common.rememberClipboardCopyHandler
 import com.android.purebilibili.core.ui.rememberAppLikeFilledIcon
@@ -429,7 +433,7 @@ internal fun VideoInlineSubReplyDetailContent(
     onDismiss: () -> Unit,
     onRootCommentClick: () -> Unit,
     onTimestampClick: ((Long) -> Unit)?,
-    onImagePreview: ((List<String>, Int, Rect?, ImagePreviewTextContent?) -> Unit)?,
+    onImagePreview: ((List<String>, Int, ImagePreviewSourceAnchor?, ImagePreviewTextContent?) -> Unit)?,
     onReplyClick: (ReplyItem) -> Unit,
     onConversationClick: (ReplyItem) -> Unit,
     onConversationBack: () -> Unit,
@@ -509,7 +513,7 @@ internal fun SubReplyDetailContent(
     onTimestampClick: ((Long) -> Unit)? = null,
     upMid: Long = 0,
     showUpFlag: Boolean = false,
-    onImagePreview: ((List<String>, Int, Rect?, ImagePreviewTextContent?) -> Unit)? = null,
+    onImagePreview: ((List<String>, Int, ImagePreviewSourceAnchor?, ImagePreviewTextContent?) -> Unit)? = null,
     onReplyClick: ((ReplyItem) -> Unit)? = null,
     onConversationClick: ((ReplyItem) -> Unit)? = null,
     onConversationBack: (() -> Unit)? = null,
@@ -1000,7 +1004,7 @@ private fun SubReplyDetailItem(
     emoteMap: Map<String, String>,
     showUpFlag: Boolean,
     onTimestampClick: ((Long) -> Unit)?,
-    onImagePreview: ((List<String>, Int, Rect?, ImagePreviewTextContent?) -> Unit)?,
+    onImagePreview: ((List<String>, Int, ImagePreviewSourceAnchor?, ImagePreviewTextContent?) -> Unit)?,
     onReplyClick: () -> Unit,
     onDeleteClick: (() -> Unit)?,
     onCheckFraudClick: (() -> Unit)? = null,
@@ -1083,7 +1087,7 @@ private fun SubReplyDetailItem(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val copyToClipboard = rememberClipboardCopyHandler()
-    val blockedUpRepository = remember(context) { BlockedUpRepository(context) }
+    val blockedUpRepository = remember { BlockedUpRepository.getInstance(context) }
     var showActionSheet by remember(item.rpid) { mutableStateOf(false) }
     var showFreeCopyDialog by remember(item.rpid) { mutableStateOf(false) }
     var showReportDialog by remember(item.rpid) { mutableStateOf(false) }
@@ -1097,6 +1101,15 @@ private fun SubReplyDetailItem(
     }
     val copyText = remember(item.content.message) { item.content.message.trim() }
     val replyMemberMid = remember(item.member.mid, item.mid) { resolveReplyMemberMid(item) }
+    // [新增] 点踩折叠：与主评论区一致，正文收起为一行，可展开；取消点踩自动恢复
+    var hatedBodyExpanded by remember(item.rpid, isHated) { mutableStateOf(false) }
+    val collapseHatedBody = isHated && !hatedBodyExpanded
+    var hatePromptHandled by remember(item.rpid) { mutableStateOf(false) }
+    var confirmBlockUser by remember(item.rpid) { mutableStateOf(false) }
+    val hateCollapseSpring: SpringSpec<androidx.compose.ui.unit.IntSize> = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
     fun launchSaveReplyCommentImage(reply: ReplyItem) {
         scope.launch {
             val success = saveReplyCommentImageToGallery(context, reply)
@@ -1162,7 +1175,7 @@ private fun SubReplyDetailItem(
             },
             onReply = onReplyClick,
             onBlockUser = {
-                blockReplyUser()
+                confirmBlockUser = true
             },
             onReport = { showReportDialog = true },
             onToggleTop = {},
@@ -1189,6 +1202,24 @@ private fun SubReplyDetailItem(
             showReportDialog = false
         }
     )
+
+    if (confirmBlockUser) {
+        com.android.purebilibili.core.ui.AppAlertDialog(
+            onDismissRequest = { confirmBlockUser = false },
+            title = { AppText("拉黑该用户？") },
+            text = { AppText("拉黑「${item.member.uname}」后将不再显示 TA 的评论和动态，可在设置中解除。") },
+            confirmButton = {
+                com.android.purebilibili.core.ui.AppDialogAction(onClick = {
+                    confirmBlockUser = false
+                    hatePromptHandled = true
+                    blockReplyUser()
+                }) { AppText("确认拉黑") }
+            },
+            dismissButton = {
+                com.android.purebilibili.core.ui.AppDialogAction(onClick = { confirmBlockUser = false }) { AppText("取消") }
+            },
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -1289,6 +1320,44 @@ private fun SubReplyDetailItem(
                 }
 
                 Spacer(modifier = Modifier.height(layoutPolicy.authorToContentSpacingDp.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(animationSpec = hateCollapseSpring)
+                ) {
+                    if (collapseHatedBody) {
+                        AppText(
+                            text = "已点踩的评论 · 点击展开",
+                            style = if (isRootItem) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                            color = appearance.secondaryTextColor,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { hatedBodyExpanded = true }
+                                .padding(vertical = 2.dp)
+                        )
+                        if (!hatePromptHandled) {
+                            Row(
+                                modifier = Modifier.padding(top = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                ReplyTextAction(
+                                    label = "屏蔽该用户",
+                                    appearance = appearance,
+                                    onClick = { confirmBlockUser = true }
+                                )
+                                ReplyTextAction(
+                                    label = "举报",
+                                    appearance = appearance,
+                                    onClick = {
+                                        hatePromptHandled = true
+                                        showReportDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    } else {
                 ReplyMessageText(
                     text = displayMessage,
                     fontSize = if (isRootItem) MaterialTheme.typography.bodyLarge.fontSize else MaterialTheme.typography.bodyMedium.fontSize,
@@ -1325,6 +1394,8 @@ private fun SubReplyDetailItem(
                             },
                             testTagPrefix = "$SUB_REPLY_DETAIL_IMAGE_TAG_PREFIX${item.rpid}_"
                         )
+                    }
+                }
                     }
                 }
 

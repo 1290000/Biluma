@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.ThumbUp
+import androidx.compose.material.icons.rounded.ThumbDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -104,11 +105,13 @@ fun ActionButtonsRow(
     info: ViewInfo,
     isFavorited: Boolean = false,
     isLiked: Boolean = false,
+    isDisliked: Boolean = false,
     coinCount: Int = 0,
     downloadProgress: Float = -1f,  //  -1 = 未下载, 0-1 = 进度, 1 = 已完成
     isInWatchLater: Boolean = false,  //  稍后再看状态
     onFavoriteClick: () -> Unit = {},
     onLikeClick: () -> Unit = {},
+    onDislikeClick: () -> Unit = {},
     onCoinClick: () -> Unit = {},
     onTripleClick: () -> Unit = {},
     onCommentClick: () -> Unit,
@@ -167,14 +170,14 @@ fun ActionButtonsRow(
     val shareIcon = rememberAppShareIcon()
     val watchLaterIcon = rememberAppWatchLaterIcon()
     val downloadIcon = rememberAppDownloadIcon()
-    val actionCount = 6 + if (showCommentAction) 1 else 0 // like/coin/fav/share/watchLater/cache[+comment]
+    val actionCount = 7 + if (showCommentAction) 1 else 0 // like/dislike/coin/fav/share/watchLater/cache[+comment]
     val itemSpacing = resolveVideoDetailActionRowItemSpacing(actionCount)
     val buttonHorizontalPadding = resolveVideoDetailActionButtonHorizontalPadding(actionCount)
 
     Row(
         modifier = modifier
             .animateContentSize()
-            .padding(horizontal = 4.dp, vertical = 6.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(itemSpacing),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -182,7 +185,7 @@ fun ActionButtonsRow(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .heightIn(min = 56.dp),
+                .heightIn(min = 48.dp),
             contentAlignment = Alignment.Center
         ) {
             TripleProgressActionButton(
@@ -225,11 +228,29 @@ fun ActionButtonsRow(
             )
         }
 
+        // Dislike - 点踩（与点赞互斥，官方不展示点踩数，固定显示文字）
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            TripleProgressActionButton(
+                icon = if (isDisliked) Icons.Rounded.ThumbDown else Icons.Outlined.ThumbDown,
+                text = "点踩",
+                isActive = isDisliked,
+                activeColor = activeColors.primaryAction,
+                progress = 0f,
+                onClick = onDislikeClick,
+                horizontalPadding = buttonHorizontalPadding
+            )
+        }
+
         // Coin
         Box(
             modifier = Modifier
                 .weight(1f)
-                .heightIn(min = 56.dp),
+                .heightIn(min = 48.dp),
             contentAlignment = Alignment.Center
         ) {
             TripleProgressActionButton(
@@ -247,7 +268,7 @@ fun ActionButtonsRow(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .heightIn(min = 56.dp),
+                    .heightIn(min = 48.dp),
                 contentAlignment = Alignment.Center
             ) {
                 BiliActionButton(
@@ -265,7 +286,7 @@ fun ActionButtonsRow(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .heightIn(min = 56.dp),
+                .heightIn(min = 48.dp),
             contentAlignment = Alignment.Center
         ) {
             TripleProgressActionButton(
@@ -284,7 +305,7 @@ fun ActionButtonsRow(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .heightIn(min = 56.dp),
+                .heightIn(min = 48.dp),
             contentAlignment = Alignment.Center
         ) {
             BiliActionButton(
@@ -301,7 +322,7 @@ fun ActionButtonsRow(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .heightIn(min = 56.dp),
+                .heightIn(min = 48.dp),
             contentAlignment = Alignment.Center
         ) {
             BiliActionButton(
@@ -325,7 +346,7 @@ fun ActionButtonsRow(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .heightIn(min = 56.dp),
+                .heightIn(min = 48.dp),
             contentAlignment = Alignment.Center
         ) {
             BiliActionButton(
@@ -386,7 +407,7 @@ private fun TripleProgressActionButton(
         verticalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = 48.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -714,7 +735,7 @@ private fun BiliActionButton(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = 48.dp)
             .graphicsLayer {
                 scaleX = scale * pulseScale
                 scaleY = scale * pulseScale
