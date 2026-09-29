@@ -1052,6 +1052,18 @@ class DanmakuManager private constructor(
 
     private var viewport: DanmakuViewport? = null
 
+    /**
+     * Hosts that only render (portrait pager, bangumi, offline, fullscreen overlay) rely on the
+     * render target's own size, so every surface applies the same style without describing its
+     * picture box first.
+     */
+    private fun resolveEffectiveViewport(view: DanmakuRenderView): DanmakuViewport? =
+        resolveDanmakuViewport(
+            widthPx = view.width,
+            heightPx = view.height,
+            density = context.resources.displayMetrics.density
+        )
+
     /** The player host supplies the same geometry to the engine and Compose overlays. */
     fun updateViewport(value: DanmakuViewport) {
         if (viewport == value) return
@@ -1069,7 +1081,7 @@ class DanmakuManager private constructor(
      */
     private fun applyConfigToController(reason: String) {
         controller?.let { ctrl ->
-            val currentViewport = viewport ?: return
+            val currentViewport = viewport ?: danmakuView?.let(::resolveEffectiveViewport) ?: return
             baseRenderConfig = config.resolveRenderConfig(currentViewport)
 
             // 记录设置后的基准时间，供倍速同步使用
