@@ -239,6 +239,8 @@ import com.android.purebilibili.feature.dynamic.components.ImagePreviewDialog
 import com.android.purebilibili.feature.dynamic.components.isImagePreviewSourceHidden
 import com.android.purebilibili.feature.dynamic.components.imagePreviewSourceBounds
 import com.android.purebilibili.feature.dynamic.components.rememberImagePreviewSourceRect
+import com.android.purebilibili.feature.dynamic.components.prepareImagePreviewSourceTransition
+import com.android.purebilibili.feature.dynamic.components.resolveImagePreviewPlaceholderCacheKey
 import com.android.purebilibili.feature.dynamic.components.RepostDialog
 import com.android.purebilibili.feature.list.VideoProgressDisplayState
 import com.android.purebilibili.feature.video.controller.PlaybackProgressManager
@@ -739,10 +741,12 @@ fun SpaceScreen(
                             onMemberGuardClick = onMemberGuardClick
                                 ?: { m, _, _ -> onWebClick("https://space.bilibili.com/$m", "大航海") },
                             onTopPhotoClick = { rect ->
+                                prepareImagePreviewSourceTransition(rect)
                                 topPhotoSourceRect = rect
                                 showTopPhotoPreview = true
                             },
                             onAvatarClick = { rect ->
+                                prepareImagePreviewSourceTransition(rect)
                                 avatarSourceRect = rect
                                 showAvatarPreview = true
                             },
@@ -2719,6 +2723,8 @@ private fun SpaceHeader(
                     }
                     .align(Alignment.TopCenter)
                     .clickable(
+                        interactionSource = null,
+                        indication = null,
                         enabled = skinSpaceBackgroundPaths.isEmpty() &&
                             (shouldEnableSpaceTopPhotoPreview(topPhotoUrl) || userInfo.topImages.isNotEmpty()),
                         onClick = { onTopPhotoClick(topPhotoRect.value) }
@@ -2773,12 +2779,17 @@ private fun SpaceHeader(
                         .size(avatarSize)
                         .imagePreviewSourceBounds(avatarRect)
                         .alpha(if (avatarHidden) 0f else 1f)
-                        .clickable(enabled = avatarPreviewEnabled && !avatarHidden) { onAvatarClick(avatarRect.value) }
+                        .clickable(
+                            interactionSource = null,
+                            indication = null,
+                            enabled = avatarPreviewEnabled && !avatarHidden,
+                        ) { onAvatarClick(avatarRect.value) }
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(FormatUtils.buildSizedImageUrl(userInfo.face, width = 320, height = 320))
-                            .crossfade(true)
+                            .memoryCacheKey(resolveImagePreviewPlaceholderCacheKey(userInfo.face) ?: userInfo.face)
+                            .crossfade(false)
                             .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
@@ -2925,8 +2936,9 @@ private fun SpaceHeaderIdentityInfo(
     modifier: Modifier = Modifier,
 ) {
     // 信息区：名字 + 等级 + VIP 标识。
-    SelectionContainer {
-        Column(modifier = modifier) {
+    // Row 的 weight 要传给 SelectionContainer 的顶层布局，不能只挂在其内部 Column。
+    SelectionContainer(modifier = modifier) {
+        Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -5096,7 +5108,8 @@ private fun SpaceHeaderBanner(
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(item.header)
-                        .crossfade(true)
+                        .memoryCacheKey(resolveImagePreviewPlaceholderCacheKey(item.header) ?: item.header)
+                        .crossfade(false)
                         .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
@@ -5133,7 +5146,8 @@ private fun SpaceHeaderBanner(
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(item.header)
-                    .crossfade(true)
+                    .memoryCacheKey(resolveImagePreviewPlaceholderCacheKey(item.header) ?: item.header)
+                    .crossfade(false)
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
@@ -5154,7 +5168,10 @@ private fun SpaceHeaderBanner(
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(fallbackTopPhotoUrl)
-                .crossfade(true)
+                .memoryCacheKey(
+                    resolveImagePreviewPlaceholderCacheKey(fallbackTopPhotoUrl) ?: fallbackTopPhotoUrl
+                )
+                .crossfade(false)
                 .build(),
             contentDescription = null,
             contentScale = ContentScale.Crop,

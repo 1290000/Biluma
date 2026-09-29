@@ -82,6 +82,7 @@ import com.android.purebilibili.data.repository.VideoRepository
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewTextContent
 import com.android.purebilibili.feature.dynamic.components.isImagePreviewSourceHidden
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewSourceAnchor
+import com.android.purebilibili.feature.dynamic.components.prepareImagePreviewSourceTransition
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewTextPlacement
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewCommentContext
 import com.android.purebilibili.feature.dynamic.components.ImageDecodeTarget
@@ -2948,26 +2949,38 @@ fun CommentPictures(
                         imageRect = coordinates.boundsInWindow()
                         imageRect?.let { galleryRects[0] = it }
                     }
-                    .clickable(enabled = !sourceHidden) {
+                    .clickable(
+                        interactionSource = null,
+                        indication = null,
+                        enabled = !sourceHidden,
+                    ) {
+                        val anchor = imageRect?.let {
+                            ImagePreviewSourceAnchor(
+                                it,
+                                singleImageCornerDp,
+                                galleryRects = galleryRects.toMap()
+                            )
+                        }
+                        prepareImagePreviewSourceTransition(anchor?.rect)
                         onImageClick(
                             imageUrls,
                             0,
-                            imageRect?.let {
-                                ImagePreviewSourceAnchor(
-                                    it,
-                                    singleImageCornerDp,
-                                    galleryRects = galleryRects.toMap()
-                                )
-                            }
+                            anchor
                         )
                     }
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(imageUrls[0])
+                        // Preview uses this exact URL as its placeholder cache key. Keep
+                        // the thumbnail cache identity independent of its decode size so
+                        // the hero flight can paint the already-visible source immediately.
+                        .memoryCacheKey(imageUrls[0])
                         .size(thumbnailDecodeSize.widthPx, thumbnailDecodeSize.heightPx)
                         .httpHeaders(NetworkHeaders.Builder().set("Referer", "https://www.bilibili.com/").build())  //  必需
-                        .crossfade(true)
+                        // Hero owns the transition; a second image fade on return causes
+                        // the thumbnail to blink after the preview window is removed.
+                        .crossfade(false)
                         .build(),
                     contentDescription = null,
                     imageLoader = gifImageLoader,  //  支持 GIF 和其他格式
@@ -3003,17 +3016,23 @@ fun CommentPictures(
                                         imageRect = coordinates.boundsInWindow()
                                         imageRect?.let { galleryRects[globalIndex] = it }
                                     }
-                                    .clickable(enabled = !sourceHidden) {
+                                    .clickable(
+                                        interactionSource = null,
+                                        indication = null,
+                                        enabled = !sourceHidden,
+                                    ) {
+                                        val anchor = imageRect?.let {
+                                            ImagePreviewSourceAnchor(
+                                                it,
+                                                gridImageCornerDp,
+                                                galleryRects = galleryRects.toMap()
+                                            )
+                                        }
+                                        prepareImagePreviewSourceTransition(anchor?.rect)
                                         onImageClick(
                                             imageUrls,
                                             globalIndex,
-                                            imageRect?.let {
-                                                ImagePreviewSourceAnchor(
-                                                    it,
-                                                    gridImageCornerDp,
-                                                    galleryRects = galleryRects.toMap()
-                                                )
-                                            }
+                                            anchor
                                         )
                                     },
                                 contentAlignment = Alignment.Center
@@ -3021,9 +3040,13 @@ fun CommentPictures(
                                 AsyncImage(
                                     model = ImageRequest.Builder(context)
                                         .data(imageUrls[globalIndex])
+                                        // Match ImagePreviewDialog's placeholder key; the
+                                        // thumbnail and fullscreen requests use different
+                                        // decode sizes but must share the source image entry.
+                                        .memoryCacheKey(imageUrls[globalIndex])
                                         .size(thumbnailDecodeSize.widthPx, thumbnailDecodeSize.heightPx)
                                         .httpHeaders(NetworkHeaders.Builder().set("Referer", "https://www.bilibili.com/").build())  //  必需
-                                        .crossfade(true)
+                                        .crossfade(false)
                                         .build(),
                                     contentDescription = null,
                                     imageLoader = gifImageLoader,  //  支持 GIF

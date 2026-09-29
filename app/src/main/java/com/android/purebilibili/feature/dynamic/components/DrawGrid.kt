@@ -176,13 +176,20 @@ private fun DrawGridImage(
                 imageRectRef.value = coordinates.boundsInWindow()
                 galleryRects[index] = imageRectRef.value!!
             }
-            .clickable(enabled = !sourceHidden) {
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                enabled = !sourceHidden,
+            ) {
                 val rect = imageRectRef.value
+                val anchor = rect?.let {
+                    ImagePreviewSourceAnchor(it, cornerRadius.value, galleryRects.toMap())
+                }
+                if (onImagePreviewClick != null) {
+                    prepareImagePreviewSourceTransition(anchor?.rect)
+                }
                 onImageClick(index, rect)
-                onImagePreviewClick?.invoke(
-                    index,
-                    rect?.let { ImagePreviewSourceAnchor(it, cornerRadius.value, galleryRects.toMap()) }
-                )
+                onImagePreviewClick?.invoke(index, anchor)
             },
         contentAlignment = Alignment.Center
     ) {
@@ -190,8 +197,12 @@ private fun DrawGridImage(
             AsyncImage(
                 model = coil3.request.ImageRequest.Builder(context)
                     .data(imageUrl)
+                    // Reuse this exact source identity as the preview's placeholder key.
+                    .memoryCacheKey(imageUrl)
                     .httpHeaders(NetworkHeaders.Builder().set("Referer", "https://www.bilibili.com/").build())
-                    .crossfade(!isGif)
+                    // The Hero flight is the only transition; don't fade the source
+                    // again if its list item is recreated while the preview is open.
+                    .crossfade(false)
                     .build(),
                 imageLoader = if (isGif) gifImageLoader else defaultImageLoader,
                 contentDescription = null,
