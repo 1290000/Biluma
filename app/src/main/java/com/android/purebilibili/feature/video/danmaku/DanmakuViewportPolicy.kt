@@ -17,7 +17,7 @@ data class DanmakuViewport(
 }
 
 /** Inline players cover a fraction of the screen, so lift the text without moving the geometry. */
-internal const val INLINE_DANMAKU_FONT_SIZE_BOOST = 1.5f
+internal const val INLINE_DANMAKU_FONT_SIZE_BOOST = 1.25f
 
 internal fun resolveDanmakuFontSizeBoost(isFullscreen: Boolean): Float =
     if (isFullscreen) 1f else INLINE_DANMAKU_FONT_SIZE_BOOST

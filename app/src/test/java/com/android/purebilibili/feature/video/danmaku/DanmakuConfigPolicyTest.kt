@@ -144,7 +144,7 @@ class DanmakuConfigPolicyTest {
 
         assertEquals(fullscreen.scale, inline.scale, 0f)
         assertEquals(
-            1.5f,
+            1.25f,
             resolveDanmakuTextSizePx(inline, 1f) / resolveDanmakuTextSizePx(fullscreen, 1f),
             0.001f
         )
