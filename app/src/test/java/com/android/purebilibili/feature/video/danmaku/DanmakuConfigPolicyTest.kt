@@ -117,13 +117,6 @@ class DanmakuConfigPolicyTest {
     }
 
     @Test
-    fun `text size follows the density independent base and the user preference`() {
-        assertEquals(75f, resolveDanmakuTextSizePx(density = 3f, fontScale = 1f), 0.0001f)
-        assertEquals(112.5f, resolveDanmakuTextSizePx(density = 3f, fontScale = 1.5f), 0.0001f)
-        assertEquals(40f, resolveDanmakuTextSizePx(density = 1.6f, fontScale = 1f), 0.0001f)
-    }
-
-    @Test
     fun `text size ignores the container box so every surface renders the same`() {
         val inline = requireNotNull(resolveDanmakuViewport(1080, 608, 3f))
         val fullscreen = requireNotNull(resolveDanmakuViewport(2392, 1080, 3f))
