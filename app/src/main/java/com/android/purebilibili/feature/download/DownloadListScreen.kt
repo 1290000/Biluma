@@ -41,7 +41,9 @@ import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.ui.ImmersiveAppScaffold as AppScaffold
 import com.android.purebilibili.core.ui.AppTopBar
 import com.android.purebilibili.core.ui.rememberAppBackIcon
+import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.components.AppCard
+import com.android.purebilibili.feature.home.components.cards.HorizontalVideoCardFrame
 import com.android.purebilibili.core.ui.components.AppCardDefaults
 import com.android.purebilibili.core.ui.components.AppCardShape
 import com.android.purebilibili.core.ui.components.AppCircularProgressIndicator
@@ -206,23 +208,24 @@ private fun DownloadTaskItem(
     onPauseResume: () -> Unit,
     onDelete: () -> Unit,
     stacked: Boolean = false,
-    offlinePlayable: Boolean
+    offlinePlayable: Boolean,
+    modifier: Modifier = Modifier,
 ) {
-    val cover: @Composable (Modifier) -> Unit = { coverModifier ->
-        // 封面
-        Box(
-            modifier = coverModifier
-                .aspectRatio(16f / 9f)
-                .clip(AppShapes.container(ContainerLevel.Chip))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
+    // 与相关推荐/个人列表一致：复用全局横向卡骨架（顶对齐、共享封面宽度与信息区排版）。
+    HorizontalVideoCardFrame(
+        stacked = stacked,
+        coverAspectRatio = 16f / 9f,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(AppShapes.container(ContainerLevel.Card))
+            .background(AppSurfaceTokens.cardContainer())
+            .clickable(onClick = onClick),
+        coverContent = {
             // 🖼️ [修复] 优先使用本地封面（无网络时也能显示）
             val localCoverFile = task.localCoverPath?.let { java.io.File(it) }
             val coverSource = if (localCoverFile?.exists() == true) {
-                // 使用本地缓存的封面
                 localCoverFile
             } else {
-                // Fallback 到网络URL
                 val coverUrl = task.cover.let { url ->
                     if (url.startsWith("http://")) url.replace("http://", "https://")
                     else url
@@ -236,11 +239,12 @@ private fun DownloadTaskItem(
 
             AsyncImage(
                 model = coverSource,
-                contentDescription = null,
+                contentDescription = task.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-
+        },
+        coverOverlayContent = {
             // 进度/状态覆盖层
             if (!task.isComplete) {
                 Box(
@@ -289,14 +293,8 @@ private fun DownloadTaskItem(
                     style = MaterialTheme.typography.labelSmall
                 )
             }
-        }
-
-    }
-    val info: @Composable () -> Unit = {
-        // 信息
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        },
+        infoContent = {
             AppText(
                 text = task.title,
                 fontWeight = FontWeight.Medium,
@@ -322,7 +320,9 @@ private fun DownloadTaskItem(
             AppText(
                 text = task.ownerName,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(AppSpacingTokens.ExtraSmall))
@@ -355,11 +355,12 @@ private fun DownloadTaskItem(
             )
             if (assetTexts.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(AppSpacingTokens.ExtraSmall))
+                // 单行省略：小横卡信息区宽度有限，折行会截断成“弹幕完/成”
                 AppText(
                     text = assetTexts.joinToString(" · "),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -373,60 +374,37 @@ private fun DownloadTaskItem(
                         "本地缓存文件不可用"
                     },
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-        }
+        },
+        trailingContent = {
+            Column(
+                modifier = Modifier.align(Alignment.BottomEnd),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 暂停/继续
+                if (task.isDownloading || task.canResume) {
+                    AppIconButton(onClick = onPauseResume) {
+                        AppIcon(
+                            imageVector = if (task.isDownloading) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                            contentDescription = if (task.isDownloading) "暂停" else "继续",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
 
-    }
-    val actions: @Composable () -> Unit = {
-        // 操作按钮
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // 暂停/继续
-            if (task.isDownloading || task.canResume) {
-                AppIconButton(onClick = onPauseResume) {
+                // 删除
+                AppIconButton(onClick = onDelete) {
                     AppIcon(
-                        imageVector = if (task.isDownloading) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                        contentDescription = if (task.isDownloading) "暂停" else "继续",
-                        tint = MaterialTheme.colorScheme.primary
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "删除",
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }
-
-            // 删除
-            AppIconButton(onClick = onDelete) {
-                AppIcon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-    AppCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = AppCardShape.Semantic(ContainerLevel.Card),
-        colors = AppCardDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        if (stacked) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                cover(Modifier.fillMaxWidth())
-                info()
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { actions() }
-            }
-        } else {
-            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.Bottom) {
-                cover(Modifier.width(120.dp))
-                Spacer(Modifier.width(12.dp))
-                Box(modifier = Modifier.weight(1f)) { info() }
-                actions()
-            }
-        }
-    }
+        },
+    )
 }
