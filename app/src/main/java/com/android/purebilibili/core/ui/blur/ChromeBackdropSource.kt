@@ -34,33 +34,9 @@ internal class ChromeBackdropSource(
  * content. Keep the replay layer separate from the backdrop layer to avoid recording itself.
  * No RenderEffect, alpha or clipping is applied to the replay layer, so it does not request
  * another offscreen raster pass. Miuix still owns coordinates and backdrop lifecycle.
- *
- * Set [replayContent] to false for a narrow independent source that should use Miuix
- * directly, without inserting another display-list layer into its sampling chain.
  */
 @Composable
-internal fun rememberChromeBackdropSource(replayContent: Boolean = true): ChromeBackdropSource {
-    if (!replayContent) {
-        // Narrow chrome sources use Miuix's direct capture rather than a nested replay layer.
-        val recorded = remember { mutableStateOf(false) }
-        val firstRecording = remember { CompletableDeferred<Unit>() }
-        LaunchedEffect(firstRecording) {
-            firstRecording.await()
-            recorded.value = true
-        }
-        val backdrop = rememberLayerBackdrop(onDraw = {
-            drawContent()
-            firstRecording.complete(Unit)
-        })
-        return remember(backdrop) {
-            ChromeBackdropSource(
-                backdrop = backdrop,
-                recorded = recorded,
-                modifier = Modifier.layerBackdrop(backdrop),
-            )
-        }
-    }
-
+internal fun rememberChromeBackdropSource(): ChromeBackdropSource {
     val contentLayer = rememberGraphicsLayer()
     val recorded = remember(contentLayer) { mutableStateOf(false) }
     val firstRecording = remember(contentLayer) { CompletableDeferred<Unit>() }
