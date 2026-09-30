@@ -27,8 +27,9 @@ class DownloadWorker(
         const val KEY_TASK_ID = "task_id"
         const val TAG_DOWNLOAD = "video_download"
 
-        // 固定通知 id：每次 setForeground 更新进度时复用，避免通知堆积
-        private const val FOREGROUND_NOTIFICATION_ID = 20001
+        // 通知 id 按任务派生：同一任务反复 setForeground 复用同一个 id，避免堆积；
+        // 并发下载时各任务各自一条通知
+        fun foregroundNotificationId(taskId: String?): Int = (taskId ?: "download").hashCode()
         
         /**
          * 调度下载任务
@@ -155,9 +156,9 @@ class DownloadWorker(
 
         val serviceType = resolveDownloadForegroundServiceType(Build.VERSION.SDK_INT)
         return if (serviceType != null) {
-            ForegroundInfo(FOREGROUND_NOTIFICATION_ID, notification, serviceType)
+            ForegroundInfo(foregroundNotificationId(inputData.getString(KEY_TASK_ID)), notification, serviceType)
         } else {
-            ForegroundInfo(FOREGROUND_NOTIFICATION_ID, notification)
+            ForegroundInfo(foregroundNotificationId(inputData.getString(KEY_TASK_ID)), notification)
         }
     }
 }

@@ -801,8 +801,7 @@ object DownloadManager {
     }
 
     private fun scheduleNextQueuedDownload() {
-        val nextTaskId = resolveNextQueuedDownloadTaskId(_tasks.value.values) ?: return
-        enqueueDownload(nextTaskId)
+        resolveNextQueuedDownloadTaskIds(_tasks.value.values).forEach(::enqueueDownload)
     }
 
     private fun ensureTaskCanRun(taskId: String) {

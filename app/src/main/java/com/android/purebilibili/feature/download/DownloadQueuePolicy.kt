@@ -9,15 +9,23 @@ internal fun isDownloadTaskActive(task: DownloadTask): Boolean {
     }
 }
 
-internal fun resolveNextQueuedDownloadTaskId(tasks: Collection<DownloadTask>): String? {
-    if (tasks.any(::isDownloadTaskActive)) return null
+/** 默认并发下载数：WorkManager 每个任务独立 worker，串行仅由调度策略保证 */
+internal const val DEFAULT_MAX_CONCURRENT_DOWNLOADS = 2
+
+internal fun resolveNextQueuedDownloadTaskIds(
+    tasks: Collection<DownloadTask>,
+    maxConcurrent: Int = DEFAULT_MAX_CONCURRENT_DOWNLOADS
+): List<String> {
+    val slots = (maxConcurrent - tasks.count(::isDownloadTaskActive)).coerceAtLeast(0)
+    if (slots == 0) return emptyList()
 
     return tasks
         .asSequence()
         .filter { it.status == DownloadStatus.QUEUED }
         .sortedWith(compareBy<DownloadTask> { it.createdAt }.thenBy { it.id })
+        .take(slots)
         .map { it.id }
-        .firstOrNull()
+        .toList()
 }
 
 /**
