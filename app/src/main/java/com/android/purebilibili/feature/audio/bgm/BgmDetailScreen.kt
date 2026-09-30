@@ -162,7 +162,20 @@ private fun BgmDetailContent(
                 }
             }
         },
-        floatingActionButton = { if (canComment && !showVideos && !state.loading) AppButton(onClick = onCompose, modifier = Modifier.heightIn(min = 48.dp)) { AppText("写评论") } },
+        floatingActionButton = {
+            if (canComment && !showVideos && !state.loading) {
+                // 听视频小横条悬浮时上浮避让（与首页/动态页 76dp 预留一致），避免挡住入口
+                val nowPlayingBarOverlayVisible by com.android.purebilibili.feature.audio.player
+                    .AudioNowPlayingSession.barOverlayVisible
+                    .collectAsStateWithLifecycle()
+                AppButton(
+                    onClick = onCompose,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .padding(bottom = if (nowPlayingBarOverlayVisible) 76.dp else 0.dp),
+                ) { AppText("写评论") }
+            }
+        },
     ) { padding ->
         when {
             state.loading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { AppCircularProgressIndicator() }
