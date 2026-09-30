@@ -176,6 +176,9 @@ internal fun DynamicSidebar(
     // 渐进模糊开启时，顶栏改用全局 chrome 渐进模糊，与动态页顶栏一致。
     // 注意 biliPaiProgressiveTopBlur 有静默 no-op 路径（API < 33 / 低模糊预算），
     // 必须用同一条门槛函数显式预判，否则头部会退成无模糊的透明底。
+    val sidebarThemeConfig = com.android.purebilibili.core.ui.LocalAppThemeConfig.current
+    val sidebarFadeWillRender = sidebarThemeConfig.progressiveTopFadeEnabled &&
+        !sidebarThemeConfig.headerBlurEnabled
     val progressiveBackdrop = progressiveChromeSource
         ?.takeIf { source ->
             source.isReady &&
@@ -277,20 +280,39 @@ internal fun DynamicSidebar(
     ) {
         // 内容层 - 使用 Box 重新组织布局以支持模糊
         Box(modifier = Modifier.fillMaxSize()) {
-            // 可滚动内容 - 作为模糊源
-            LazyColumn(
-                state = userListState,
-                flingBehavior = flingBehavior,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                contentPadding = PaddingValues(
-                    top = topPadding + returnHeaderHeight, // 与右侧动态顶栏同高，保证视觉中线一致
-                    bottom = AppSpacingTokens.Large
-                ),
+            // 渐进/渐隐 chrome 生效时毛玻璃源彻底退出，杜绝两套模糊并存的重影。
+            val useProgressiveChrome = progressiveBackdrop != null || sidebarFadeWillRender
+            // 可滚动内容：backdrop 记录源挂在其静态容器上（与 SpaceScreen 同构），
+            // 不直接挂在 LazyColumn 上，避免滚动偏移参与坐标映射。
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .hazeSourceCompat(sidebarHazeState) // 设置模糊源
-                    .then(progressiveChromeSource?.modifier ?: Modifier) // 渐进模糊记录源
+                    .then(
+                        if (useProgressiveChrome) {
+                            progressiveChromeSource?.modifier ?: Modifier
+                        } else {
+                            Modifier
+                        }
+                    )
             ) {
+                LazyColumn(
+                    state = userListState,
+                    flingBehavior = flingBehavior,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    contentPadding = PaddingValues(
+                        top = topPadding + returnHeaderHeight, // 与右侧动态顶栏同高，保证视觉中线一致
+                        bottom = AppSpacingTokens.Large
+                    ),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (!useProgressiveChrome) {
+                                Modifier.hazeSourceCompat(sidebarHazeState) // 毛玻璃模糊源
+                            } else {
+                                Modifier
+                            }
+                        )
+                ) {
                 // 隐藏用户切换按钮 (胶囊样式)
                 if (hiddenCount > 0 || showHiddenUsers) {
                     item(key = "hidden_toggle") {
@@ -387,13 +409,11 @@ internal fun DynamicSidebar(
                     )
                 }
             }
+            }
             
             // 顶部返回按钮区域 - 与全局顶栏走同一条 chrome 通道：
             // 渐进模糊可用时模糊+渐隐；不可用时退化为同款渐隐渐变（对齐其他页面顶部
             // 在该设备上的实际表现）；两者都不可用才回退原毛玻璃。
-            val sidebarThemeConfig = com.android.purebilibili.core.ui.LocalAppThemeConfig.current
-            val sidebarFadeWillRender = sidebarThemeConfig.progressiveTopFadeEnabled &&
-                !sidebarThemeConfig.headerBlurEnabled
             if (progressiveBackdrop != null || sidebarFadeWillRender) {
                 com.android.purebilibili.feature.home.components.BiliPaiImmersiveTopBar(
                     backdrop = progressiveBackdrop,
