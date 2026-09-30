@@ -389,6 +389,11 @@ internal sealed interface BiliPaiNavKey : NavKey {
     }
 
     @Serializable
+    data class WeeklySeries(val number: Int? = null) : BiliPaiNavKey {
+        override val routeBase: String = "weekly_series"
+    }
+
+    @Serializable
     data class MusicDetail(
         val sid: Long
     ) : BiliPaiNavKey {

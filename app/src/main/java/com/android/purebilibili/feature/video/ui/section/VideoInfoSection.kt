@@ -785,7 +785,8 @@ fun VideoTitleWithDesc(
                 val jumpUrl = resolveVideoHonorJumpUrl(
                     type = honor.type,
                     honorUrl = honor.honorUrl,
-                    weeklyRecommendNum = honor.weeklyRecommendNum
+                    weeklyRecommendNum = honor.weeklyRecommendNum,
+                    honorText = "${honor.honorName} ${honor.desc?.content.orEmpty()}"
                 ) ?: return@mapNotNull null
                 Triple(honor, text, jumpUrl)
             }

@@ -6,6 +6,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class MainActivityLinkNavigationPolicyTest {
+    @Test
+    fun weeklyColdStartPreservesHistoricalPeriod() {
+        val navigation = resolveMainActivityLinkNavigation(BilibiliNavigationTarget.PopularFeed("weekly", 133))
+        assertEquals("weekly_series?number=133", navigation?.pendingNavigationRoute)
+        assertNull(navigation?.pendingVideoId)
+    }
+
 
     @Test
     fun spaceTarget_mapsToSpaceRoute() {

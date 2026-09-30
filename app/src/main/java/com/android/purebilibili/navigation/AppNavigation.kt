@@ -1641,7 +1641,11 @@ fun AppNavigation(
                     pushNavigation3Key(BiliPaiNavKey.ArticleDetail(target.articleId))
                 }
                 is BilibiliNavigationTarget.PopularFeed -> {
-                    // 热门榜单(每周必看/排行榜/入站必刷/综合热门):切回首页 POPULAR
+                    if (target.subCategoryKey == "weekly") {
+                        pushNavigation3Key(BiliPaiNavKey.WeeklySeries(target.weeklyNumber))
+                        return true
+                    }
+                    // 热门榜单(排行榜/入站必刷/综合热门):切回首页 POPULAR
                     // 子分类的原生 feed,并弹回主宿主,与底栏点首页一致。
                     // 注意顺序:先切子分类(同步写状态),再切大类(其状态更新在协程中,
                     // 若后切子分类,switchCategory 捕获的旧快照会把子分类覆盖回去)。
@@ -2325,6 +2329,7 @@ fun AppNavigation(
                         }
                         BiliPaiNavEntryContentRole.HOME -> HomeScreen(
                                 viewModel = homeViewModel,
+                                onWeeklySeriesClick = { pushNavigation3Key(BiliPaiNavKey.WeeklySeries()) },
                                 onVideoClick = { request -> navigateToHomeVideoInNavigation3(request) },
                                 onSearchClick = { pushNavigation3Key(BiliPaiNavKey.Search) },
                                 onAvatarClick = { pushNavigation3Key(BiliPaiNavKey.Login) },
@@ -3893,6 +3898,27 @@ fun AppNavigation(
                                     }
                                 )
                             }
+                        BiliPaiNavEntryContentRole.WEEKLY_SERIES -> {
+                            val weeklyKey = key as BiliPaiNavKey.WeeklySeries
+                            com.android.purebilibili.feature.home.WeeklySeriesScreen(
+                                initialNumber = weeklyKey.number,
+                                onBack = { performSystemBackAction() },
+                                onVideoClick = { video, videos ->
+                                    PlaylistManager.setExternalPlaylist(
+                                        items = videos.map { item ->
+                                            com.android.purebilibili.feature.video.player.PlaylistItem(
+                                                bvid = item.bvid, cid = item.cid, title = item.title,
+                                                cover = item.pic, owner = item.owner.name,
+                                                ownerFace = item.owner.face, duration = item.duration.toLong()
+                                            )
+                                        },
+                                        startIndex = videos.indexOfFirst { it.bvid == video.bvid }.coerceAtLeast(0)
+                                    )
+                                    PlaylistManager.setPlayMode(com.android.purebilibili.feature.video.player.PlayMode.SEQUENTIAL)
+                                    navigateToVideoInNavigation3(video.bvid, video.cid, video.pic)
+                                }
+                            )
+                        }
                         BiliPaiNavEntryContentRole.MUSIC_DETAIL -> {
                                 val musicKey = key as BiliPaiNavKey.MusicDetail
                                 com.android.purebilibili.feature.audio.screen.MusicDetailScreen(

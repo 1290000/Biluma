@@ -270,6 +270,11 @@ sealed class ScreenRoutes(val route: String) {
     }
     
     // [新增] Audio Player
+    object WeeklySeries : ScreenRoutes("weekly_series?number={number}") {
+        fun createRoute(number: Int? = null): String =
+            "weekly_series" + (number?.takeIf { it > 0 }?.let { "?number=$it" } ?: "")
+    }
+
     object MusicDetail : ScreenRoutes("music/{sid}") {
         fun createRoute(sid: Long): String {
             return "music/$sid"

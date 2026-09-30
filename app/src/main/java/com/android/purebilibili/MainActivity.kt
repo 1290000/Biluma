@@ -411,8 +411,13 @@ internal fun resolveMainActivityLinkNavigation(
             pendingNavigationRoute = ScreenRoutes.ArticleDetail.createRoute(target.articleId)
         )
 
-        // 热门榜单只在主宿主内导航,冷启动深链接入时落到默认首页即可。
-        is BilibiliNavigationTarget.PopularFeed -> MainActivityLinkNavigation()
+        is BilibiliNavigationTarget.PopularFeed -> if (target.subCategoryKey == "weekly") {
+            MainActivityLinkNavigation(
+                pendingNavigationRoute = ScreenRoutes.WeeklySeries.createRoute(target.weeklyNumber)
+            )
+        } else {
+            MainActivityLinkNavigation()
+        }
     }
 }
 
