@@ -4430,6 +4430,13 @@ fun AppNavigation(
                 isLandscape = isLandscapeNowPlaying,
                 isPlayerDestination = isPlayerIndependentDestination
             )
+            // 发布“听视频小横条是否悬浮在内容上方”，供首页/动态等悬浮元素避让
+            androidx.compose.runtime.SideEffect {
+                com.android.purebilibili.feature.audio.player.AudioNowPlayingSession
+                    .publishBarOverlayVisible(
+                        showAudioNowPlayingInDock || showAudioNowPlayingIndependent
+                    )
+            }
 
             val audioNowPlayingHandoff =
                 if (navigation3ReturnSession.isReturningFromDetail && driveBottomBarByProgress) {

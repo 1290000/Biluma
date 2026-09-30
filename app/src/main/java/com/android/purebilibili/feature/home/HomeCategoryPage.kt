@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import com.android.purebilibili.core.ui.components.AppCard
 import com.android.purebilibili.core.ui.components.AppCardDefaults
 import com.android.purebilibili.core.ui.AdaptiveLoadingIndicator
+import androidx.compose.material.icons.outlined.Close
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppTextButton
 import com.android.purebilibili.core.ui.components.AppText
@@ -754,6 +755,9 @@ internal fun HomeCategoryPageContent(
         }
         }
         }
+        val nowPlayingBarOverlayVisible by com.android.purebilibili.feature.audio.player
+            .AudioNowPlayingSession.barOverlayVisible
+            .collectAsStateWithLifecycle()
         AnimatedVisibility(
             visible = category == HomeCategory.RECOMMEND &&
                 oldContentGridItemIndex != null &&
@@ -764,7 +768,9 @@ internal fun HomeCategoryPageContent(
                 .align(Alignment.BottomEnd)
                 .padding(
                     end = AppSpacingTokens.Large,
-                    bottom = contentPadding.calculateBottomPadding() + AppSpacingTokens.Medium,
+                    // 听视频小横条悬浮时上浮避让（与动态页 76dp 预留一致）
+                    bottom = contentPadding.calculateBottomPadding() + AppSpacingTokens.Medium +
+                        if (nowPlayingBarOverlayVisible) 76.dp else 0.dp,
                 ),
         ) {
             AppButton(
@@ -781,6 +787,20 @@ internal fun HomeCategoryPageContent(
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
             ) {
                 AppText("定位上次刷新")
+                Spacer(modifier = Modifier.width(6.dp))
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .clickable { oldContentLocatorDismissed = true },
+                    contentAlignment = Alignment.Center
+                ) {
+                    AppIcon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "关闭",
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
         }
     }
