@@ -76,8 +76,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -1367,6 +1369,9 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     
     // State
     private val _uiState = MutableStateFlow<VideoPlaybackUiState>(VideoPlaybackUiState.Loading.Initial)
+    // A stale playback snapshot must not overwrite metadata already loaded for this video.
+    // Keep labels per bvid/cid, independently of the shared plugin's mutable playback data.
+    private val sponsorVideoLabels = MutableStateFlow<Map<Pair<String, Long>, String>>(emptyMap())
 
     private fun updateSponsorVideoLabel(
         bvid: String,
@@ -1374,20 +1379,39 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         segments: List<com.android.purebilibili.data.model.response.SponsorSegment>
     ) {
         val label = segments.resolveSponsorVideoLabel()
+        val videoKey = bvid to cid
+        // getSegments also returns empty on request failures. Preserve a known label
+        // during same-video reloads; disabling the assistant explicitly clears this cache.
+        sponsorVideoLabels.update { labels ->
+            if (label.isEmpty() || labels[videoKey] == label) {
+                labels
+            } else {
+                (labels - videoKey + (videoKey to label)).entries.toList().takeLast(16)
+                    .associate { it.key to it.value }
+            }
+        }
+        val retainedLabel = sponsorVideoLabels.value[videoKey].orEmpty()
         // 原子 RMW：label 写入慢（插件网络返回后），与其它 uiState 更新交错时
         // 先读后写的 copy 会互相覆盖，表现为徽标概率性丢失。
         _uiState.update { current ->
             if (current is VideoPlaybackUiState.Success &&
                 current.info.bvid == bvid && current.info.cid == cid &&
-                current.sponsorVideoLabel != label
+                current.sponsorVideoLabel != retainedLabel
             ) {
-                current.copy(sponsorVideoLabel = label)
+                current.copy(sponsorVideoLabel = retainedLabel)
             } else {
                 current
             }
         }
     }
-    val uiState = _uiState.asStateFlow()
+    val uiState: StateFlow<VideoPlaybackUiState> = combine(_uiState, sponsorVideoLabels) { state, labels ->
+        if (state is VideoPlaybackUiState.Success) {
+            val label = labels[state.info.bvid to state.info.cid].orEmpty()
+            if (state.sponsorVideoLabel == label) state else state.copy(sponsorVideoLabel = label)
+        } else {
+            state
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, _uiState.value)
 
     private val _subjectSnapshot = MutableStateFlow<VideoSubjectSnapshot?>(null)
     val subjectSnapshot = _subjectSnapshot.asStateFlow()
@@ -7782,6 +7806,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                 if (sponsorPlugin == null) {
                     sponsorBlockLoadedVideo = null
                     _sponsorProgressMarkers.value = emptyList()
+                    sponsorVideoLabels.value = emptyMap()
                     currentVideo?.let { updateSponsorVideoLabel(it.info.bvid, it.info.cid, emptyList()) }
                 } else if (currentVideo != null) {
                     val bvid = currentVideo.info.bvid
@@ -7798,20 +7823,6 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                             }
                         } catch (e: Exception) {
                             Logger.e("PlayerVM", "Plugin ${sponsorPlugin.name} onVideoLoad failed", e)
-                        }
-                    }
-                }
-                // 标签自愈：若首次写入时 uiState 瞬时不是 Success（重试/切换）或被
-                // 并发更新覆盖，这里用插件已加载的片段补写，对齐 PiliPlus 的
-                // "数据到达即写入 RxString" 语义。
-                plugins.forEach { plugin ->
-                    if (plugin is com.android.purebilibili.feature.plugin.SponsorBlockPlugin) {
-                        val segments = plugin.getSegments()
-                        if (segments.isNotEmpty()) {
-                            val current = _uiState.value as? VideoPlaybackUiState.Success
-                            if (current != null && sponsorBlockLoadedVideo == (current.info.bvid to current.info.cid)) {
-                                updateSponsorVideoLabel(current.info.bvid, current.info.cid, segments)
-                            }
                         }
                     }
                 }
