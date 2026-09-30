@@ -327,6 +327,7 @@ private fun DownloadTaskItem(
     HorizontalVideoCardFrame(
         stacked = stacked,
         coverAspectRatio = 16f / 9f,
+        coverModifier = Modifier.padding(top = AppSpacingTokens.Small),
         modifier = modifier
             .fillMaxWidth()
             .clip(AppShapes.container(ContainerLevel.Card))
@@ -440,6 +441,13 @@ private fun DownloadTaskItem(
             Spacer(modifier = Modifier.height(AppSpacingTokens.ExtraSmall))
 
             // 状态文字
+            val assetSummary = resolveDownloadAssetSummary(task)
+            val assetTexts = listOfNotNull(
+                assetSummary.videoText,
+                assetSummary.audioText,
+                assetSummary.danmakuText
+            )
+            val hasAssetSummary = assetTexts.isNotEmpty()
             val statusText = when (task.status) {
                 DownloadStatus.QUEUED -> "排队中..."
                 DownloadStatus.PENDING -> "等待中..."
@@ -452,33 +460,30 @@ private fun DownloadTaskItem(
                     }
                 }
                 DownloadStatus.MERGING -> "处理中..."
-                DownloadStatus.COMPLETED -> "已完成"
+                // 已完成时资产行（视频/音频/弹幕完成）信息重复，仅在其缺席时显示
+                DownloadStatus.COMPLETED -> if (hasAssetSummary) null else "已完成"
                 DownloadStatus.PAUSED -> "已暂停"
                 DownloadStatus.FAILED -> task.errorMessage ?: "下载失败"
             }
-            AppText(
-                text = statusText,
-                style = MaterialTheme.typography.labelSmall,
-                color = when (task.status) {
-                    DownloadStatus.COMPLETED -> MaterialTheme.colorScheme.secondary
-                    DownloadStatus.FAILED -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.primary
-                }
-            )
+            if (statusText != null) {
+                AppText(
+                    text = statusText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = when (task.status) {
+                        DownloadStatus.COMPLETED -> MaterialTheme.colorScheme.secondary
+                        DownloadStatus.FAILED -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                )
+            }
 
-            val assetSummary = resolveDownloadAssetSummary(task)
-            val assetTexts = listOfNotNull(
-                assetSummary.videoText,
-                assetSummary.audioText,
-                assetSummary.danmakuText
-            )
-            if (assetTexts.isNotEmpty()) {
+            if (hasAssetSummary) {
                 Spacer(modifier = Modifier.height(AppSpacingTokens.ExtraSmall))
                 // 单行省略：小横卡信息区宽度有限，折行会截断成“弹幕完/成”
                 AppText(
                     text = assetTexts.joinToString(" · "),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.secondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
