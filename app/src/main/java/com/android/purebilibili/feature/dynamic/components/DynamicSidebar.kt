@@ -9,6 +9,7 @@ import com.android.purebilibili.core.ui.AppSpacingTokens
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.ContainerLevel
+import com.android.purebilibili.feature.home.components.biliPaiProgressiveTopBlur
 import com.android.purebilibili.core.ui.motion.AppMotionTokens
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -162,15 +163,24 @@ fun DynamicSidebar(
     onToggleExpand: () -> Unit,
     topPadding: androidx.compose.ui.unit.Dp, // 新增：内部处理顶部间距
     onBackClick: () -> Unit, // 新增：返回按钮回调
+    progressiveChromeSource: com.android.purebilibili.core.ui.blur.ChromeBackdropSource? = null,
     modifier: Modifier = Modifier
 ) {
     val animatedWidth by animateFloatAsState(
         targetValue = resolveDynamicSidebarWidth(isExpanded).value,
         label = "sidebarWidth"
     )
-    
+
     // 模糊状态
     val sidebarHazeState = rememberRecoverableHazeState()
+
+    // 渐进模糊开启时，顶栏改用全局 chrome 渐进模糊，与动态页顶栏一致
+    val progressiveBackdrop = progressiveChromeSource
+        ?.takeIf {
+            it.isReady &&
+                !com.android.purebilibili.core.ui.performance.isLowBlurBudgetForced()
+        }
+        ?.backdrop
     
     // 读取模糊强度设置
     val blurIntensity = currentUnifiedBlurIntensity()
@@ -276,6 +286,7 @@ fun DynamicSidebar(
                 modifier = Modifier
                     .fillMaxSize()
                     .hazeSourceCompat(sidebarHazeState) // 设置模糊源
+                    .then(progressiveChromeSource?.modifier ?: Modifier) // 渐进模糊记录源
             ) {
                 // 隐藏用户切换按钮 (胶囊样式)
                 if (hiddenCount > 0 || showHiddenUsers) {
@@ -379,7 +390,18 @@ fun DynamicSidebar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(topPadding + returnHeaderHeight)
-                    .unifiedBlur(sidebarHazeState) // 应用模糊
+                    .then(
+                        if (progressiveBackdrop != null) {
+                            // 渐进模糊：与全局顶栏同一条 progressive blur 通道
+                            Modifier.biliPaiProgressiveTopBlur(
+                                backdrop = progressiveBackdrop,
+                                enabled = true,
+                                surfaceColor = returnHeaderColor,
+                            )
+                        } else {
+                            Modifier.unifiedBlur(sidebarHazeState) // 应用模糊
+                        }
+                    )
                     .background(returnHeaderColor)
                     .align(Alignment.TopCenter)
             ) {
