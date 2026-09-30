@@ -174,10 +174,14 @@ internal fun DynamicSidebar(
     // 模糊状态
     val sidebarHazeState = rememberRecoverableHazeState()
 
-    // 渐进模糊开启时，顶栏改用全局 chrome 渐进模糊，与动态页顶栏一致
+    // 渐进模糊开启时，顶栏改用全局 chrome 渐进模糊，与动态页顶栏一致。
+    // 注意 biliPaiProgressiveTopBlur 有静默 no-op 路径（API < 33 / 低模糊预算），
+    // 必须用同一条门槛函数显式预判，否则头部会退成无模糊的透明底。
     val progressiveBackdrop = progressiveChromeSource
-        ?.takeIf {
-            it.isReady &&
+        ?.takeIf { source ->
+            source.isReady &&
+                com.android.purebilibili.feature.home.components
+                    .shouldUseBiliPaiProgressiveTopBlur(enabled = true, hasBackdrop = true) &&
                 !com.android.purebilibili.core.ui.performance.isLowBlurBudgetForced()
         }
         ?.backdrop
@@ -392,10 +396,12 @@ internal fun DynamicSidebar(
                     .height(topPadding + returnHeaderHeight)
                     .then(
                         if (progressiveBackdrop != null) {
-                            // 渐进模糊：与全局顶栏同一条 progressive blur 通道
+                            // 渐进模糊：与全局顶栏同一条 progressive blur 通道；
+                            // 直角 shape 保持侧边栏原有外观（默认 shape 带 28dp 圆角底边）。
                             Modifier.biliPaiProgressiveTopBlur(
                                 backdrop = progressiveBackdrop,
                                 enabled = true,
+                                shape = androidx.compose.ui.graphics.RectangleShape,
                                 surfaceColor = returnHeaderColor,
                             )
                         } else {
