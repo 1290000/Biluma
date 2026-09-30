@@ -750,7 +750,18 @@ fun BottomControlBar(
     ) {
         if (progressPlacement == PlayerProgressPlacement.ABOVE_CONTROLS) {
             progressBarContent()
-            Spacer(modifier = Modifier.height(layoutPolicy.progressSpacingDp.dp))
+            if (viewPoints.isNotEmpty() && progress.duration > 0L) {
+                ViewPointSegmentBar(
+                    viewPoints = viewPoints,
+                    durationMs = progress.duration,
+                    currentPositionMs = progress.current,
+                    onSeek = onSeek,
+                    modifier = Modifier
+                        .padding(horizontal = if (isFullscreen) 48.dp else 0.dp)
+                        .testTag("player_viewpoint_segments")
+                )
+                Spacer(modifier = Modifier.height(layoutPolicy.progressSpacingDp.dp))
+            }
         }
 
         // 2. Control Row
