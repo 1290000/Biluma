@@ -31,6 +31,13 @@ import java.nio.charset.StandardCharsets
      *   - isSelf (field 29, bool) - 当前账号发送
      */
 object DanmakuProto {
+
+    /** DmSegMobileReply 解析结果：elems + 顶层 state（1 = UP主已关闭弹幕） */
+    data class DanmakuSegReply(
+        val elems: List<DanmakuElem>,
+        val state: Int
+    )
+
     
     private const val TAG = "DanmakuProto"
     

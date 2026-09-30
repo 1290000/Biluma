@@ -130,7 +130,7 @@ internal fun CommandDanmakuOverlay(
                     isFollowing = isFollowing,
                     onDismiss = { state.dismiss(item.id) },
                     onOpenVotePanel = { voteId, initialOptionIndex ->
-                        votePanelInitialOptionIndex = initialOptionIndex
+                        votePanelInitialOptionIndex = initialOptionIndex ?: -1
                         votePanelVoteId = voteId
                     }
                 )

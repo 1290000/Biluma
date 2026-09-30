@@ -602,6 +602,7 @@ fun VideoPlayerOverlay(
     onDanmakuAllowBottomChange: (Boolean) -> Unit = {},
     onDanmakuAllowColorfulChange: (Boolean) -> Unit = {},
     onDanmakuAllowSpecialChange: (Boolean) -> Unit = {},
+    onDanmakuWeightFilterLevelChange: (Int) -> Unit = {},
     onDanmakuHideInteractiveCommandsChange: (Boolean) -> Unit = {},
     onDanmakuBlockRulesRawChange: (String) -> Unit = {},
     onDanmakuSmartOcclusionChange: (Boolean) -> Unit = {},

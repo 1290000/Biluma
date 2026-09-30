@@ -189,6 +189,11 @@ fun DanmakuContextMenu(
                             voteLoading = voteLoading,
                             canVote = canVote,
                             canRecall = canRecall,
+                            timestampJumpMs = timestampJumpMs,
+                            onSeekToTimestamp = {
+                                onSeekToTimestamp(it)
+                                onDismiss()
+                            },
                             onLike = {
                                 onLike()
                                 onDismiss()
@@ -309,6 +314,8 @@ private fun MainMenu(
     voteLoading: Boolean,
     canVote: Boolean,
     canRecall: Boolean,
+    timestampJumpMs: Long? = null,
+    onSeekToTimestamp: (Long) -> Unit = {},
     onLike: () -> Unit,
     onRecall: () -> Unit,
     onReportClick: () -> Unit,

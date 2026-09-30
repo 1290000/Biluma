@@ -10,9 +10,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import com.android.purebilibili.core.ui.transition.CardPositionManager
-import com.android.purebilibili.core.ui.transition.LocalAnimatedVisibilityScope
-import com.android.purebilibili.core.ui.transition.LocalSharedTransitionScope
+import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
+import com.android.purebilibili.core.ui.LocalSharedTransitionScope
 import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
 import com.android.purebilibili.core.ui.transition.LocalVideoSharedTransitionSpeedSettings
 import com.android.purebilibili.core.ui.transition.LocalVideoTransitionAdaptiveInfo
@@ -24,6 +23,7 @@ import com.android.purebilibili.core.ui.transition.resolveVideoCardSharedTransit
 import com.android.purebilibili.core.ui.transition.shouldUseVideoCardShellSharedBounds
 import com.android.purebilibili.core.ui.transition.videoCardShellSharedBoundsOrEmpty
 import com.android.purebilibili.core.ui.transition.withMeasuredCoverDecodeSize
+import com.android.purebilibili.core.util.CardPositionManager
 
 /** 卡片/封面 bounds 持有器，由 onGloballyPositioned 写入。 */
 internal class PersonalCardBoundsHolder {
@@ -58,12 +58,12 @@ internal class PersonalCardVideoTransition(
         sourceCornerDp: Int,
         chrome: VideoCardSourceChromeSnapshot,
     ) {
-        val bounds = bounds.cardBounds ?: return
+        val cardBounds = bounds.cardBounds ?: return
         val sourceCoverBounds = bounds.coverBounds
         CardPositionManager.recordVideoCardPosition(
             bvid = bvid,
             sourceRoute = sourceRoute,
-            bounds = bounds,
+            bounds = cardBounds,
             screenWidth = screenWidthPx,
             screenHeight = screenHeightPx,
             sourceCornerDp = sourceCornerDp,

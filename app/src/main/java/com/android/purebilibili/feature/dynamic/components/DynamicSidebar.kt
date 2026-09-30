@@ -147,7 +147,7 @@ internal class DynamicSidebarDampedFlingBehavior(
  *  动态侧边栏 - 显示关注的UP主（支持展开/收起、在线状态）
  */
 @Composable
-fun DynamicSidebar(
+internal fun DynamicSidebar(
     users: List<SidebarUser>,
     selectedUserId: Long?,
     selfUid: Long = 0L,
