@@ -918,8 +918,11 @@ fun VideoTitleWithDesc(
                 ) {
                     videoTags.take(10).forEach { tag ->
                         com.android.purebilibili.core.ui.components.AppTagChip(
-                            label = tag.tag_name,
-                            onClick = { onTagClick(tag.tag_name) },
+                            label = if (tag.tag_type == "bgm") tag.tag_name.replaceFirst("发现", "♫ BGM：") else tag.tag_name,
+                            onClick = {
+                                val bgm = resolveBgmTagInfo(tag)
+                                if (bgm != null) onBgmClick(bgm) else onTagClick(tag.tag_name)
+                            },
                             modifier = Modifier
                                 .padding(bottom = tagMetrics.itemSpacingVertical)
                                 .copyOnLongPress(tag.tag_name, "标签"),
@@ -1615,7 +1618,7 @@ private fun InlineBgmSection(
         subtitle = null,
         showIndicator = false,
         onClick = {
-            showSheet = true
+            if (bgmList.size == 1) onBgmClick(leadSong) else showSheet = true
         }
     )
 
@@ -2165,6 +2168,8 @@ private fun BgmDetailCard(
     }
 
     AppSurface(
+        onClick = onOpenMusic,
+        enabled = !isLoading,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
@@ -2393,6 +2398,11 @@ private fun resolveBgmRecommendRowKey(
 private fun resolveBgmRecommendRowItemIndex(rowIndex: Int): Int {
     return BGM_RECOMMEND_ROW_START_INDEX + rowIndex
 }
+
+internal fun resolveBgmTagInfo(tag: com.android.purebilibili.data.model.response.VideoTag): BgmInfo? =
+    if (tag.tag_type == "bgm" && (tag.music_id.isNotBlank() || tag.jump_url.isNotBlank())) {
+        BgmInfo(musicId = tag.music_id, musicTitle = tag.tag_name, jumpUrl = tag.jump_url, coverUrl = tag.cover)
+    } else null
 
 internal fun resolveDisplayBgmList(
     bgmInfo: BgmInfo?,

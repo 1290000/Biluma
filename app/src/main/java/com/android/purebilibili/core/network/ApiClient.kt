@@ -955,10 +955,16 @@ interface BilibiliApi {
 
     @GET("x/copyright-music-publicity/bgm/detail")
     suspend fun getBgmDetail(
-        @Query("music_id") musicId: String,
-        @Query("aid") aid: Long,
-        @Query("cid") cid: Long
+        @QueryMap params: Map<String, String>
     ): com.android.purebilibili.data.model.response.BgmDetailResponse
+
+    @retrofit2.http.FormUrlEncoded
+    @POST("x/copyright-music-publicity/bgm/wish/update")
+    suspend fun updateBgmWish(
+        @retrofit2.http.Field("music_id") musicId: String,
+        @retrofit2.http.Field("state") state: Int,
+        @retrofit2.http.Field("csrf") csrf: String
+    ): SimpleApiResponse
 
     @GET("x/copyright-music-publicity/bgm/recommend_list")
     suspend fun getBgmRecommendList(
@@ -967,6 +973,12 @@ interface BilibiliApi {
         @Query("cid") cid: Long,
         @Query("pn") pn: Int = 1,
         @Query("ps") ps: Int = 5
+    ): com.android.purebilibili.data.model.response.BgmRecommendListResponse
+
+    // 音乐详情页与 PiliPlus 一致，取完整列表而非视频内发现音乐的分页窗口。
+    @GET("x/copyright-music-publicity/bgm/recommend_list")
+    suspend fun getAllBgmRecommendList(
+        @Query("music_id") musicId: String
     ): com.android.purebilibili.data.model.response.BgmRecommendListResponse
 
     @GET("x/stein/edgeinfo_v2")

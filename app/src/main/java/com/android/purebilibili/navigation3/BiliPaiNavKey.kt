@@ -394,6 +394,16 @@ internal sealed interface BiliPaiNavKey : NavKey {
     }
 
     @Serializable
+    data class BgmDetail(
+        val musicId: String,
+        val aid: Long = 0,
+        val cid: Long = 0,
+        val showVideos: Boolean = false,
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "bgm_detail"
+    }
+
+    @Serializable
     data class MusicDetail(
         val sid: Long
     ) : BiliPaiNavKey {
