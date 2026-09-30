@@ -116,7 +116,7 @@ internal fun rememberPersonalCardVideoTransition(
     )
     val boundsHolder = remember(bvid) { PersonalCardBoundsHolder() }
     val nativeCardSnapshot = rememberNativeVideoCardSnapshotController(bvid)
-    val shellModifier = videoCardShellSharedBoundsOrEmpty(
+    val shellModifier = Modifier.videoCardShellSharedBoundsOrEmpty(
         enabled = useSharedBounds,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
