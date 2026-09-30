@@ -63,6 +63,7 @@ import com.android.purebilibili.feature.video.progress.PbpRidgeDensity
 import com.android.purebilibili.feature.video.progress.PbpRidgeSample
 import com.android.purebilibili.feature.video.ui.components.SeekPreviewBubble
 import com.android.purebilibili.feature.video.ui.components.SeekPreviewBubblePlacement
+import com.android.purebilibili.feature.video.ui.components.resolveSeekPreviewBubbleHeightDp
 import com.android.purebilibili.feature.video.ui.components.SeekPreviewBubbleSimple
 import com.android.purebilibili.feature.video.ui.components.VideoAspectRatio
 import com.android.purebilibili.feature.video.ui.components.DolbyBadge
@@ -1616,13 +1617,16 @@ fun VideoProgressBar(
     } else {
         layoutPolicy.baseHeightWithoutChapterDp.dp
     }
-    val previewAreaHeightDp = remember(layoutPolicy.draggingContainerHeightDp, baseHeightDp, isSeekScrubbing) {
-        if (!isSeekScrubbing) {
-            0.dp
-        } else {
-            (layoutPolicy.draggingContainerHeightDp.dp - baseHeightDp).coerceAtLeast(52.dp)
-        }
-    }
+    val previewImageHeightDp = if (videoshotData?.isValid == true) {
+        resolveSeekPreviewBubbleHeightDp(LocalConfiguration.current.screenWidthDp)
+    } else null
+    val previewAreaHeightDp = if (isSeekScrubbing) {
+        resolveVideoProgressPreviewAreaHeightDp(
+            layoutPolicy = layoutPolicy,
+            hasChapter = currentChapter != null,
+            previewImageHeightDp = previewImageHeightDp
+        ).dp
+    } else 0.dp
     val thumbSizeDp = if (isSeekScrubbing) {
         layoutPolicy.thumbDraggingSizeDp.dp
     } else {

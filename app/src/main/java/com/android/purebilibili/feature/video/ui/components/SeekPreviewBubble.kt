@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.android.purebilibili.core.ui.components.AppText
 import androidx.compose.material3.MaterialTheme
@@ -206,6 +208,9 @@ private fun resolveSeekPreviewBubbleStyle(widthDp: Int): SeekPreviewBubbleStyle 
     }
 }
 
+internal fun resolveSeekPreviewBubbleHeightDp(screenWidthDp: Int): Int =
+    resolveSeekPreviewBubbleStyle(screenWidthDp).heightDp
+
 internal fun resolveSeekPreviewBubbleOffsetPx(
     placement: SeekPreviewBubblePlacement,
     offsetX: Float,
@@ -311,8 +316,11 @@ internal fun SeekPreviewBubble(
                     Modifier
                 }
             )
-            .width(style.widthDp.dp)
-            .height(style.heightDp.dp)
+            .sizeIn(maxWidth = style.widthDp.dp, maxHeight = style.heightDp.dp)
+            .aspectRatio(
+                ratio = style.widthDp.toFloat() / style.heightDp,
+                matchHeightConstraintsFirst = true
+            )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             SeekPreviewImage(
