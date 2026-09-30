@@ -398,7 +398,9 @@ internal fun DynamicSidebar(
                 com.android.purebilibili.feature.home.components.BiliPaiImmersiveTopBar(
                     backdrop = progressiveBackdrop,
                     enabled = progressiveBackdrop != null,
-                    surfaceColor = returnHeaderColor,
+                    // 与 SpaceScreen 一致传不透明 surface：渐隐/模糊都以它为基准，
+                    // 传半透明 returnHeaderColor 会让 fade 层过弱、内容透出。
+                    surfaceColor = AppSurfaceTokens.surface(),
                     opaqueBackgroundFallback = false,
                     modifier = Modifier
                         .fillMaxWidth()
