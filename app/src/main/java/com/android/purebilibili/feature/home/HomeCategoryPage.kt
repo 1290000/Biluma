@@ -10,6 +10,7 @@ import com.android.purebilibili.core.ui.components.FeedVerticalStaggeredGrid
 import com.android.purebilibili.core.theme.AppUiStyle
 import com.android.purebilibili.core.theme.LocalAppUiStyle
 import com.android.purebilibili.core.ui.AppChromeSizeTokens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.purebilibili.core.ui.AppSpacingTokens
 
 import androidx.compose.material.icons.Icons
