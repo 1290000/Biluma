@@ -2810,6 +2810,7 @@ fun HomeScreen(
             .AudioNowPlayingSession.barOverlayVisible
             .collectAsStateWithLifecycle()
         val undoPillBottomPadding = homeListBottomPadding + AppSpacingTokens.Medium +
+            120.dp +
             (if (nowPlayingBarOverlayVisible) 76.dp else 0.dp) +
             (if (oldContentLocatorVisible) 52.dp else 0.dp)
         Box(
