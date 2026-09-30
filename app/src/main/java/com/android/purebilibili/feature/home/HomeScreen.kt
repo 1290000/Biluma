@@ -2795,6 +2795,8 @@ fun HomeScreen(
         )
 
         //  [新增] 刷新撤销悬浮按钮（右下角，5秒后自动消失）
+        //  与「定位上次刷新」胶囊共用同一底部锚点：跟随听视频横条上浮，且在定位胶囊
+        //  可见时再抬一个胶囊位（胶囊高约 36dp + 8dp 间距），避免两者互相遮挡。
         val undoVisible = undoAvailable && currentCategory == HomeCategory.RECOMMEND
         val oldContentLocatorVisible = shouldShowRecommendOldContentDivider(
             currentCategory = currentCategory,
@@ -2804,6 +2806,12 @@ fun HomeScreen(
             oldContentStartIndex = recommendOldContentStartIndex,
             refreshTipVisible = homeSettings.homeRefreshTipVisible,
         )
+        val nowPlayingBarOverlayVisible by com.android.purebilibili.feature.audio.player
+            .AudioNowPlayingSession.barOverlayVisible
+            .collectAsStateWithLifecycle()
+        val undoPillBottomPadding = homeListBottomPadding + AppSpacingTokens.Medium +
+            (if (nowPlayingBarOverlayVisible) 76.dp else 0.dp) +
+            (if (oldContentLocatorVisible) 44.dp else 0.dp)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -2822,8 +2830,7 @@ fun HomeScreen(
                 ),
                 modifier = Modifier.padding(
                     end = AppSpacingTokens.Large,
-                    bottom = homeListBottomPadding + AppSpacingTokens.Small +
-                        if (oldContentLocatorVisible) 64.dp else 0.dp,
+                    bottom = undoPillBottomPadding,
                 )
             ) {
             AppButton(
