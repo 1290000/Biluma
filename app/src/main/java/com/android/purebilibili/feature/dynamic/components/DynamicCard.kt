@@ -874,7 +874,7 @@ fun DynamicCardV2(
                         runCatching { context.startActivity(inAppIntent) }
                     }
                 },
-                modifier = Modifier.padding(bottom = AppSpacingTokens.ExtraSmall),
+                modifier = Modifier.padding(bottom = AppSpacingTokens.Micro),
             )
         }
 
@@ -2220,7 +2220,6 @@ internal fun DynamicTopicLabel(
 ) {
     Row(
         modifier = modifier
-            .heightIn(min = AppChromeSizeTokens.MinimumTouchTarget)
             .clip(AppShapes.container(ContainerLevel.Chip))
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
