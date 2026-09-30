@@ -808,7 +808,7 @@ fun DynamicScreen(
                             !appThemeConfig.headerBlurEnabled &&
                             !com.android.purebilibili.core.ui.performance.isLowBlurBudgetForced()
                         ) {
-                            com.android.purebilibili.core.ui.blur.rememberChromeBackdropSource()
+                            com.android.purebilibili.core.ui.blur.rememberChromeBackdropSource(replayContent = false)
                         } else {
                             null
                         }
