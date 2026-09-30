@@ -1162,7 +1162,7 @@ private fun MobileSettingsNavLayout(
             SettingsNavDestination.Home -> {
                 Column {
                     SettingsHomeSearchEntry(onClick = onSearchOpen)
-                    Box(modifier = Modifier.entrance()) {
+                    Box(modifier = Modifier.padding(top = 8.dp).entrance()) {
                         SettingsRootCategoryListSection(
                             categories = sectionOrder,
                             onCategoryClick = onCategoryClick,

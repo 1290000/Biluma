@@ -205,7 +205,7 @@ fun SettingsTabletShell(
                 ) {
                     SettingsHomeSearchEntry(onClick = onSearchOpen)
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().padding(top = 8.dp),
                     ) {
                         itemsIndexed(categories) { index, category ->
                             val visual = rememberSettingsEntryVisual(category.searchTarget)
