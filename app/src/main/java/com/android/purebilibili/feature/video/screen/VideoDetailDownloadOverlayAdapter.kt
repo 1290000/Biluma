@@ -151,7 +151,10 @@ internal fun VideoDetailDownloadOverlayAdapter(
                                 videoUrl = "",
                                 audioUrl = successForDownload.audioUrl ?: "",
                                 isAudioOnly = true,
-                                isVerticalVideo = false
+                                isVerticalVideo = false,
+                                options = com.android.purebilibili.feature.download.DownloadOptions(
+                                    includeDanmaku = false
+                                )
                             )
                             if (task.audioUrl.isNotEmpty()) {
                                 val started = com.android.purebilibili.feature.download.DownloadManager.addTask(task)

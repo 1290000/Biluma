@@ -11,6 +11,7 @@ import coil3.network.httpHeaders
 import coil3.request.crossfade
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppText
+import com.android.purebilibili.core.ui.AppAlertDialog
 import com.android.purebilibili.core.ui.AppSpacingTokens
 
 import androidx.compose.foundation.background
@@ -76,6 +77,7 @@ fun DownloadListScreen(
     val customDownloadPath by SettingsManager.getDownloadPath(context).collectAsStateWithLifecycle(initialValue = null)
     val downloadExportTreeUri by SettingsManager.getDownloadExportTreeUri(context).collectAsStateWithLifecycle(initialValue = null)
     val taskList = tasks.values.toList().sortedByDescending { it.createdAt }
+    var pendingDeleteTask by remember { mutableStateOf<com.android.purebilibili.feature.download.DownloadTask?>(null) }
     val currentDir = resolveDisplayedDownloadLocation(
         defaultManagedPath = remember(context) { SettingsManager.getDefaultDownloadPath(context) },
         customManagedPath = customDownloadPath,
@@ -166,7 +168,7 @@ fun DownloadListScreen(
                                 }
                             },
                             onDelete = {
-                                DownloadManager.removeTask(task.id)
+                                pendingDeleteTask = task
                             },
                             offlinePlayable = playableOffline
                         )
@@ -181,6 +183,14 @@ fun DownloadListScreen(
                             .padding(vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        AppText(
+                            text = "共 ${taskList.size} 个 · 已用 " + formatDownloadStorageBytes(
+                                taskList.sumOf { it.fileSize.coerceAtLeast(0L) }
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                        Spacer(modifier = Modifier.height(AppSpacingTokens.ExtraSmall))
                         AppText(
                             text = "存储位置",
                             style = MaterialTheme.typography.labelSmall,
@@ -197,6 +207,50 @@ fun DownloadListScreen(
                 }
             }
         }
+    }
+
+    // 删除确认：避免误触直接清掉已下载的文件
+    pendingDeleteTask?.let { taskToDelete ->
+        AppAlertDialog(
+            onDismissRequest = { pendingDeleteTask = null },
+            title = { AppText("删除缓存") },
+            text = {
+                AppText(
+                    text = "确定删除「${taskToDelete.title}」吗？已下载的视频、音频和弹幕文件将一并清除。",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        DownloadManager.removeTask(taskToDelete.id)
+                        pendingDeleteTask = null
+                    }
+                ) {
+                    AppText("删除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { pendingDeleteTask = null }) {
+                    AppText("取消")
+                }
+            }
+        )
+    }
+}
+
+
+/** 下载占用容量摘要（B / KB / MB / GB 自适应） */
+internal fun formatDownloadStorageBytes(bytes: Long): String {
+    if (bytes <= 0L) return "0 B"
+    val kb = bytes / 1024.0
+    val mb = kb / 1024.0
+    val gb = mb / 1024.0
+    return when {
+        gb >= 1.0 -> String.format(java.util.Locale.US, "%.2f GB", gb)
+        mb >= 1.0 -> String.format(java.util.Locale.US, "%.1f MB", mb)
+        kb >= 1.0 -> String.format(java.util.Locale.US, "%.0f KB", kb)
+        else -> "$bytes B"
     }
 }
 

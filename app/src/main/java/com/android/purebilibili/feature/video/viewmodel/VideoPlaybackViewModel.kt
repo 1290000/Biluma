@@ -1655,6 +1655,18 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     
     //  Download state
     private val _downloadProgress = MutableStateFlow(-1f)
+    /** 当前下载进度监听任务；新下载会替换旧监听，避免每次下载都残留一个收集器 */
+    private var downloadProgressJob: kotlinx.coroutines.Job? = null
+
+    private fun watchDownloadProgress(taskId: String) {
+        downloadProgressJob?.cancel()
+        downloadProgressJob = viewModelScope.launch {
+            com.android.purebilibili.feature.download.DownloadManager.tasks.collect { tasks ->
+                val downloadTask = tasks[taskId]
+                _downloadProgress.value = downloadTask?.progress ?: -1f
+            }
+        }
+    }
     val downloadProgress = _downloadProgress.asStateFlow()
     
     //  [新增] 视频章节/看点数据
@@ -7067,11 +7079,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             val added = com.android.purebilibili.feature.download.DownloadManager.addTask(task)
             if (added) {
                 toast("开始下载: ${task.title} [${task.qualityDesc}]")
-                // 开始监听下载进度
-                com.android.purebilibili.feature.download.DownloadManager.tasks.collect { tasks ->
-                    val downloadTask = tasks[task.id]
-                    _downloadProgress.value = downloadTask?.progress ?: -1f
-                }
+                watchDownloadProgress(task.id)
             } else {
                 toast("下载任务已存在")
             }
