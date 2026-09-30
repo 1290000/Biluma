@@ -289,7 +289,14 @@ fun CollectionSheet(
                     verticalAlignment = Alignment.Top
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        // 头部行：简介 · N 集 · 总播放（同一 Row 内基线对齐）
+                        // 头部行：N 集 · 总播放（同一 Row 内基线对齐）
+                        AppText(
+                            text = "${ugcSeason.ep_count} 集 · 总播放 ${FormatUtils.formatStat(totalPlays)}",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        // 次行：简介标签与正文基线对齐
                         Row {
                             AppText(
                                 text = "简介",
@@ -298,20 +305,16 @@ fun CollectionSheet(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.alignByBaseline()
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
                             AppText(
-                                text = " · ${ugcSeason.ep_count} 集 · 总播放 ${FormatUtils.formatStat(totalPlays)}",
-                                style = MaterialTheme.typography.labelSmall,
+                                text = collectionIntro,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = if (introExpanded) Int.MAX_VALUE else 2,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.alignByBaseline()
                             )
                         }
-                        AppText(
-                            text = collectionIntro,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = if (introExpanded) Int.MAX_VALUE else 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
                     }
                     AppIcon(
                         imageVector = if (introExpanded) {
