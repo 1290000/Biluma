@@ -254,8 +254,21 @@ object DownloadManager {
      * 执行下载
      */
     private suspend fun downloadTask(taskId: String) {
-        val task = _tasks.value[taskId] ?: throw IllegalStateException("任务不存在: $taskId")
+        var task = _tasks.value[taskId] ?: throw IllegalStateException("任务不存在: $taskId")
         updateTask(task.id) { it.copy(status = DownloadStatus.DOWNLOADING) }
+
+        // 串行队列里排了很久的任务，入队时解析的 DASH 地址大概率已过期
+        if (shouldRefreshStaleDownloadUrls(
+                createdAtMs = task.createdAt,
+                nowMs = System.currentTimeMillis()
+            )
+        ) {
+            com.android.purebilibili.core.util.Logger.d(
+                "DownloadManager",
+                "🔄 Stale queued task, refreshing playurl before download: $taskId"
+            )
+            task = refreshTaskDownloadUrls(task)
+        }
         
         val videoFile = getVideoFile(task.id)
         val audioFile = getAudioFile(task.id)
@@ -734,18 +747,28 @@ object DownloadManager {
             val playUrlData = VideoRepository.getPlayUrlData(task.bvid, task.cid, requestedQuality)
                 ?: return task
             val refreshedAudioUrl = playUrlData.dash?.getBestAudio()?.getValidUrl().orEmpty()
-            val refreshedVideoUrl = if (task.isAudioOnly) {
-                ""
-            } else {
-                playUrlData.dash?.getBestVideo(task.quality)?.getValidUrl().orEmpty()
-            }
+            val refreshedVideo = if (task.isAudioOnly) null else playUrlData.dash?.getBestVideo(task.quality)
+            val refreshedVideoUrl = refreshedVideo?.getValidUrl().orEmpty()
+
+            // 刷新后源站可能不再提供原画质：同步实际画质，避免文件与“1080P”标签不符
+            val refreshedQualityDesc = refreshedVideo?.id
+                ?.takeIf { it != task.quality }
+                ?.let { id ->
+                    com.android.purebilibili.data.model.VideoQuality.fromCode(id)?.description
+                }
+                ?: task.qualityDesc
 
             val refreshedTask = when {
                 task.isAudioOnly && refreshedAudioUrl.isNotBlank() -> {
                     task.copy(audioUrl = refreshedAudioUrl)
                 }
                 !task.isAudioOnly && refreshedVideoUrl.isNotBlank() && refreshedAudioUrl.isNotBlank() -> {
-                    task.copy(videoUrl = refreshedVideoUrl, audioUrl = refreshedAudioUrl)
+                    task.copy(
+                        videoUrl = refreshedVideoUrl,
+                        audioUrl = refreshedAudioUrl,
+                        quality = refreshedVideo?.id ?: task.quality,
+                        qualityDesc = refreshedQualityDesc
+                    )
                 }
                 else -> task
             }
@@ -754,7 +777,9 @@ object DownloadManager {
                 updateTask(task.id, persist = false) {
                     it.copy(
                         videoUrl = refreshedTask.videoUrl,
-                        audioUrl = refreshedTask.audioUrl
+                        audioUrl = refreshedTask.audioUrl,
+                        quality = refreshedTask.quality,
+                        qualityDesc = refreshedTask.qualityDesc
                     )
                 }
             }

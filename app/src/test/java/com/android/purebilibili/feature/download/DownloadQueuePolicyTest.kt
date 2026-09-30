@@ -7,6 +7,36 @@ import kotlin.test.assertNull
 class DownloadQueuePolicyTest {
 
     @Test
+    fun staleUrlRefresh_triggersAfterThreshold() {
+        val createdAt = 1_000_000L
+        val threshold = STALE_DOWNLOAD_URL_REFRESH_THRESHOLD_MS
+
+        assertEquals(
+            true,
+            shouldRefreshStaleDownloadUrls(
+                createdAtMs = createdAt,
+                nowMs = createdAt + threshold
+            )
+        )
+        assertEquals(
+            false,
+            shouldRefreshStaleDownloadUrls(
+                createdAtMs = createdAt,
+                nowMs = createdAt + threshold - 1L
+            )
+        )
+        // 刚入队/时钟异常时不刷新
+        assertEquals(
+            false,
+            shouldRefreshStaleDownloadUrls(createdAtMs = createdAt, nowMs = createdAt)
+        )
+        assertEquals(
+            false,
+            shouldRefreshStaleDownloadUrls(createdAtMs = createdAt, nowMs = createdAt - 1L)
+        )
+    }
+
+    @Test
     fun activeTask_blocksQueuedTaskDispatch() {
         val tasks = listOf(
             baseTask.copy(status = DownloadStatus.DOWNLOADING, createdAt = 1L),

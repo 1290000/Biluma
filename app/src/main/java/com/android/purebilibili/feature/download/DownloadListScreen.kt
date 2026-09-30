@@ -91,6 +91,27 @@ fun DownloadListScreen(
         }
     }
 
+    // 下载速度：串行队列同时只有一个任务在下载，按已下载字节差值估算
+    var activeDownloadSpeedBytesPerSecond by remember { mutableStateOf(0L) }
+    var lastSampledBytes by remember { mutableStateOf(0L) }
+    LaunchedEffect(taskList) {
+        while (true) {
+            delay(1_000L)
+            val activeTask = tasks.values.firstOrNull { it.status == DownloadStatus.DOWNLOADING }
+            if (activeTask == null) {
+                activeDownloadSpeedBytesPerSecond = 0L
+                lastSampledBytes = 0L
+                continue
+            }
+            val totalBytes = activeTask.assets.sumOf { it.downloadedBytes.coerceAtLeast(0L) }
+            val delta = totalBytes - lastSampledBytes
+            if (lastSampledBytes > 0L && delta >= 0L) {
+                activeDownloadSpeedBytesPerSecond = delta
+            }
+            lastSampledBytes = totalBytes
+        }
+    }
+
     AppScaffold(
         topBar = {
             AppTopBar(
@@ -170,7 +191,12 @@ fun DownloadListScreen(
                             onDelete = {
                                 pendingDeleteTask = task
                             },
-                            offlinePlayable = playableOffline
+                            offlinePlayable = playableOffline,
+                            speedBytesPerSecond = if (task.status == DownloadStatus.DOWNLOADING) {
+                                activeDownloadSpeedBytesPerSecond
+                            } else {
+                                0L
+                            }
                         )
                     }
                 }
@@ -263,6 +289,7 @@ private fun DownloadTaskItem(
     onDelete: () -> Unit,
     stacked: Boolean = false,
     offlinePlayable: Boolean,
+    speedBytesPerSecond: Long = 0L,
     modifier: Modifier = Modifier,
 ) {
     // 与相关推荐/个人列表一致：复用全局横向卡骨架（顶对齐、共享封面宽度与信息区排版）。
@@ -385,7 +412,14 @@ private fun DownloadTaskItem(
             val statusText = when (task.status) {
                 DownloadStatus.QUEUED -> "排队中..."
                 DownloadStatus.PENDING -> "等待中..."
-                DownloadStatus.DOWNLOADING -> "下载中 ${resolveDownloadTaskProgressPercent(task)}%"
+                DownloadStatus.DOWNLOADING -> buildString {
+                    append("下载中 ${resolveDownloadTaskProgressPercent(task)}%")
+                    if (speedBytesPerSecond > 0L) {
+                        append(" · ")
+                        append(formatDownloadStorageBytes(speedBytesPerSecond))
+                        append("/s")
+                    }
+                }
                 DownloadStatus.MERGING -> "处理中..."
                 DownloadStatus.COMPLETED -> "已完成"
                 DownloadStatus.PAUSED -> "已暂停"
