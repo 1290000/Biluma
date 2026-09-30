@@ -96,7 +96,11 @@ fun ViewPointSegmentBar(
                 AppText(
                     text = segment.content,
                     color = Color.White,
-                    autoSize = TextAutoSize.StepDown(minFontSize = 7.sp, maxFontSize = 10.sp),
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 7.sp,
+                        maxFontSize = 10.sp,
+                        stepSize = 0.5.sp,
+                    ),
                     fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                     maxLines = 1,
                     softWrap = false,
