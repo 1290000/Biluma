@@ -801,17 +801,6 @@ fun DynamicScreen(
                     DynamicDisplayMode.DRAWER_LEFT,
                     DynamicDisplayMode.DRAWER_RIGHT -> {
                         val sidebarOnRight = targetMode.isRightAligned()
-                        // 与 SpaceScreen 同门槛：渐进模糊开启（且顶栏 haze 未接管）时，
-                        // 侧边栏 UP 主列表头部走同一条渐进模糊通道。
-                        val sidebarProgressiveSource = if (
-                            appThemeConfig.progressiveTopBlurEnabled &&
-                            !appThemeConfig.headerBlurEnabled &&
-                            !com.android.purebilibili.core.ui.performance.isLowBlurBudgetForced()
-                        ) {
-                            com.android.purebilibili.core.ui.blur.rememberChromeBackdropSource()
-                        } else {
-                            null
-                        }
                         @Composable
                         fun UpPanelSidebar() {
                             DynamicSidebar(
@@ -820,7 +809,6 @@ fun DynamicScreen(
                                 selfUid = selfUid,
                                 isExpanded = isSidebarExpanded,
                                 userListState = sidebarUserListState,
-                                progressiveChromeSource = sidebarProgressiveSource,
                                 onUserClick = { userId ->
                                     handleUserSelection(userId)
                                     if (targetMode.isDrawer() && isSidebarExpanded) {
