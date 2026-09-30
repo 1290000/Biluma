@@ -9,7 +9,6 @@ import com.android.purebilibili.core.ui.AppSpacingTokens
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.ContainerLevel
-import com.android.purebilibili.feature.home.components.biliPaiProgressiveTopBlur
 import com.android.purebilibili.core.ui.motion.AppMotionTokens
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -389,42 +388,65 @@ internal fun DynamicSidebar(
                 }
             }
             
-            // 顶部返回按钮区域 - 应用模糊效果
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(topPadding + returnHeaderHeight)
-                    .then(
-                        if (progressiveBackdrop != null) {
-                            // 渐进模糊：与全局顶栏同一条 progressive blur 通道；
-                            // 直角 shape 保持侧边栏原有外观（默认 shape 带 28dp 圆角底边）。
-                            Modifier.biliPaiProgressiveTopBlur(
-                                backdrop = progressiveBackdrop,
-                                enabled = true,
-                                shape = androidx.compose.ui.graphics.RectangleShape,
-                                surfaceColor = returnHeaderColor,
+            // 顶部返回按钮区域 - 与全局顶栏走同一条 chrome 通道：
+            // 渐进模糊可用时模糊+渐隐；不可用时退化为同款渐隐渐变（对齐其他页面顶部
+            // 在该设备上的实际表现）；两者都不可用才回退原毛玻璃。
+            val sidebarThemeConfig = com.android.purebilibili.core.ui.LocalAppThemeConfig.current
+            val sidebarFadeWillRender = sidebarThemeConfig.progressiveTopFadeEnabled &&
+                !sidebarThemeConfig.headerBlurEnabled
+            if (progressiveBackdrop != null || sidebarFadeWillRender) {
+                com.android.purebilibili.feature.home.components.BiliPaiImmersiveTopBar(
+                    backdrop = progressiveBackdrop,
+                    enabled = progressiveBackdrop != null,
+                    surfaceColor = returnHeaderColor,
+                    opaqueBackgroundFallback = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(topPadding + returnHeaderHeight)
+                        .align(Alignment.TopCenter)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(returnHeaderHeight)
+                                .align(Alignment.BottomCenter)
+                                .clickable { onBackClick() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AppIcon(
+                                imageVector = rememberAppBackIcon(),
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(AppSpacingTokens.ExtraLarge)
                             )
-                        } else {
-                            Modifier.unifiedBlur(sidebarHazeState) // 应用模糊
                         }
-                    )
-                    .background(returnHeaderColor)
-                    .align(Alignment.TopCenter)
-            ) {
+                    }
+                }
+            } else {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(returnHeaderHeight)
-                        .align(Alignment.BottomCenter)
-                        .clickable { onBackClick() },
-                    contentAlignment = Alignment.Center
+                        .height(topPadding + returnHeaderHeight)
+                        .unifiedBlur(sidebarHazeState) // 应用模糊
+                        .background(returnHeaderColor)
+                        .align(Alignment.TopCenter)
                 ) {
-                    AppIcon(
-                        imageVector = rememberAppBackIcon(),
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(AppSpacingTokens.ExtraLarge)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(returnHeaderHeight)
+                            .align(Alignment.BottomCenter)
+                            .clickable { onBackClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AppIcon(
+                            imageVector = rememberAppBackIcon(),
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(AppSpacingTokens.ExtraLarge)
+                        )
+                    }
                 }
             }
         }
