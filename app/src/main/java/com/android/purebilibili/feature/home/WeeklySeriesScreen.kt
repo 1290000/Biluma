@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.purebilibili.core.ui.AppAlertDialog
 import com.android.purebilibili.core.ui.AppScaffold
 import com.android.purebilibili.core.ui.AppTopBar
+import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.rememberAppBackIcon
 import com.android.purebilibili.core.ui.components.*
 import com.android.purebilibili.data.model.response.VideoItem
@@ -87,7 +88,7 @@ private fun WeeklySeriesContent(
             }
             if (state.reminder.isNotBlank()) {
                 AppText(state.reminder, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    style = MaterialTheme.typography.bodySmall, color = AppSurfaceTokens.onSurfaceVariantSummary())
             }
             when {
                 state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { AppCircularProgressIndicator() }
