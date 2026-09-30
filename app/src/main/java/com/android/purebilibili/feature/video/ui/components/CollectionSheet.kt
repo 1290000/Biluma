@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
 import androidx.compose.material.icons.outlined.VerticalAlignTop
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -227,6 +228,23 @@ fun CollectionSheet(
                     Icon(
                         Icons.Outlined.MyLocation,
                         contentDescription = "定位当前播放",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                AppIconButton(
+                    onClick = {
+                        com.android.purebilibili.core.util.ShareUtils.shareCollection(
+                            context = context,
+                            title = ugcSeason.title,
+                            mid = ugcSeason.mid,
+                            seasonId = ugcSeason.id
+                        )
+                    }
+                ) {
+                    Icon(
+                        Icons.Outlined.Share,
+                        contentDescription = "分享合集",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
