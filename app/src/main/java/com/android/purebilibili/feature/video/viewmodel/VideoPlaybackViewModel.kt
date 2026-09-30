@@ -4754,6 +4754,10 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         // 恢复播放?
     }
 
+    /** 已点赞弹幕的会话级集合，供点按菜单与弹幕列表共享点赞状态 */
+    private val _likedDanmakuIds = MutableStateFlow<Set<Long>>(emptySet())
+    val likedDanmakuIds = _likedDanmakuIds.asStateFlow()
+
     private fun refreshDanmakuThumbupState(dmid: Long) {
         if (dmid <= 0L || currentCid <= 0L) return
 
@@ -4761,6 +4765,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             com.android.purebilibili.data.repository.DanmakuRepository
                 .getDanmakuThumbupState(cid = currentCid, dmid = dmid)
                 .onSuccess { thumbupState ->
+                    _likedDanmakuIds.update { if (thumbupState.liked) it + dmid else it - dmid }
                     _danmakuMenuState.update { current ->
                         if (!current.visible || current.dmid != dmid) current
                         else current.copy(
@@ -4829,6 +4834,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             com.android.purebilibili.data.repository.DanmakuRepository
                 .likeDanmaku(cid = currentCid, dmid = dmid, like = like)
                 .onSuccess {
+                    _likedDanmakuIds.update { if (like) it + dmid else it - dmid }
                     _danmakuMenuState.update { current ->
                         if (!current.visible || current.dmid != dmid) current
                         else {

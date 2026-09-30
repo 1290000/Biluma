@@ -574,6 +574,8 @@ internal fun VideoDetailDanmakuContextMenu(
         hasLiked = danmakuMenuState.hasLiked,
         voteLoading = danmakuMenuState.voteLoading,
         canVote = danmakuMenuState.canVote,
+        timestampJumpMs = resolveDanmakuTimestampJumpMs(danmakuMenuState.text),
+        onSeekToTimestamp = { viewModel.seekTo(it) },
         canRecall = danmakuMenuState.isSelf,
         canBlockKeyword = danmakuMenuState.text.isNotBlank(),
         onBlockKeyword = {

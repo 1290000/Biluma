@@ -610,6 +610,9 @@ private fun CinemaStagePlayer(
                     onSponsorContributionSubmit = playbackActions.submitSponsorContribution,
                     onSponsorContributionCancel = playbackActions.cancelSponsorContribution,
                     onLikeDanmaku = playbackActions.likeDanmaku,
+                    onLikeDanmakuToggle = playbackActions.likeDanmakuToggle,
+                    likedDanmakuIds = playbackActions.likedDanmakuIds,
+                    onReportDanmaku = playbackActions.reportDanmaku,
                     onRecallDanmaku = playbackActions.recallDanmaku,
                 ),
             )

@@ -654,6 +654,9 @@ internal fun VideoDetailScreenStateHolder(
             },
             markVideoNotInterested = viewModel::markVideoNotInterested,
             likeDanmaku = { viewModel.likeDanmaku(it) },
+            likeDanmakuToggle = { dmid, like -> viewModel.likeDanmaku(dmid, like) },
+            likedDanmakuIds = viewModel.likedDanmakuIds,
+            reportDanmaku = { dmid, reason -> viewModel.reportDanmaku(dmid, reason) },
             recallDanmaku = { viewModel.recallDanmaku(it) }
         )
     }

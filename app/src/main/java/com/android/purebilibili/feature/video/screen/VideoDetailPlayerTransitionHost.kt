@@ -357,6 +357,9 @@ internal fun PortraitInlineVideoPlayerHost(
                     onSubtitleDisplayModePreferenceOverrideChange,
                 onSubtitleTrackSelected = playbackActions.selectSubtitleTrack,
                 onLikeDanmaku = playbackActions.likeDanmaku,
+                onLikeDanmakuToggle = playbackActions.likeDanmakuToggle,
+                likedDanmakuIds = playbackActions.likedDanmakuIds,
+                onReportDanmaku = playbackActions.reportDanmaku,
                 onRecallDanmaku = playbackActions.recallDanmaku,
             ),
         )

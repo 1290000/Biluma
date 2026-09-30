@@ -794,7 +794,6 @@ private fun VideoPlayerSectionContent(
     val onSubtitleDisplayModePreferenceOverrideChange =
         actions.onSubtitleDisplayModePreferenceOverrideChange
     val onSubtitleTrackSelected = actions.onSubtitleTrackSelected
-    val onLikeDanmaku = actions.onLikeDanmaku
     val onRecallDanmaku = actions.onRecallDanmaku
     val context = LocalContext.current
     val localDensity = LocalDensity.current
@@ -5741,6 +5740,11 @@ private fun VideoPlayerSectionContent(
             )
 
             if (showDanmakuPoolSheet) {
+                val poolSheetDanmakuLikedIds by actions.likedDanmakuIds
+                    .collectAsStateWithLifecycle()
+                val poolSheetBlockRulesRaw by com.android.purebilibili.core.store.SettingsManager
+                    .getDanmakuBlockRulesRaw(context, activeDanmakuScope)
+                    .collectAsStateWithLifecycle(initialValue = "", lifecycle = lifecycleOwner.lifecycle)
                 DanmakuPoolSheet(
                     danmakuList = danmakuManager.getLoadedDanmakuList(),
                     currentPositionMs = playerState.player?.currentPosition ?: 0L,
@@ -5759,8 +5763,34 @@ private fun VideoPlayerSectionContent(
                         danmakuManager.seekTo(commitResult.committedPositionMs)
                         onUserSeek(commitResult.committedPositionMs)
                     },
-                    onLikeDanmaku = onLikeDanmaku,
+                    likedDanmakuIds = poolSheetDanmakuLikedIds,
+                    onLikeDanmaku = actions.onLikeDanmakuToggle,
                     onRecallDanmaku = onRecallDanmaku,
+                    onReportDanmaku = actions.onReportDanmaku,
+                    onBlockSender = { userHash ->
+                        val updatedRules = com.android.purebilibili.feature.video.danmaku
+                            .appendDanmakuUserHashBlockRule(
+                                rawRules = poolSheetBlockRulesRaw,
+                                userHash = userHash
+                            )
+                        scope.launch {
+                            com.android.purebilibili.core.store.SettingsManager.setDanmakuBlockRulesRaw(
+                                context,
+                                updatedRules,
+                                activeDanmakuScope
+                            )
+                        }
+                        Toast.makeText(
+                            context,
+                            com.android.purebilibili.feature.video.ui.components
+                                .resolveDanmakuBlockActionFeedbackMessage(
+                                    target = com.android.purebilibili.feature.video.ui.components
+                                        .DanmakuBlockActionTarget.USER,
+                                    changed = updatedRules != poolSheetBlockRulesRaw
+                                ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
                     onDismiss = { showDanmakuPoolSheet = false }
                 )
             }
