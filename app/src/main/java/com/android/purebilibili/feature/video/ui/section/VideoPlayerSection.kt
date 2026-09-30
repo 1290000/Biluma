@@ -4691,7 +4691,8 @@ private fun VideoPlayerSectionContent(
                             videoshotData = videoshotData,
                             targetPositionMs = seekTargetTime,
                             durationMs = playerState.player.duration,
-                            videoAspectRatio = com.android.purebilibili.feature.video.ui.components.PORTRAIT_SEEK_PREVIEW_ASPECT_RATIO
+                            videoAspectRatio = com.android.purebilibili.feature.video.ui.components.PORTRAIT_SEEK_PREVIEW_ASPECT_RATIO,
+                            containerHeightDp = LocalConfiguration.current.screenHeightDp
                         )
                     } else {
                         // 普通播放器保留横向预览；竖屏全屏统一使用大尺寸 9:16 预览。
