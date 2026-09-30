@@ -4447,23 +4447,42 @@ private fun VideoPlayerSectionContent(
                     player = playerState.player,
                     onFollowClick = onToggleFollow,
                     onTripleClick = onTriple,
-                    onVoteSubmit = { item, option ->
+                    onVoteSubmit = { item, option, optionIndex ->
                         val success = uiState as? VideoPlaybackUiState.Success
-                        val score = option.score
-                        if (success != null && score != null && item.voteId.isNotBlank()) {
+                        if (success != null && item.voteId.isNotBlank()) {
+                            val gradeScore = option.score
                             settingsScope.launch {
-                                val result = com.android.purebilibili.data.repository.DanmakuRepository.submitGradeDanmaku(
-                                    aid = success.info.aid,
-                                    cid = success.info.cid,
-                                    progress = item.startTimeMs,
-                                    gradeId = item.voteId,
-                                    gradeScore = score
-                                )
-                                if (result.isFailure) {
-                                    android.util.Log.w(
-                                        "VideoPlayerSection",
-                                        "Vote submit failed: ${result.exceptionOrNull()?.message}"
+                                if (gradeScore != null) {
+                                    val result = com.android.purebilibili.data.repository.DanmakuRepository.submitGradeDanmaku(
+                                        aid = success.info.aid,
+                                        cid = success.info.cid,
+                                        progress = item.startTimeMs,
+                                        gradeId = item.voteId,
+                                        gradeScore = gradeScore
                                     )
+                                    if (result.isFailure) {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            result.exceptionOrNull()?.message ?: "打分失败",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                } else {
+                                    // 互动投票弹幕的 vote_id 属于标准投票系统，复用 do_vote
+                                    val voteIdLong = item.voteId.toLongOrNull()
+                                    if (voteIdLong != null) {
+                                        val result = com.android.purebilibili.data.repository.DynamicVoteRepository.submitVote(
+                                            voteId = voteIdLong,
+                                            optionIndexes = listOf(optionIndex)
+                                        )
+                                        if (result.isFailure) {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                result.exceptionOrNull()?.message ?: "投票失败",
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
                                 }
                             }
                         }
