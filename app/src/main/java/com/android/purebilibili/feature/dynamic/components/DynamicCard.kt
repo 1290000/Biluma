@@ -435,7 +435,10 @@ fun DynamicCardV2(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = resolveDynamicCardContentPadding())
-                .padding(top = AppSpacingTokens.Medium, bottom = if (isDetail) AppSpacingTokens.None else AppSpacingTokens.Small + AppSpacingTokens.Micro)
+                .padding(
+                    top = if (isDetail) AppSpacingTokens.Medium else AppSpacingTokens.ExtraSmall,
+                    bottom = if (isDetail) AppSpacingTokens.None else AppSpacingTokens.ExtraSmall,
+                )
                 .clickable(enabled = isPrimaryClickEnabled) {
                     dispatchDynamicCardPrimaryClick(
                         item = item,
