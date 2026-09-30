@@ -24,8 +24,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.animation.animateContentSize
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.PlayArrow
@@ -249,6 +252,46 @@ fun CollectionSheet(
             }
 
             AppHorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // ── 合集简介（接口 intro 字段，可展开）──
+            val collectionIntro = ugcSeason.displayIntro
+            if (collectionIntro.isNotBlank()) {
+                var introExpanded by remember(ugcSeason.id) { mutableStateOf(false) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize()
+                        .clickable { introExpanded = !introExpanded }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    AppText(
+                        text = "简介",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    AppText(
+                        text = collectionIntro,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = if (introExpanded) Int.MAX_VALUE else 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    AppIcon(
+                        imageVector = if (introExpanded) {
+                            Icons.Outlined.KeyboardArrowUp
+                        } else {
+                            Icons.Outlined.KeyboardArrowDown
+                        },
+                        contentDescription = if (introExpanded) "收起简介" else "展开简介",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
 
             // ── 分区切换（仅多 section 时展示）──
             if (sections.size > 1) {
