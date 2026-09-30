@@ -50,6 +50,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -61,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.TextUnit
@@ -2218,35 +2221,46 @@ internal fun DynamicTopicLabel(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .clip(AppShapes.container(ContainerLevel.Chip))
-            .clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(AppSpacingTokens.ExtraSmall))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
-                .padding(horizontal = AppSpacingTokens.Micro),
-            contentAlignment = Alignment.Center,
+    // 话题入口按文字高度占位，命中范围也与可见框一致：clickable 会按
+    // ViewConfiguration.minimumTouchTargetSize 把低于 48dp 的布局向外扩命中，
+    // 这里显式清零，避免又撑出一条点得到、看不到的空白。
+    val baseViewConfiguration = LocalViewConfiguration.current
+    val contentSizedViewConfiguration = remember(baseViewConfiguration) {
+        object : ViewConfiguration by baseViewConfiguration {
+            override val minimumTouchTargetSize: DpSize = DpSize.Zero
+        }
+    }
+    CompositionLocalProvider(LocalViewConfiguration provides contentSizedViewConfiguration) {
+        Row(
+            modifier = modifier
+                .clip(AppShapes.container(ContainerLevel.Chip))
+                .clickable(onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(AppSpacingTokens.ExtraSmall))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
+                    .padding(horizontal = AppSpacingTokens.Micro),
+                contentAlignment = Alignment.Center,
+            ) {
+                AppText(
+                    text = "#",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(modifier = Modifier.width(AppSpacingTokens.Small))
             AppText(
-                text = "#",
+                text = topicName,
                 color = MaterialTheme.colorScheme.primary,
-                fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(modifier = Modifier.width(AppSpacingTokens.Small))
-        AppText(
-            text = topicName,
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
