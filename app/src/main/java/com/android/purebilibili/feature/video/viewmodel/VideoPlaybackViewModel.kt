@@ -1380,8 +1380,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     ) {
         val label = segments.resolveSponsorVideoLabel()
         val videoKey = bvid to cid
-        // getSegments also returns empty on request failures. Preserve a known label
-        // during same-video reloads; disabling the assistant explicitly clears this cache.
+        // Preserve known metadata during reloads; disabling the assistant clears it.
         sponsorVideoLabels.update { labels ->
             if (label.isEmpty() || labels[videoKey] == label) {
                 labels
@@ -3195,6 +3194,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                     "Keep loaded detail UI for ${playbackRequest.bvid}; player not attached yet"
                 )
             }
+            restoreSponsorPlaybackState(currentSuccess)
             return
         }
 
@@ -3216,6 +3216,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             if (!player.isPlaying) {
                 player.play()
             }
+            restoreSponsorPlaybackState(currentSuccess)
             return
         }
 
@@ -4341,6 +4342,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         } else {
             Logger.d("PlayerVM", "♻️ Skipping state restoration, already has valid state")
         }
+        (_uiState.value as? VideoPlaybackUiState.Success)?.let(::restoreSponsorPlaybackState)
     }
 
     // ========== Interaction ==========
@@ -7723,6 +7725,24 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     
     // ==========  Plugin System (SponsorBlock等) ==========
 
+    /** Cached detail restoration bypasses the normal post-load plugin plan. */
+    private fun restoreSponsorPlaybackState(state: VideoPlaybackUiState.Success) {
+        val sponsorEnabled = getSessionPlayerPlugins().any {
+            it is com.android.purebilibili.feature.plugin.SponsorBlockPlugin
+        }
+        if (sponsorEnabled && state.sponsorVideoLabel.isNotEmpty()) {
+            val key = state.info.bvid to state.info.cid
+            sponsorVideoLabels.update { labels ->
+                if (labels.containsKey(key)) labels else {
+                    (labels + (key to state.sponsorVideoLabel)).entries.toList().takeLast(16)
+                        .associate { it.key to it.value }
+                }
+            }
+        }
+        // Repeated reconciliation must not cancel an in-flight segment request.
+        if (pluginCheckJob?.isActive != true) startPluginCheck()
+    }
+
     private fun scheduleDeferredPostLoadWork(
         loadedBvid: String,
         loadedCid: Long,
@@ -8744,6 +8764,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         }
         _uiState.value = restoredState
         publishSubjectSnapshot(restoredState)
+        restoreSponsorPlaybackState(restoredState)
     }
 
     private fun publishSubjectSnapshot(state: VideoPlaybackUiState.Success) {
