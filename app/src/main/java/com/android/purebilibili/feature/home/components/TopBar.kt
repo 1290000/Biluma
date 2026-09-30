@@ -172,9 +172,10 @@ internal fun resolveTopTabDockIndicatorVerticalGapDp(
     hasOuterChromeSurface: Boolean,
     isLiquidGlassReuseEnabled: Boolean = false
 ): Float {
-    val standardGap = if (hasOuterChromeSurface) 3f else 3f
+    // 与底栏一致：胶囊几乎贴满 dock 高度，上下各只留 1dp 呼吸边。
+    val standardGap = 1f
     return if (isLiquidGlassReuseEnabled) {
-        (standardGap - 1f).coerceAtLeast(1f)
+        (standardGap - 0.5f).coerceAtLeast(0.5f)
     } else {
         standardGap
     }
@@ -190,17 +191,18 @@ internal fun resolveTopTabDockEndInsetDp(
 ): Float = if (wrapContent || isFloatingStyle) 4f else 0f
 
 /**
- * 顶部 Tab 的视觉背景保持 30dp 高；36dp 行高留出上下各 3dp 的呼吸空间。
+ * 顶部胶囊指示器与底栏同规格：几乎贴满 dock 高度（上下各 1dp），宽度在内容
+ * 宽之外各留 14dp 内边距，50% 圆角呈扁圆。
+ */
+/**
+ * 顶部胶囊指示器与底栏共用同一枚扁圆（50% 圆角）形状：液态玻璃、Miuix 非
+ * 玻璃、MD3 dock 胶囊全部一致，仅皮肤平铺与 MD3 原生下划线走各自路径。
  */
 internal fun resolveTopTabIndicatorShape(
     showIcon: Boolean,
     showText: Boolean,
     isMiuixNonGlass: Boolean = false,
-): Shape = when {
-    isMiuixNonGlass -> RoundedCornerShape(8.dp)
-    showIcon && showText -> RoundedCornerShape(12.dp)
-    else -> resolveSharedBottomBarCapsuleShape()
-}
+): Shape = resolveSharedBottomBarCapsuleShape()
 
 /**
  * Resolves the vertical center offset (in Dp) of the MD3 native underline indicator
@@ -238,6 +240,8 @@ internal fun resolveTopTabDockIndicatorWidthDp(
 }
 
 /** Interpolates liquid capsule width between adjacent tab labels during pager motion. */
+internal const val TOP_TAB_INDICATOR_CONTENT_PADDING_DP = 14f
+
 internal fun resolveTopTabInterpolatedIndicatorWidthDp(
     position: Float,
     itemWidthDp: Float,
@@ -250,9 +254,10 @@ internal fun resolveTopTabInterpolatedIndicatorWidthDp(
     val clamped = position.coerceIn(0f, contentWidthsDp.lastIndex.toFloat())
     val start = clamped.toInt()
     val end = (start + 1).coerceAtMost(contentWidthsDp.lastIndex)
+    // 胶囊两侧各留一圈水平内边距，才能呈现底栏同款扁圆；宽度仍受槽位上限约束。
     val contentWidth = androidx.compose.ui.util.lerp(
         contentWidthsDp[start], contentWidthsDp[end], clamped - start
-    ) + horizontalGapDp * 2f
+    ) + TOP_TAB_INDICATOR_CONTENT_PADDING_DP * 2f + horizontalGapDp * 2f
     return contentWidth.coerceIn(horizontalGapDp * 2f + 1f, slotMax)
 }
 
@@ -747,20 +752,27 @@ internal fun resolveIosTopTabRowHeight(
 ): Dp {
     val iconAndText = normalizeTopTabLabelMode(labelMode) == 0
     return if (isFloatingStyle) {
-        if (iconAndText) 60.dp else AppSpacingTokens.DoubleExtraLarge + AppSpacingTokens.Small
+        if (iconAndText) 52.dp else AppSpacingTokens.DoubleExtraLarge + AppSpacingTokens.ExtraSmall
     } else {
-        if (iconAndText) 56.dp else AppSpacingTokens.DoubleExtraLarge + AppSpacingTokens.ExtraSmall
+        if (iconAndText) 48.dp else AppSpacingTokens.DoubleExtraLarge
     }
 }
 
+/**
+ * 顶部 dock 专用壳高：此前直接复用底栏 64dp 壳（按纯图标调校），顶部塞入
+ * 图标+双行文案后整体偏大。独立收缩一档，底栏不受影响。
+ */
+internal fun resolveHomeTopDockShellHeight(isFloatingStyle: Boolean): Dp =
+    if (isFloatingStyle) 52.dp else 48.dp
+
 internal fun resolveIosTopTabActionButtonSize(isFloatingStyle: Boolean): Dp =
-    if (isFloatingStyle) AppSpacingTokens.TripleExtraLarge - AppSpacingTokens.Micro else AppSpacingTokens.DoubleExtraLarge + AppSpacingTokens.Medium
+    if (isFloatingStyle) AppSpacingTokens.DoubleExtraLarge + AppSpacingTokens.ExtraSmall else AppSpacingTokens.DoubleExtraLarge
 
 internal fun resolveIosTopTabActionButtonCorner(isFloatingStyle: Boolean): Dp =
-    if (isFloatingStyle) AppSpacingTokens.ExtraLarge - AppSpacingTokens.Micro else AppSpacingTokens.Large + AppSpacingTokens.ExtraSmall
+    if (isFloatingStyle) AppSpacingTokens.ExtraLarge else AppSpacingTokens.Large + AppSpacingTokens.ExtraSmall
 
 internal fun resolveIosTopTabActionIconSize(isFloatingStyle: Boolean): Dp =
-    if (isFloatingStyle) AppSpacingTokens.ExtraLarge - AppSpacingTokens.Micro / 2 else AppSpacingTokens.ExtraLarge - AppSpacingTokens.Micro
+    AppSpacingTokens.ExtraLarge - AppSpacingTokens.ExtraSmall
 
 internal fun performHomeTopBarTap(
     haptic: (HapticType) -> Unit,
@@ -1104,7 +1116,7 @@ private fun LightweightHomeTopTabs(
     )
     val topTabMotionSpec = remember { resolveSegmentedControlMotionSpec() }
     val baseRowHeight = if (useFloatingBottomBarDock) {
-        resolveBiliPaiBottomBarDockHeight(searchExpanded = false)
+        resolveHomeTopDockShellHeight(isFloatingStyle)
     } else if (skinPlainStyle) {
         resolveHomeSkinTopTabRowHeight()
     } else when (effectivePresentation) {
@@ -1271,7 +1283,7 @@ private fun LightweightHomeTopTabs(
             effectiveMaxDockWidth
         }
         if (useFloatingBottomBarDock) {
-            val floatingDockHeight = resolveBiliPaiBottomBarDockHeight(searchExpanded = false)
+            val floatingDockHeight = resolveHomeTopDockShellHeight(isFloatingStyle)
             val floatingDockWidth = resolveHomeTopTabFloatingDockWidth(
                 containerWidth = effectiveMaxDockWidth.dp,
                 itemCount = categories.size,
@@ -1521,26 +1533,32 @@ private fun LightweightHomeTopTabs(
                 )
             }
         }
-        // 速度在 derivedStateOf 内逐帧重算并更新跟踪器；空闲时无读取即无重算，
-        // 与原 SideEffect 方案在静止时的行为一致。
-        val topTabVelocityPositionTracker = remember { mutableFloatStateOf(Float.NaN) }
-        val topTabVelocityTimeTracker = remember { mutableLongStateOf(0L) }
+        // 速度跟踪器必须是普通可变字段而非 snapshot state：derivedStateOf 的
+        // 计算体既读又写它们，若为 state 会自失效形成重组死循环（静止时全局
+        // 锁 120Hz）。作为纯记忆字段写入不触发任何失效，仅位置 state 变化
+        // 才重算，空闲时无读取即无开销。
+        val topTabVelocityTracker = remember {
+            object {
+                var previousPosition = Float.NaN
+                var previousNanos = 0L
+            }
+        }
         val topTabMotionVelocityItemsPerSecondState = remember {
             derivedStateOf {
                 val position = topTabIndicatorPositionState.value
                 val now = System.nanoTime()
-                val previousPosition = topTabVelocityPositionTracker.floatValue
+                val previousPosition = topTabVelocityTracker.previousPosition
                 val velocity = if (previousPosition.isNaN()) {
                     0f
                 } else {
                     resolveTopTabPagerVelocityItemsPerSecond(
                         currentPosition = position,
                         previousPosition = previousPosition,
-                        elapsedNanos = (now - topTabVelocityTimeTracker.longValue).coerceAtLeast(1L)
+                        elapsedNanos = (now - topTabVelocityTracker.previousNanos).coerceAtLeast(1L)
                     )
                 }
-                topTabVelocityPositionTracker.floatValue = position
-                topTabVelocityTimeTracker.longValue = now
+                topTabVelocityTracker.previousPosition = position
+                topTabVelocityTracker.previousNanos = now
                 velocity
             }
         }
