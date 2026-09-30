@@ -82,7 +82,11 @@ internal fun normalizeSponsorSegments(
 ): List<SponsorSegment> {
     return segments
         .asSequence()
-        .filter { segment -> segment.endTimeMs > segment.startTimeMs }
+        .filter { segment ->
+            segment.endTimeMs > segment.startTimeMs ||
+                (segment.actionType == com.android.purebilibili.data.model.response.SponsorActionType.FULL &&
+                    segment.startTimeMs == 0L && segment.endTimeMs == 0L)
+        }
         .groupBy { segment -> "${segment.category}:${segment.actionType}" }
         .values
         .mapNotNull { candidates ->
@@ -110,6 +114,10 @@ internal fun resolveSponsorProgressMarkers(
                 SponsorBlockMarkerMode.SPONSOR_ONLY -> segment.category == com.android.purebilibili.data.model.response.SponsorCategory.SPONSOR
                 SponsorBlockMarkerMode.ALL_SKIPPABLE -> true
             }
+        }
+        .filterNot { segment ->
+            segment.actionType == com.android.purebilibili.data.model.response.SponsorActionType.FULL &&
+                segment.startTimeMs == 0L && segment.endTimeMs == 0L
         }
         .map { segment ->
             SponsorProgressMarker(
@@ -223,7 +231,8 @@ class SponsorBlockPlugin : PlayerPluginApi {
                 )
             ).filter { segment ->
                 config.behaviorFor(segment.category) != SponsorBlockSegmentBehavior.DISABLED &&
-                    segment.duration >= config.minimumSegmentDurationSeconds
+                    (segment.actionType == com.android.purebilibili.data.model.response.SponsorActionType.FULL ||
+                        segment.duration >= config.minimumSegmentDurationSeconds)
             }
             progressMarkers = resolveSponsorProgressMarkers(segments, config.markerMode, config.categoryColorHex)
             Logger.d(
@@ -425,7 +434,9 @@ class SponsorBlockPlugin : PlayerPluginApi {
         if (!config.communityContributionEnabled) {
             return Result.failure(IllegalStateException("请先在空降助手设置中允许提交社区片段"))
         }
-        if (bvid.isBlank() || endMs <= startMs || startMs < 0L) {
+        val wholeVideo = actionType == com.android.purebilibili.data.model.response.SponsorActionType.FULL &&
+            startMs == 0L && endMs == 0L
+        if (bvid.isBlank() || startMs < 0L || (!wholeVideo && endMs <= startMs)) {
             return Result.failure(IllegalArgumentException("片段时间范围无效"))
         }
         if (category !in com.android.purebilibili.data.model.response.SponsorCategory.ALL_CATEGORIES) {

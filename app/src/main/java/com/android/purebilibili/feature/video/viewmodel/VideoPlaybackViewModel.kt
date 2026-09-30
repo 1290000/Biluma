@@ -1368,12 +1368,19 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     // State
     private val _uiState = MutableStateFlow<VideoPlaybackUiState>(VideoPlaybackUiState.Loading.Initial)
 
-    private fun updateSponsorVideoLabel(segments: List<com.android.purebilibili.data.model.response.SponsorSegment>) {
+    private fun updateSponsorVideoLabel(
+        bvid: String,
+        cid: Long,
+        segments: List<com.android.purebilibili.data.model.response.SponsorSegment>
+    ) {
         val label = segments.resolveSponsorVideoLabel()
         // 原子 RMW：label 写入慢（插件网络返回后），与其它 uiState 更新交错时
         // 先读后写的 copy 会互相覆盖，表现为徽标概率性丢失。
         _uiState.update { current ->
-            if (current is VideoPlaybackUiState.Success && current.sponsorVideoLabel != label) {
+            if (current is VideoPlaybackUiState.Success &&
+                current.info.bvid == bvid && current.info.cid == cid &&
+                current.sponsorVideoLabel != label
+            ) {
                 current.copy(sponsorVideoLabel = label)
             } else {
                 current
