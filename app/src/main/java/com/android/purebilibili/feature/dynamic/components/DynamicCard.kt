@@ -2227,9 +2227,9 @@ internal fun DynamicTopicLabel(
     ) {
         Box(
             modifier = Modifier
-                .size(AppSpacingTokens.Large + AppSpacingTokens.ExtraSmall)
                 .clip(RoundedCornerShape(AppSpacingTokens.ExtraSmall))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
+                .padding(horizontal = AppSpacingTokens.Micro),
             contentAlignment = Alignment.Center,
         ) {
             AppText(

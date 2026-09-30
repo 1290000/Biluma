@@ -178,7 +178,7 @@ internal fun resolveDanmakuTypeface(fontWeight: Int): Typeface {
  * Density-independent base size: the same physical size in inline, fullscreen and
  * every other surface; the container only decides how many rows fit.
  */
-internal const val DANMAKU_BASE_TEXT_SIZE_DP = 15f
+internal const val DANMAKU_BASE_TEXT_SIZE_DP = 20f
 
 internal fun resolveDanmakuTextSizePx(density: Float, fontScale: Float): Float =
     DANMAKU_BASE_TEXT_SIZE_DP * density * fontScale.coerceIn(0.3f, 2f)
