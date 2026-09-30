@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import com.android.purebilibili.core.ui.components.AppSurface
 import com.android.purebilibili.core.ui.components.AppText
@@ -47,7 +48,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.android.purebilibili.core.store.HomeDurationStyle
 import com.android.purebilibili.core.store.HomeFeedCardStyle
+import com.android.purebilibili.core.store.HomeSettings
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.store.TodayWatchDislikedVideoSnapshot
 import com.android.purebilibili.core.store.TodayWatchFeedbackStore
@@ -60,6 +63,8 @@ import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.ContainerLevel
 import com.android.purebilibili.core.ui.LocalAnimatedVisibilityScope
 import com.android.purebilibili.core.ui.LocalSharedTransitionEnabled
+import com.android.purebilibili.core.ui.videoCardTitleMaxLines
+import com.android.purebilibili.core.ui.videoCardTitleOverflow
 import com.android.purebilibili.core.ui.LocalSharedTransitionScope
 import com.android.purebilibili.core.ui.components.UpBadgeName
 import com.android.purebilibili.core.ui.transition.LocalVideoCardSharedElementSourceRoute
@@ -167,6 +172,28 @@ internal fun rememberRelatedVideoCardLayout(): HomeFeedCardLayout {
     }
 }
 
+/** 相关推荐卡片跟随的首页排版设置（数据贴封面/时长样式/发布时间） */
+internal data class RelatedVideoCardPresentation(
+    val compactStatsOnCover: Boolean,
+    val durationStyle: HomeDurationStyle,
+    val showPublishTime: Boolean,
+)
+
+@Composable
+internal fun rememberRelatedVideoCardPresentation(): RelatedVideoCardPresentation {
+    val context = LocalContext.current
+    val homeSettings by SettingsManager
+        .getHomeSettings(context)
+        .collectAsStateWithLifecycle(initialValue = HomeSettings())
+    return remember(homeSettings) {
+        RelatedVideoCardPresentation(
+            compactStatsOnCover = homeSettings.compactVideoStatsOnCover,
+            durationStyle = homeSettings.homeDurationStyle,
+            showPublishTime = homeSettings.showHomePublishTime
+        )
+    }
+}
+
 /**
  * 相关推荐单列横卡：点击时冻结来源标识、几何与 chrome，供整卡 Morph 及逐层返回。
  * 与首页视频卡一致，由一个 sharedBounds 容器承载封面、标题、UP 信息和统计内容。
@@ -179,6 +206,9 @@ fun RelatedVideoItem(
     showUpBadge: Boolean = true,
     coverAspectRatio: Float = RELATED_VIDEO_CARD_COVER_ASPECT_RATIO,
     stacked: Boolean = false,
+    compactStatsOnCover: Boolean = false,
+    durationStyle: HomeDurationStyle = HomeDurationStyle.OVERLAY_TEXT_ONLY,
+    showPublishTime: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onMoreClick: (() -> Unit)? = null
@@ -271,12 +301,16 @@ fun RelatedVideoItem(
                         // Related horizontal card keeps play/danmaku in the info column.
                         infoPresentation = com.android.purebilibili.core.ui.transition
                             .resolveVideoCardSourceInfoPresentation(
-                                publishTimeText = FormatUtils.formatPublishTime(video.pubdate),
-                                showStatsInInfo = true,
+                                publishTimeText = if (showPublishTime) {
+                                    FormatUtils.formatPublishTime(video.pubdate)
+                                } else {
+                                    ""
+                                },
+                                showStatsInInfo = !compactStatsOnCover,
                                 showOverflowMenu = onMoreClick != null,
                             ),
                         coverPresentation = VideoCardSourceCoverPresentation(
-                            showDurationOnCover = true,
+                            showDurationOnCover = durationStyle != HomeDurationStyle.HIDDEN,
                         ),
                         coverUrl = stationaryCoverUrl,
                         coverCacheKey = stationaryCoverUrl,
@@ -332,29 +366,44 @@ fun RelatedVideoItem(
                 )
             },
             coverOverlayContent = {
-                AppText(
-                    text = FormatUtils.formatDuration(video.duration),
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        shadow = Shadow(
-                            color = Color.Black.copy(alpha = 0.6f),
-                            blurRadius = 4f,
-                            offset = Offset(0f, 1f),
+                if (compactStatsOnCover) {
+                    HorizontalVideoStatRow(
+                        playText = FormatUtils.formatStat(video.stat.view.toLong()),
+                        danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
+                        contentColor = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(6.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Black.copy(alpha = 0.45f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+                if (durationStyle != HomeDurationStyle.HIDDEN) {
+                    AppText(
+                        text = FormatUtils.formatDuration(video.duration),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                blurRadius = 4f,
+                                offset = Offset(0f, 1f),
+                            ),
                         ),
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(6.dp),
-                )
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp),
+                    )
+                }
             },
             infoContent = {
                 AppText(
                     text = video.title,
                     style = contentTypography.title,
-                    maxLines = 2,
+                    maxLines = videoCardTitleMaxLines(),
                     minLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    overflow = videoCardTitleOverflow(),
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -365,7 +414,7 @@ fun RelatedVideoItem(
                         horizontalArrangement = Arrangement.spacedBy(AppSpacingTokens.Small),
                     ) {
                         val publishTime = remember(video.pubdate) {
-                            FormatUtils.formatPublishTime(video.pubdate)
+                            if (showPublishTime) FormatUtils.formatPublishTime(video.pubdate) else ""
                         }
                         if (publishTime.isNotBlank()) {
                             AppText(
@@ -431,10 +480,12 @@ fun RelatedVideoItem(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    HorizontalVideoStatRow(
-                        playText = FormatUtils.formatStat(video.stat.view.toLong()),
-                        danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
-                    )
+                    if (!compactStatsOnCover) {
+                        HorizontalVideoStatRow(
+                            playText = FormatUtils.formatStat(video.stat.view.toLong()),
+                            danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
+                        )
+                    }
                 }
             },
             trailingContent = onMoreClick?.let { moreClick ->
@@ -485,6 +536,7 @@ internal fun RelatedVideoGridRow(
     }
     var isBlockingCreator by remember { mutableStateOf(false) }
     val blockedUpRepository = remember { BlockedUpRepository.getInstance(context) }
+    val presentation = rememberRelatedVideoCardPresentation()
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
@@ -498,8 +550,11 @@ internal fun RelatedVideoGridRow(
                 video = video,
                 isFollowed = video.owner.mid in followingMids,
                 showUpBadge = showUpBadge,
-                coverAspectRatio = RELATED_VIDEO_CARD_COVER_ASPECT_RATIO,
+                coverAspectRatio = cardLayout.coverAspectRatio,
                 stacked = resolvedCardPresentation == RelatedVideoCardLayout.STACKED,
+                compactStatsOnCover = presentation.compactStatsOnCover,
+                durationStyle = presentation.durationStyle,
+                showPublishTime = presentation.showPublishTime,
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onVideoClick(video) },
                 onMoreClick = { actionVideo = video }

@@ -62,7 +62,6 @@ import top.yukonga.miuix.kmp.blur.Backdrop as MiuixBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.android.purebilibili.feature.home.components.cards.ElegantVideoCard
-import com.android.purebilibili.feature.home.components.cards.LiveRoomCard
 import com.android.purebilibili.feature.home.components.cards.LocalHomeScrollTickProvider
 import com.android.purebilibili.feature.home.components.cards.StoryVideoCard
 
@@ -237,6 +236,7 @@ internal fun HomeCategoryPageContent(
     onTodayWatchUpClick: (Long) -> Unit = {},
     popularSubCategory: PopularSubCategory = PopularSubCategory.COMPREHENSIVE,
     onPopularSubCategoryChange: (PopularSubCategory) -> Unit = {},
+    onWeeklySeriesClick: () -> Unit = {},
     onTodayWatchVideoClick: (VideoItem) -> Unit = { video ->
         onVideoClick(
             HomeVideoClickRequest(
@@ -622,6 +622,17 @@ internal fun HomeCategoryPageContent(
                             .fillMaxWidth()
                             .padding(horizontal = AppSpacingTokens.Small, vertical = AppSpacingTokens.None)
                     )
+                }
+            }
+
+            if (category == HomeCategory.POPULAR && popularSubCategory == PopularSubCategory.WEEKLY) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    com.android.purebilibili.core.ui.components.AppTextButton(
+                        onClick = onWeeklySeriesClick,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    ) {
+                        com.android.purebilibili.core.ui.components.AppText("查看往期每周必看")
+                    }
                 }
             }
 

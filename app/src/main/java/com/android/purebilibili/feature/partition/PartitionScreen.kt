@@ -1158,6 +1158,9 @@ private fun PartitionVideoList(
     val homeFeedCardStyle by SettingsManager
         .getHomeFeedCardStyle(context)
         .collectAsStateWithLifecycle(initialValue = HomeFeedCardStyle.BILIPAI)
+    val showUpBadges by SettingsManager
+        .getHomeUpBadgesVisible(context)
+        .collectAsStateWithLifecycle(initialValue = false)
     val cardLayout = remember(homeFeedCardStyle) {
         resolveHomeFeedCardLayout(homeFeedCardStyle)
     }
@@ -1208,7 +1211,7 @@ private fun PartitionVideoList(
                         sourceRoute = sharedElementSourceRoute,
                         coverAspectRatio = cardLayout.coverAspectRatio,
                         transitionEnabled = sharedTransitionEnabled,
-                        showUpBadge = false,
+                        showUpBadge = showUpBadges,
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { onVideoClick(video) },
                     )

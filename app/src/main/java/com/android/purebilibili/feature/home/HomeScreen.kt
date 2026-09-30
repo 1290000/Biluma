@@ -133,7 +133,6 @@ import com.android.purebilibili.feature.home.policy.shouldTreatInitialHomePagerP
 import com.android.purebilibili.feature.home.policy.shouldUseInitialHomePagerSnap
 //  从 cards 子包导入卡片组件
 import com.android.purebilibili.feature.home.components.cards.ElegantVideoCard
-import com.android.purebilibili.feature.home.components.cards.LiveRoomCard
 import com.android.purebilibili.feature.home.components.cards.StoryVideoCard   //  故事卡片
 import com.android.purebilibili.core.ui.LoadingAnimation
 import com.android.purebilibili.core.ui.ErrorState as ModernErrorState
@@ -251,6 +250,7 @@ fun HomeScreen(
     onHistoryClick: () -> Unit = {},
     //  新增：分区回调
     onPartitionClick: () -> Unit = {},
+    onWeeklySeriesClick: () -> Unit = {},
     partitionVideoSourceRoute: String = "partition",
     onPartitionVideoClick: (VideoItem) -> Unit = { video ->
         onVideoClick(
@@ -2486,6 +2486,7 @@ fun HomeScreen(
                                      onTodayWatchUpClick = onTodayWatchUpClick,
                                      popularSubCategory = selectedPopularSubCategory,
                                      onPopularSubCategoryChange = onPopularSubCategoryChange,
+                                     onWeeklySeriesClick = onWeeklySeriesClick,
                                      onTodayWatchVideoClick = onTodayWatchVideoClick,
                                      firstGridItemModifier = Modifier
                                  )
