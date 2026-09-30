@@ -1131,6 +1131,7 @@ fun DynamicCardV2(
                     initialIndex = selectedImageIndex,
                     sourceRect = sourceAnchor?.rect,
                     sourceRects = sourceAnchor?.galleryRects.orEmpty(),
+                    sourceKey = sourceAnchor?.sourceKey,
                     sourceCornerRadiusDp = sourceAnchor?.cornerRadiusDp
                         ?: resolveDrawGridCornerRadiusDp().toFloat(),
                     textContent = drawPreviewText,
