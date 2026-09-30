@@ -1636,9 +1636,19 @@ fun VideoProgressBar(
                     .fillMaxWidth()
                     .height(previewAreaHeightDp)
                     .padding(bottom = layoutPolicy.previewBottomPaddingDp.dp),
-                contentAlignment = Alignment.BottomCenter
+                contentAlignment = Alignment.BottomStart
             ) {
-                ProgressSeekPreview(videoshotData, activePositionProvider, currentPosition, duration)
+                ProgressSeekPreview(
+                    videoshotData = videoshotData,
+                    positionProvider = activePositionProvider,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    thumbCenterXPx = containerWidthPx * resolveProgressFraction(
+                        positionMs = activePositionProvider(),
+                        durationMs = duration
+                    ),
+                    containerWidthPx = containerWidthPx
+                )
 
             }
         }
@@ -1889,15 +1899,23 @@ private fun ProgressSeekPreview(
     videoshotData: com.android.purebilibili.data.model.response.VideoshotData?,
     positionProvider: () -> Long,
     currentPosition: Long,
-    duration: Long
+    duration: Long,
+    thumbCenterXPx: Float,
+    containerWidthPx: Float
 ) {
     val target = positionProvider()
+    // 与竖屏 PortraitProgressBar 一致：预览跟随拖动 thumb；宽度未测量时回退居中。
+    val placement = if (containerWidthPx > 0f) {
+        SeekPreviewBubblePlacement.Anchored
+    } else {
+        SeekPreviewBubblePlacement.Centered
+    }
     if (videoshotData != null && videoshotData.isValid) {
         SeekPreviewBubble(videoshotData = videoshotData, targetPositionMs = target,
-            currentPositionMs = currentPosition, durationMs = duration, offsetX = 0f,
-            containerWidth = 0f, placement = SeekPreviewBubblePlacement.Centered)
+            currentPositionMs = currentPosition, durationMs = duration, offsetX = thumbCenterXPx,
+            containerWidth = containerWidthPx, placement = placement)
     } else {
         SeekPreviewBubbleSimple(targetPositionMs = target, currentPositionMs = currentPosition,
-            offsetX = 0f, containerWidth = 0f, placement = SeekPreviewBubblePlacement.Centered)
+            offsetX = thumbCenterXPx, containerWidth = containerWidthPx, placement = placement)
     }
 }
