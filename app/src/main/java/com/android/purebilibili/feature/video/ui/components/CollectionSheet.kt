@@ -289,14 +289,7 @@ fun CollectionSheet(
                     verticalAlignment = Alignment.Top
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        // 头部行：N 集 · 总播放（同一 Row 内基线对齐）
-                        AppText(
-                            text = "${ugcSeason.ep_count} 集 · 总播放 ${FormatUtils.formatStat(totalPlays)}",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        // 次行：简介标签与正文基线对齐
+                        // 首行：简介标签与正文基线对齐
                         Row {
                             AppText(
                                 text = "简介",
@@ -315,6 +308,13 @@ fun CollectionSheet(
                                 modifier = Modifier.alignByBaseline()
                             )
                         }
+                        // 次行：N 集 · 总播放
+                        AppText(
+                            text = "${ugcSeason.ep_count} 集 · 总播放 ${FormatUtils.formatStat(totalPlays)}",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                     AppIcon(
                         imageVector = if (introExpanded) {
