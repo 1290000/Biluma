@@ -57,6 +57,8 @@ import com.android.purebilibili.core.ui.rememberAppChevronDownIcon
 import com.android.purebilibili.core.ui.rememberAppChevronUpIcon
 import com.android.purebilibili.core.ui.rememberAppVisibilityOffIcon
 import com.android.purebilibili.core.ui.rememberAppVisibilityOnIcon
+import com.android.purebilibili.core.ui.TopChromeRenderMode
+import com.android.purebilibili.core.ui.resolveTopChromeRenderMode
 import com.android.purebilibili.core.ui.LocalGlobalWallpaperBackdropVisible
 import com.android.purebilibili.core.ui.resolveGlobalWallpaperProtectiveColor
 import com.android.purebilibili.core.ui.blur.BlurStyles
@@ -80,6 +82,30 @@ import com.android.purebilibili.feature.dynamic.resolveDynamicSidebarAvatarPrefe
 import com.android.purebilibili.feature.dynamic.resolveDynamicSidebarFlingDampingFactor
 import com.android.purebilibili.feature.dynamic.resolveDynamicSidebarUserAvatarUrl
 import com.android.purebilibili.feature.dynamic.shouldAnimateSidebarItemCascade
+
+internal data class DynamicSidebarChromePolicy(
+    val recordProgressiveSource: Boolean,
+    val renderMode: TopChromeRenderMode,
+    val useSolidFade: Boolean,
+)
+
+internal fun resolveDynamicSidebarChromePolicy(
+    headerBlurEnabled: Boolean,
+    progressiveBlurEnabled: Boolean,
+    solidFadeEnabled: Boolean,
+    progressiveSupported: Boolean,
+    sourceReady: Boolean,
+): DynamicSidebarChromePolicy = DynamicSidebarChromePolicy(
+    // Recording must start before readiness; the first recording makes the source ready.
+    recordProgressiveSource = !headerBlurEnabled && progressiveBlurEnabled && progressiveSupported,
+    renderMode = resolveTopChromeRenderMode(
+        headerBlurRequested = headerBlurEnabled,
+        progressiveBlurRequested = progressiveBlurEnabled,
+        hazeAvailable = headerBlurEnabled,
+        progressiveAvailable = progressiveSupported && sourceReady,
+    ),
+    useSolidFade = solidFadeEnabled && !headerBlurEnabled,
+)
 
 internal fun performDynamicSidebarUserAvatarClick(
     haptic: (HapticType) -> Unit,
@@ -173,21 +199,21 @@ internal fun DynamicSidebar(
     // 模糊状态
     val sidebarHazeState = rememberRecoverableHazeState()
 
-    // 渐进模糊开启时，顶栏改用全局 chrome 渐进模糊，与动态页顶栏一致。
-    // 注意 biliPaiProgressiveTopBlur 有静默 no-op 路径（API < 33 / 低模糊预算），
-    // 必须用同一条门槛函数显式预判，否则头部会退成无模糊的透明底。
     val sidebarThemeConfig = com.android.purebilibili.core.ui.LocalAppThemeConfig.current
-    val sidebarFadeWillRender = sidebarThemeConfig.progressiveTopFadeEnabled &&
-        !sidebarThemeConfig.headerBlurEnabled
+    val sidebarChromePolicy = resolveDynamicSidebarChromePolicy(
+        headerBlurEnabled = sidebarThemeConfig.headerBlurEnabled,
+        progressiveBlurEnabled = sidebarThemeConfig.progressiveTopBlurEnabled,
+        solidFadeEnabled = sidebarThemeConfig.progressiveTopFadeEnabled,
+        progressiveSupported = progressiveChromeSource != null &&
+            com.android.purebilibili.feature.home.components
+                .shouldUseBiliPaiProgressiveTopBlur(enabled = true, hasBackdrop = true) &&
+            !com.android.purebilibili.core.ui.performance.isLowBlurBudgetForced(),
+        sourceReady = progressiveChromeSource?.isReady == true,
+    )
     val progressiveBackdrop = progressiveChromeSource
-        ?.takeIf { source ->
-            source.isReady &&
-                com.android.purebilibili.feature.home.components
-                    .shouldUseBiliPaiProgressiveTopBlur(enabled = true, hasBackdrop = true) &&
-                !com.android.purebilibili.core.ui.performance.isLowBlurBudgetForced()
-        }
+        ?.takeIf { sidebarChromePolicy.renderMode == TopChromeRenderMode.PROGRESSIVE }
         ?.backdrop
-    
+
     // 读取模糊强度设置
     val blurIntensity = currentUnifiedBlurIntensity()
     val backgroundAlpha = BlurStyles.getBackgroundAlpha(blurIntensity)
@@ -280,15 +306,14 @@ internal fun DynamicSidebar(
     ) {
         // 内容层 - 使用 Box 重新组织布局以支持模糊
         Box(modifier = Modifier.fillMaxSize()) {
-            // 渐进/渐隐 chrome 生效时毛玻璃源彻底退出，杜绝两套模糊并存的重影。
-            val useProgressiveChrome = progressiveBackdrop != null || sidebarFadeWillRender
+            // Attach the recording source while it is warming up, before exposing its backdrop.
             // 可滚动内容：backdrop 记录源挂在其静态容器上（与 SpaceScreen 同构），
             // 不直接挂在 LazyColumn 上，避免滚动偏移参与坐标映射。
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(
-                        if (useProgressiveChrome) {
+                        if (sidebarChromePolicy.recordProgressiveSource) {
                             progressiveChromeSource?.modifier ?: Modifier
                         } else {
                             Modifier
@@ -306,7 +331,7 @@ internal fun DynamicSidebar(
                     modifier = Modifier
                         .fillMaxSize()
                         .then(
-                            if (!useProgressiveChrome) {
+                            if (sidebarChromePolicy.renderMode == TopChromeRenderMode.HAZE) {
                                 Modifier.hazeSourceCompat(sidebarHazeState) // 毛玻璃模糊源
                             } else {
                                 Modifier
@@ -411,17 +436,17 @@ internal fun DynamicSidebar(
             }
             }
             
-            // 顶部返回按钮区域 - 与全局顶栏走同一条 chrome 通道：
-            // 渐进模糊可用时模糊+渐隐；不可用时退化为同款渐隐渐变（对齐其他页面顶部
-            // 在该设备上的实际表现）；两者都不可用才回退原毛玻璃。
-            if (progressiveBackdrop != null || sidebarFadeWillRender) {
+            // Only the explicitly selected Gaussian mode attaches Haze. Other modes use
+            // progressive blur, solid fade, or an opaque fallback until the source is ready.
+            if (sidebarChromePolicy.renderMode != TopChromeRenderMode.HAZE) {
                 com.android.purebilibili.feature.home.components.BiliPaiImmersiveTopBar(
                     backdrop = progressiveBackdrop,
-                    enabled = progressiveBackdrop != null,
+                    enabled = sidebarChromePolicy.renderMode == TopChromeRenderMode.PROGRESSIVE,
+                    fadeEnabled = sidebarChromePolicy.useSolidFade,
                     // 与 SpaceScreen 一致传不透明 surface：渐隐/模糊都以它为基准，
                     // 传半透明 returnHeaderColor 会让 fade 层过弱、内容透出。
                     surfaceColor = AppSurfaceTokens.surface(),
-                    opaqueBackgroundFallback = false,
+                    opaqueBackgroundFallback = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(topPadding + returnHeaderHeight)
