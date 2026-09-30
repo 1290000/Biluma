@@ -571,6 +571,8 @@ internal fun ElegantVideoCard(
             transitionEnabled = transitionEnabled,
             isFollowing = isFollowing,
             showUpBadge = showUpBadge ?: com.android.purebilibili.core.ui.LocalUpBadgeVisibility.current.showBadges,
+            durationStyle = homeDurationStyle,
+            showPublishTime = showPublishTime,
             modifier = modifier,
             highlightedTitle = highlightedTitle,
             onClick = { onClick(video.bvid, video.cid) },
@@ -1831,7 +1833,10 @@ internal fun ElegantVideoCard(
         )
 
         VideoCardDurationPublishRow(
-            durationText = durationText.takeIf { showDurationOutside }.orEmpty(),
+            // 数据贴封面时，时长已随统计行以 pill 呈现，不再在信息区重复显示
+            durationText = durationText
+                .takeIf { showDurationOutside && !scrollLitePolicy.showCompactStatsOnCover }
+                .orEmpty(),
             publishTimeText = publishTimeRowText,
             emphasizePublishTime = emphasizePublishTime,
             publishTimeColor = metadataColors.publishTimeColor,

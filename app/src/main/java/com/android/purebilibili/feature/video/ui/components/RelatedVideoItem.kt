@@ -55,6 +55,7 @@ import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.store.TodayWatchDislikedVideoSnapshot
 import com.android.purebilibili.core.store.TodayWatchFeedbackStore
 import com.android.purebilibili.core.store.withDislikedVideoFeedback
+import com.android.purebilibili.feature.home.components.cards.resolveVideoCardDurationStatMinWidthDp
 import com.android.purebilibili.core.ui.AppAlertDialog
 import com.android.purebilibili.core.ui.AppDialogAction
 import com.android.purebilibili.core.ui.AppShapes
@@ -367,13 +368,17 @@ fun RelatedVideoItem(
             },
             coverOverlayContent = {
                 if (compactStatsOnCover) {
+                    // 预留右下角时长角标宽度，避免统计底衬与时长文字重叠
+                    // (与首页卡 VideoCard.kt 的 statsEndPaddingDp 预留同策略)
+                    val durationReserveDp =
+                        resolveVideoCardDurationStatMinWidthDp(FormatUtils.formatDuration(video.duration)) + 6f
                     HorizontalVideoStatRow(
                         playText = FormatUtils.formatStat(video.stat.view.toLong()),
                         danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
                         contentColor = Color.White,
                         modifier = Modifier
                             .align(Alignment.BottomStart)
-                            .padding(6.dp)
+                            .padding(start = 6.dp, end = 6.dp + durationReserveDp.dp, bottom = 6.dp)
                             .clip(RoundedCornerShape(6.dp))
                             .background(Color.Black.copy(alpha = 0.45f))
                             .padding(horizontal = 6.dp, vertical = 2.dp),
