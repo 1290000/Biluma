@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -54,7 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.android.purebilibili.core.ui.components.AppText
-import com.android.purebilibili.core.ui.components.resolveAppSegmentedLabelFontSizeSp
+import com.android.purebilibili.core.ui.components.resolveAppSegmentedLabelFontSize
 import com.android.purebilibili.core.ui.components.resolveMiuixNonGlassContentTabItemWidths
 
 import kotlin.math.absoluteValue
@@ -76,9 +77,9 @@ internal fun <T> AppMiuixSegmentedControl(
     val longestLabelLength = remember(options) {
         options.maxOfOrNull { it.label.length } ?: 0
     }
-    val labelFontSize = remember(options.size, longestLabelLength) {
-        resolveAppSegmentedLabelFontSizeSp(options.size, longestLabelLength).sp
-    }
+    val labelFontSize = resolveAppSegmentedLabelFontSize(
+        MaterialTheme.typography.labelLarge.fontSize, options.size, longestLabelLength
+    )
     val targetHeight = height ?: 36.dp
     val cornerRadius = 8.dp
     val tabColors = resolveAppMiuixSegmentedColors(colors)
@@ -431,7 +432,7 @@ private fun <T> AppMiuixContentSizedNonGlassTabs(
                         .padding(horizontal = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    androidx.compose.material3.Text(
+                    AppText(
                         text = option.label,
                         modifier = Modifier.wrapContentWidth(unbounded = true),
                         color = if (selected) {

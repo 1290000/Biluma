@@ -95,6 +95,14 @@ fun resolveAppSegmentedLabelFontSizeSp(
     else -> 15f
 }
 
+/** Preserve compact-label ratios while honoring the active theme and app font scale. */
+fun resolveAppSegmentedLabelFontSize(
+    themeLabelFontSize: androidx.compose.ui.unit.TextUnit,
+    optionCount: Int,
+    longestLabelLength: Int,
+): androidx.compose.ui.unit.TextUnit =
+    themeLabelFontSize * (resolveAppSegmentedLabelFontSizeSp(optionCount, longestLabelLength) / 15f)
+
 fun shouldFillMaxWidthAppSegmentedControl(
     optionCount: Int,
     longestLabelLength: Int,

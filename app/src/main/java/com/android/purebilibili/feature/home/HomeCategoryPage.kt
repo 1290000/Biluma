@@ -1,4 +1,6 @@
 package com.android.purebilibili.feature.home
+
+import com.android.purebilibili.core.ui.components.AppButton
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -23,7 +25,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.android.purebilibili.core.ui.components.AppCard
@@ -766,7 +767,7 @@ internal fun HomeCategoryPageContent(
                     bottom = contentPadding.calculateBottomPadding() + AppSpacingTokens.Medium,
                 ),
         ) {
-            Button(
+            AppButton(
                 onClick = {
                     oldContentLocatorDismissed = true
                     oldContentGridItemIndex?.let { targetIndex ->

@@ -400,7 +400,7 @@ fun VideoDetailSponsorLabelChip(
     modifier: Modifier = Modifier,
     maxLines: Int = 1,
 ) {
-    androidx.compose.material3.Surface(
+    AppSurface(
         modifier = modifier,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -969,14 +969,14 @@ private fun VideoArgueMsgRow(argueMsg: String) {
 
 /**
  * 视频荣誉徽标(全站排行榜最高第N名/每周必看等):
- * 着色小胶囊,有跳转链接时可点击,走通用的 B 站链接路由(榜单页进应用内 Web)。
+ * 着色小胶囊,有跳转链接时可点击,走通用的 B 站链接路由进入对应原生榜单页面。
  */
 @Composable
 private fun VideoHonorChip(
     text: String,
     onClick: (() -> Unit)? = null
 ) {
-    androidx.compose.material3.Surface(
+    AppSurface(
         onClick = onClick ?: {},
         enabled = onClick != null,
         shape = RoundedCornerShape(50),

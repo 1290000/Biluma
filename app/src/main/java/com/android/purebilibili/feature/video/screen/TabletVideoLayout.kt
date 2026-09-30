@@ -1634,7 +1634,7 @@ private fun ScrollableVideoInfoSection(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 2,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                lineHeight = 16.sp
+
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             AppText(

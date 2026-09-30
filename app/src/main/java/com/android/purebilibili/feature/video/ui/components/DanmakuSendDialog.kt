@@ -1,5 +1,8 @@
 // 文件路径: feature/video/ui/components/DanmakuSendDialog.kt
 package com.android.purebilibili.feature.video.ui.components
+
+import com.android.purebilibili.core.ui.AppAlertDialog
+import com.android.purebilibili.core.ui.components.AppSlider
 import com.android.purebilibili.core.ui.resolveFilledButtonContainerColor
 import com.android.purebilibili.core.ui.resolveFilledButtonContentColor
 import com.android.purebilibili.core.ui.components.AppIcon
@@ -608,7 +611,7 @@ internal fun DanmakuCustomColorPickerDialog(
     var pickerBlue by remember { mutableIntStateOf(initialColor and 0xFF) }
     val pickerRgb = (pickerRed shl 16) or (pickerGreen shl 8) or pickerBlue
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { AppText("自定义弹幕颜色") },
         text = {
@@ -631,7 +634,7 @@ internal fun DanmakuCustomColorPickerDialog(
                             style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier.width(20.dp)
                         )
-                        Slider(
+                        AppSlider(
                             value = channel.toFloat(),
                             onValueChange = { onChange(it.roundToInt()) },
                             valueRange = 0f..255f
@@ -651,12 +654,12 @@ internal fun DanmakuCustomColorPickerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(pickerRgb) }) {
+            AppTextButton(onClick = { onConfirm(pickerRgb) }) {
                 AppText("确定")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            AppTextButton(onClick = onDismiss) {
                 AppText("取消")
             }
         }

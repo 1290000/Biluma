@@ -2642,28 +2642,28 @@ private fun PortraitTopBar(
                     }
                 }
             } else {
-                DropdownMenu(
+                AppDropdownMenu(
                     expanded = showMoreMenu,
                     onDismissRequest = { showMoreMenu = false }
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("播放设置") },
+                    AppDropdownMenuItem(
+                        text = { AppText("播放设置") },
                         onClick = { showMoreMenu = false; onSettings() }
                     )
-                    DropdownMenuItem(
-                        text = { Text(if (sleepTimerMinutes == null) "定时关闭" else "取消定时关闭（${sleepTimerMinutes}分钟）") },
+                    AppDropdownMenuItem(
+                        text = { AppText(if (sleepTimerMinutes == null) "定时关闭" else "取消定时关闭（${sleepTimerMinutes}分钟）") },
                         onClick = {
                             showMoreMenu = false
                             onSleepTimerChange(if (sleepTimerMinutes == null) 30 else null)
                         }
                     )
-                    DropdownMenuItem(
-                        text = { Text("不感兴趣") },
+                    AppDropdownMenuItem(
+                        text = { AppText("不感兴趣") },
                         onClick = { showMoreMenu = false; onNotInterested() }
                     )
                     if (compactPlayerChrome) {
-                        DropdownMenuItem(
-                            text = { Text("分享") },
+                        AppDropdownMenuItem(
+                            text = { AppText("分享") },
                             onClick = { showMoreMenu = false; onShare() }
                         )
                     }

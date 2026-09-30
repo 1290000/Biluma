@@ -1,6 +1,8 @@
 // File: feature/video/ui/components/DanmakuPoolSheet.kt
 package com.android.purebilibili.feature.video.ui.components
 
+import com.android.purebilibili.core.ui.components.AppTextButton
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -435,7 +437,7 @@ fun DanmakuPoolSheet(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                AppTextButton(onClick = {
                     if (showReportReasons) showReportReasons = false else selectedItemForAction = null
                 }) {
                     AppText(if (showReportReasons) "返回" else "关闭")

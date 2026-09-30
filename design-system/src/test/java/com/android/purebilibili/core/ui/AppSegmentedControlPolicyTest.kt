@@ -330,7 +330,8 @@ class AppSegmentedControlPolicyTest {
         val tabRow = materialSource.substringAfter("internal fun <T> AppMaterial3TabRow(")
 
         assertTrue(tabRow.contains("text = {"))
-        assertTrue(tabRow.contains("resolveAppSegmentedLabelFontSizeSp("))
+        assertTrue(tabRow.contains("resolveAppSegmentedLabelFontSize("))
+        assertTrue(tabRow.contains("MaterialTheme.typography.labelLarge.fontSize"))
         assertTrue(tabRow.contains("allowLabelOverflow"))
         assertTrue(tabRow.contains("wrapContentWidth("))
         assertTrue(tabRow.contains("unbounded = true"))

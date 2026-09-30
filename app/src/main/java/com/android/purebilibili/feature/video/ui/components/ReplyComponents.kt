@@ -1613,7 +1613,7 @@ fun ReplyItemView(
                         AppText(
                             text = metadataText,
                             fontSize = VideoCommentTypographyTokens.metadata,
-                            lineHeight = 16.sp,
+                            lineHeight = VideoCommentTypographyTokens.metadataLineHeight,
                             color = appearance.secondaryTextColor
                         )
                     }
