@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
 
 class AppSegmentedControlPolicyTest {
     @Test
-    fun nativeOutlinedTabsNeedOpaqueBackdropOnlyInsideImmersiveChrome() {
+    fun nativeOutlinedItemsNeedOpaqueFillOnlyInsideImmersiveChrome() {
         assertTrue(shouldUseOpaqueMiuixTabBackdrop(nonGlassMiuix = true, immersiveTopChrome = true))
         assertFalse(shouldUseOpaqueMiuixTabBackdrop(nonGlassMiuix = true, immersiveTopChrome = false))
         assertFalse(shouldUseOpaqueMiuixTabBackdrop(nonGlassMiuix = false, immersiveTopChrome = true))
@@ -48,7 +48,11 @@ class AppSegmentedControlPolicyTest {
             "src/main/java/com/android/purebilibili/core/ui/renderer/miuix/" +
                 "AppMiuixSegmentedControl.kt"
         )
-        assertTrue(source.contains("else -> tabColors.backgroundColor"))
+        assertTrue(source.contains("else -> inactiveItemBackground"))
+        assertTrue(source.contains("drawPath(path, itemBackground)"))
+        val entrySource = loadSource("src/main/java/com/android/purebilibili/core/ui/components/AppSegmentedControl.kt")
+        assertFalse(entrySource.contains("readingPlaneModifier"))
+        assertFalse(entrySource.contains("Modifier.background("))
         assertFalse(source.contains("adaptiveSquircleBackground(\n                color = trackColor"))
         assertTrue(source.contains("AppMiuixNonGlassTabs("))
         assertTrue(source.contains("Arrangement.spacedBy(AppSpacingTokens.Small)"))

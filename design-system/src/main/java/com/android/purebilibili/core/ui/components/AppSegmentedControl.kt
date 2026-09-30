@@ -18,7 +18,6 @@ import com.android.purebilibili.core.ui.rememberAppSegmentedControlPolicy
 import com.android.purebilibili.core.ui.roundMatchedLiquidIndicatorHeightDp
 import com.android.purebilibili.core.ui.renderer.material3.AppMaterial3SegmentedControl
 import com.android.purebilibili.core.ui.renderer.material3.AppMaterial3TabRow
-import androidx.compose.foundation.background
 import com.android.purebilibili.core.ui.isMiuixNonGlassEnabled
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixSegmentedControl
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixTabRow
@@ -265,7 +264,7 @@ fun resolveAppMiuixSegmentedColors(
     selectedContentColor = colors.activeContentColor,
 )
 
-/** Native outlined tabs need a solid reading plane when list content scrolls behind chrome. */
+/** Only individual outlined items need opaque fills over scrolling chrome; the track stays clear. */
 fun shouldUseOpaqueMiuixTabBackdrop(nonGlassMiuix: Boolean, immersiveTopChrome: Boolean): Boolean =
     nonGlassMiuix && immersiveTopChrome
 
@@ -312,10 +311,6 @@ fun <T> AppNativeSegmentedControl(
     } else {
         AppSurfaceTokens.surfaceContainer()
     }
-    val readingPlaneColor = AppSurfaceTokens.groupedListContainer()
-    val readingPlaneModifier = if (shouldUseOpaqueMiuixTabBackdrop(isMiuixNonGlass, isImmersiveTopChrome)) {
-        Modifier.background(readingPlaneColor)
-    } else Modifier
     val activeTextColor = AppSurfaceTokens.onSurface()
     val inactiveTextColor = AppSurfaceTokens.onSurfaceVariantSummary()
     val colors = resolveAppSegmentedControlColors(
@@ -344,7 +339,7 @@ fun <T> AppNativeSegmentedControl(
             enabled = enabled,
             colors = colors,
             preferredCornerRadius = policy.preferredCornerRadius,
-            modifier = modifier.then(readingPlaneModifier),
+            modifier = modifier,
             indicatorPositionProvider = indicatorPositionProvider,
             onSelectionChange = onSelectionChange,
         )
@@ -417,10 +412,6 @@ fun <T> AppNativeTabRow(
     } else {
         AppSurfaceTokens.surfaceContainer()
     }
-    val readingPlaneColor = AppSurfaceTokens.groupedListContainer()
-    val readingPlaneModifier = if (shouldUseOpaqueMiuixTabBackdrop(isMiuixNonGlass, isImmersiveTopChrome)) {
-        Modifier.background(readingPlaneColor)
-    } else Modifier
     val activeTextColor = AppSurfaceTokens.onSurface()
     val inactiveTextColor = AppSurfaceTokens.onSurfaceVariantSummary()
     val colors = resolveAppSegmentedControlColors(
@@ -473,7 +464,7 @@ fun <T> AppNativeTabRow(
                 viewportBoundedModifier.requiredWidth(compactItemWidth * options.size)
             } else {
                 viewportBoundedModifier
-            }.then(readingPlaneModifier),
+            },
             indicatorPositionProvider = indicatorPositionProvider,
             equalizeScrollableItemWidths = equalizeMiuixNonGlassItems,
             contentSizedNonGlassItems = useContentSizedMiuixItems,
