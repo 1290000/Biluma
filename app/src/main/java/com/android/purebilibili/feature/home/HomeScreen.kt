@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import com.android.purebilibili.core.ui.components.AppIcon
 import androidx.compose.ui.graphics.graphicsLayer
@@ -2881,7 +2882,7 @@ fun HomeScreen(
                     contentAlignment = androidx.compose.ui.Alignment.Center
                 ) {
                     AppIcon(
-                        imageVector = Close,
+                        imageVector = Icons.Outlined.Close,
                         contentDescription = "关闭",
                         modifier = Modifier.size(14.dp)
                     )
