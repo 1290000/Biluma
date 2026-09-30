@@ -31,8 +31,6 @@ import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.MyLocation
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
 import androidx.compose.material.icons.outlined.VerticalAlignTop
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -65,6 +63,7 @@ import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.ContainerLevel
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.ui.components.AppHorizontalDivider
+import com.android.purebilibili.feature.home.components.cards.HorizontalVideoStatRow
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppIconButton
 import com.android.purebilibili.core.ui.components.AppSegmentOption
@@ -442,20 +441,15 @@ private fun CollectionEpisodeRow(
                 val stat = arc?.stat
                 if (stat != null && (stat.view > 0 || stat.danmaku > 0)) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (stat.view > 0) {
-                            CollectionEpisodeStat(
-                                icon = Icons.Outlined.PlayArrow,
-                                text = FormatUtils.formatStat(stat.view.toLong())
-                            )
+                    // 复用全局统计原子（图标/字号/间距与其他卡片一致）
+                    HorizontalVideoStatRow(
+                        playText = FormatUtils.formatStat(stat.view.toLong()),
+                        danmakuText = if (stat.danmaku > 0) {
+                            FormatUtils.formatStat(stat.danmaku.toLong())
+                        } else {
+                            ""
                         }
-                        if (stat.danmaku > 0) {
-                            CollectionEpisodeStat(
-                                icon = Icons.Outlined.Subtitles,
-                                text = FormatUtils.formatStat(stat.danmaku.toLong())
-                            )
-                        }
-                    }
+                    )
                 }
             }
         }
@@ -488,26 +482,7 @@ private fun CollectionEpisodeRow(
     }
 }
 
-@Composable
-private fun CollectionEpisodeStat(
-    icon: ImageVector,
-    text: String
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(14.dp)
-        )
-        Spacer(modifier = Modifier.width(3.dp))
-        AppText(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
+
 
 /** 绝对时间格式：2026-09-25 12:00 */
 internal fun resolveCollectionEpisodeAbsoluteTimeText(episode: UgcEpisode): String {
