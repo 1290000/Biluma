@@ -67,7 +67,10 @@ import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.ui.components.AppHorizontalDivider
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppIconButton
+import com.android.purebilibili.core.ui.components.AppSegmentOption
+import com.android.purebilibili.core.ui.components.AppTabRowIndicatorPresentation
 import com.android.purebilibili.core.ui.components.AppText
+import com.android.purebilibili.core.ui.components.AppThemeAdaptiveTabRow
 import com.android.purebilibili.core.ui.rememberAppClearIcon
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.data.model.response.Page
@@ -294,32 +297,23 @@ fun CollectionSheet(
             }
 
             // ── 分区切换（仅多 section 时展示）──
+            // 液态玻璃开启时由 AppThemeAdaptiveTabRow 委托底栏同款玻璃分段控件
+            // （胶囊指示器/拖拽选档/按压折射），关闭时回落主题原生样式
             if (sections.size > 1) {
-                Row(
+                AppThemeAdaptiveTabRow(
+                    indicatorPresentation = AppTabRowIndicatorPresentation.TONAL_PILL,
+                    options = sections.mapIndexed { index, section ->
+                        AppSegmentOption(index, section.title.ifBlank { "第${index + 1}季" })
+                    },
+                    selectedValue = selectedSectionIndex,
+                    onSelectionChange = { selectedSectionIndex = it },
+                    scrollable = true,
+                    dragSelectionEnabled = true,
+                    tapPressRefractionEnabled = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
                         .padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    sections.forEachIndexed { index, section ->
-                        val isSelected = index == selectedSectionIndex
-                        AppText(
-                            text = section.title.ifBlank { "第${index + 1}季" },
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            modifier = Modifier
-                                .clip(AppShapes.container(ContainerLevel.Chip))
-                                .clickable { selectedSectionIndex = index }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                    }
-                }
+                )
             }
 
             // ── 视频列表 ──
