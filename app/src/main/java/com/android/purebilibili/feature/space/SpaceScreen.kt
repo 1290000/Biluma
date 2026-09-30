@@ -848,10 +848,21 @@ fun SpaceScreen(
     val avatarCornerDp = avatarSourceRect?.let { rect ->
         with(density) { (minOf(rect.width, rect.height) / 2f).toDp().value }
     } ?: 40f
-    if (showTopPhotoPreview && shouldEnableSpaceTopPhotoPreview(previewUrl)) {
+    // 装扮头图（可能多张）优先：预览列表与点击时实际显示的页对齐，支持滑动切换
+    val topPhotoPreviewImages = remember(topPhotoBannerUrl, currentSuccessState?.userInfo?.topImages, previewUrl) {
+        val topImages = currentSuccessState?.userInfo?.topImages.orEmpty()
+        if (topImages.isNotEmpty()) {
+            topImages.map { normalizeSpaceTopPhotoUrl(it.header) }.filter { it.isNotBlank() }
+        } else {
+            listOf(previewUrl)
+        }
+    }
+    val topPhotoPreviewIndex = topPhotoPreviewImages.indexOf(topPhotoBannerUrl).takeIf { it >= 0 } ?: 0
+    val topPhotoPreviewEnabled = topPhotoPreviewImages.any { shouldEnableSpaceTopPhotoPreview(it) }
+    if (showTopPhotoPreview && topPhotoPreviewEnabled) {
         ImagePreviewDialog(
-            images = listOf(topPhotoBannerUrl ?: previewUrl),
-            initialIndex = 0,
+            images = topPhotoPreviewImages,
+            initialIndex = topPhotoPreviewIndex,
             sourceRect = topPhotoSourceRect,
             // hero 封面全出血无圆角
             sourceCornerRadiusDp = 0f,
