@@ -4584,6 +4584,8 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     // ========== 弹幕发送 ==========
     
     private val _showDanmakuDialog = MutableStateFlow(false)
+    /** 发弹幕面板打开前是否正在播放，用于关闭后恢复 */
+    private var wasPlayingBeforeDanmakuComposer = false
     val showDanmakuDialog = _showDanmakuDialog.asStateFlow()
     
     private val _isSendingDanmaku = MutableStateFlow(false)
@@ -4600,6 +4602,17 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             }
             return false
         }
+        if (com.android.purebilibili.data.repository.DanmakuRepository
+                .isDanmakuServerDisabled(currentCid)
+        ) {
+            viewModelScope.launch { toast("UP主已关闭弹幕") }
+            return false
+        }
+        // 对齐 PiliPlus：发弹幕时暂停播放，关闭后恢复
+        wasPlayingBeforeDanmakuComposer = exoPlayer?.isPlaying == true
+        if (wasPlayingBeforeDanmakuComposer) {
+            exoPlayer?.pause()
+        }
         ensureComposerDraftVideo()
         _showDanmakuDialog.value = true
         return true
@@ -4607,6 +4620,10 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     
     fun hideDanmakuSendDialog() {
         _showDanmakuDialog.value = false
+        if (wasPlayingBeforeDanmakuComposer) {
+            wasPlayingBeforeDanmakuComposer = false
+            exoPlayer?.play()
+        }
     }
 
     fun updateDanmakuDraft(text: String, attentionCommand: Boolean) {
@@ -4653,6 +4670,13 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             viewModelScope.launch { toast("视频未加载") }
             return
         }
+
+        if (com.android.purebilibili.data.repository.DanmakuRepository
+                .isDanmakuServerDisabled(currentCid)
+        ) {
+            viewModelScope.launch { toast("UP主已关闭弹幕") }
+            return
+        }
         
         val progress = exoPlayer?.currentPosition ?: 0L
         val isVipGradualColor =
@@ -4688,7 +4712,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             result
                 .onSuccess {
                     toast("发送成功")
-                    _showDanmakuDialog.value = false
+                    hideDanmakuSendDialog()
                     _composerDrafts.update {
                         it.copy(danmaku = DanmakuComposerDraft())
                     }

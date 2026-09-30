@@ -5168,6 +5168,7 @@ private fun VideoPlayerSectionContent(
                 danmakuDuplicateMergeWindowMs = danmakuDuplicateMergeWindowMs,
                 danmakuDuplicateMergeCountThreshold = danmakuDuplicateMergeCountThreshold,
                 danmakuAllowScroll = danmakuAllowScroll,
+                danmakuWeightFilterLevel = danmakuSettings.weightFilterLevel,
                 danmakuAllowTop = danmakuAllowTop,
                 danmakuAllowBottom = danmakuAllowBottom,
                 danmakuAllowColorful = danmakuAllowColorful,
@@ -5330,6 +5331,12 @@ private fun VideoPlayerSectionContent(
                             value,
                             activeDanmakuScope
                         )
+                    }
+                },
+                onDanmakuWeightFilterLevelChange = { value ->
+                    scope.launch {
+                        com.android.purebilibili.core.store.SettingsManager
+                            .setDanmakuWeightFilterLevel(context, value)
                     }
                 },
                 onDanmakuAllowScrollChange = { value ->
