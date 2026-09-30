@@ -18,7 +18,7 @@ import com.android.purebilibili.core.ui.rememberAppSegmentedControlPolicy
 import com.android.purebilibili.core.ui.roundMatchedLiquidIndicatorHeightDp
 import com.android.purebilibili.core.ui.renderer.material3.AppMaterial3SegmentedControl
 import com.android.purebilibili.core.ui.renderer.material3.AppMaterial3TabRow
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import com.android.purebilibili.core.ui.isMiuixNonGlassEnabled
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixSegmentedControl
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixTabRow
@@ -265,6 +265,10 @@ fun resolveAppMiuixSegmentedColors(
     selectedContentColor = colors.activeContentColor,
 )
 
+/** Native outlined tabs need a solid reading plane when list content scrolls behind chrome. */
+fun shouldUseOpaqueMiuixTabBackdrop(nonGlassMiuix: Boolean, immersiveTopChrome: Boolean): Boolean =
+    nonGlassMiuix && immersiveTopChrome
+
 fun resolveAppMiuixTabTrackColor(
     nonGlassMiuix: Boolean,
     trackColor: Color,
@@ -298,17 +302,20 @@ fun <T> AppNativeSegmentedControl(
     val materialColors = MaterialTheme.colorScheme
     val isImmersiveTopChrome = LocalImmersiveTopChromeActive.current
     val isMiuixNonGlass = isMiuixNonGlassEnabled()
-    val isDark = isSystemInDarkTheme()
     val trackColor = if (isImmersiveTopChrome || isMiuixNonGlass) {
         Color.Transparent
     } else {
         AppSurfaceTokens.surfaceContainerHigh()
     }
     val activeCardColor = if (isMiuixNonGlass) {
-        if (isDark) Color(0xFF383838) else AppSurfaceTokens.surfaceContainer()
+        AppSurfaceTokens.surfaceContainerHigh()
     } else {
         AppSurfaceTokens.surfaceContainer()
     }
+    val readingPlaneColor = AppSurfaceTokens.groupedListContainer()
+    val readingPlaneModifier = if (shouldUseOpaqueMiuixTabBackdrop(isMiuixNonGlass, isImmersiveTopChrome)) {
+        Modifier.background(readingPlaneColor)
+    } else Modifier
     val activeTextColor = AppSurfaceTokens.onSurface()
     val inactiveTextColor = AppSurfaceTokens.onSurfaceVariantSummary()
     val colors = resolveAppSegmentedControlColors(
@@ -337,7 +344,7 @@ fun <T> AppNativeSegmentedControl(
             enabled = enabled,
             colors = colors,
             preferredCornerRadius = policy.preferredCornerRadius,
-            modifier = modifier,
+            modifier = modifier.then(readingPlaneModifier),
             indicatorPositionProvider = indicatorPositionProvider,
             onSelectionChange = onSelectionChange,
         )
@@ -400,17 +407,20 @@ fun <T> AppNativeTabRow(
     val materialColors = MaterialTheme.colorScheme
     val isImmersiveTopChrome = LocalImmersiveTopChromeActive.current
     val isMiuixNonGlass = isMiuixNonGlassEnabled()
-    val isDark = isSystemInDarkTheme()
     val trackColor = if (isImmersiveTopChrome || isMiuixNonGlass) {
         Color.Transparent
     } else {
         AppSurfaceTokens.surfaceContainerHigh()
     }
     val activeCardColor = if (isMiuixNonGlass) {
-        if (isDark) Color(0xFF383838) else AppSurfaceTokens.surfaceContainer()
+        AppSurfaceTokens.surfaceContainerHigh()
     } else {
         AppSurfaceTokens.surfaceContainer()
     }
+    val readingPlaneColor = AppSurfaceTokens.groupedListContainer()
+    val readingPlaneModifier = if (shouldUseOpaqueMiuixTabBackdrop(isMiuixNonGlass, isImmersiveTopChrome)) {
+        Modifier.background(readingPlaneColor)
+    } else Modifier
     val activeTextColor = AppSurfaceTokens.onSurface()
     val inactiveTextColor = AppSurfaceTokens.onSurfaceVariantSummary()
     val colors = resolveAppSegmentedControlColors(
@@ -463,7 +473,7 @@ fun <T> AppNativeTabRow(
                 viewportBoundedModifier.requiredWidth(compactItemWidth * options.size)
             } else {
                 viewportBoundedModifier
-            },
+            }.then(readingPlaneModifier),
             indicatorPositionProvider = indicatorPositionProvider,
             equalizeScrollableItemWidths = equalizeMiuixNonGlassItems,
             contentSizedNonGlassItems = useContentSizedMiuixItems,
