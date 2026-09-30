@@ -420,7 +420,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "互动与评论") {
                         SettingsDetailEntrySection(
@@ -459,7 +458,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "推荐流与动态") {
                         FeedApiSection(
@@ -508,7 +506,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "交互与动效") {
                         SettingsDetailEntrySection(
@@ -595,7 +592,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "动效") {
                         SettingsDetailEntrySection(
@@ -614,7 +610,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "导航") {
                         SettingsDetailEntrySection(
@@ -633,7 +628,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "全屏与手势") {
                         SettingsDetailEntrySection(
@@ -672,7 +666,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "推荐流与动态") {
                         FeedApiSection(
@@ -701,7 +694,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "画质与播放") {
                         SettingsDetailEntrySection(
@@ -720,7 +712,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "互动") {
                         SettingsDetailEntrySection(
@@ -759,7 +750,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "隐私与安全") {
                         PrivacySection(
@@ -807,7 +797,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "帮助与工具") {
                         SupportToolsSection(
@@ -816,7 +805,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     SettingsDetailGroup(title = "关于与更新") {
                         AboutSection(
@@ -851,7 +839,6 @@ internal fun SettingsRootCategoryContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
                 SettingsRootCategoryEntranceSection {
                     ReleaseChannelPinnedCard(
                         onGithubClick = actions.onGithubClick,
