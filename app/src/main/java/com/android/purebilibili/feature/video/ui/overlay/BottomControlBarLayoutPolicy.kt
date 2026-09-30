@@ -166,7 +166,7 @@ fun resolveBottomControlBarLayoutPolicy(
 
     return BottomControlBarLayoutPolicy(
         bottomPaddingDp = 12,
-        progressSpacingDp = if (compact) 3 else 8,
+        progressSpacingDp = if (compact) 3 else 0,
         horizontalPaddingDp = if (compact) 5 else 12,
         playButtonSizeDp = 32,
         playIconSizeDp = 28,
