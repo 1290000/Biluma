@@ -1504,6 +1504,13 @@ private fun VideoPlayerSectionContent(
             )
         )
     }
+    // Only interaction boundaries invalidate the player shell; positions stay in leaf readers.
+    val seekSliderMoving by remember(bvid, currentSeekSessionCid) {
+        derivedStateOf { sharedSeekSession.isSliderMoving }
+    }
+    val pendingSeekPosition by remember(bvid, currentSeekSessionCid) {
+        derivedStateOf { sharedSeekSession.pendingSeekPositionMs }
+    }
     var isGestureVisible by remember { mutableStateOf(false) }
     TrackJankStateFlag(
         stateName = "video_player:gesture_visible",
@@ -1563,7 +1570,7 @@ private fun VideoPlayerSectionContent(
     }
 
     LaunchedEffect(
-        sharedSeekSession.pendingSeekPositionMs,
+        pendingSeekPosition,
         playerState.player.playWhenReady,
         playerState.player.isPlaying,
         playerState.player.playbackState
@@ -4054,7 +4061,7 @@ private fun VideoPlayerSectionContent(
         isFirstFrameRendered,
         forceCoverDuringReturnAnimation,
         playerState.player.isPlaying,
-        sharedSeekSession.isSliderMoving
+        seekSliderMoving
     ) {
         if (
             shouldAutoHidePlayerChromeOnPlaybackStart(
@@ -4063,7 +4070,7 @@ private fun VideoPlayerSectionContent(
                 isPlaying = playerState.player.isPlaying,
                 isFirstFrameRendered = isFirstFrameRendered,
                 forceCoverDuringReturnAnimation = forceCoverDuringReturnAnimation,
-                isSeekScrubbing = sharedSeekSession.isSliderMoving
+                isSeekScrubbing = seekSliderMoving
             )
         ) {
             showControls = false
@@ -5106,7 +5113,7 @@ private fun VideoPlayerSectionContent(
                 viewportWidthDpOverride = uiLayoutWidthDp,
                 diagnosticEvents = diagnosticEvents,
                 pendingUserAction = pendingUserAction,
-                hasPendingSeekResume = sharedSeekSession.pendingSeekPositionMs != null,
+                hasPendingSeekResume = pendingSeekPosition != null,
                 playerDiagnosticLoggingEnabled = playerDiagnosticLoggingEnabled,
                 //  [新增] 传入清晰度切换状态和会员状态
                 isQualitySwitching = uiState.isQualitySwitching,
@@ -5562,7 +5569,7 @@ private fun VideoPlayerSectionContent(
                     sharedSeekSession = cancelPlaybackSeekInteraction(sharedSeekSession)
                     danmakuManager.cancelSeekScrub()
                 },
-                isSeekScrubbing = sharedSeekSession.isSliderMoving && gestureMode != VideoGestureMode.Seek,
+                isSeekScrubbing = seekSliderMoving && gestureMode != VideoGestureMode.Seek,
                 //  [加固] 显式同步弹幕到新进度，避免某些设备 seek 回调时机差导致短暂不同步
                 onSeekTo = { position ->
                     val commitResult = commitPlaybackSeekInteraction(
@@ -5579,12 +5586,12 @@ private fun VideoPlayerSectionContent(
                     danmakuManager.seekTo(commitResult.committedPositionMs)
                     onUserSeek(commitResult.committedPositionMs)
                 },
-                progressDisplayOverridePositionMs = resolveProgressDisplayOverridePositionMs(
+                progressDisplayOverridePositionProvider = { resolveProgressDisplayOverridePositionMs(
                     seekSession = sharedSeekSession,
                     pendingPlaybackTransitionPositionMs = uiState.pendingPlaybackTransitionPositionMs,
                     isLongPressing = isLongPressing,
                     longPressSpeedLocked = longPressSpeedLocked
-                ),
+                ) },
                 isPlaybackTransitionPending = uiState.pendingPlaybackTransitionPositionMs != null,
                 highFrequencyProgressActive = isLongPressing,
                 // [New] Codec & Audio

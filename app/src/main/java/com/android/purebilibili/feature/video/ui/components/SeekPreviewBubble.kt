@@ -441,14 +441,17 @@ private fun SeekPreviewImage(
     val context = LocalContext.current
     val (rawImageUrl, spriteOffsetX, spriteOffsetY) = currentPreviewInfo
     val imageUrl = if (rawImageUrl.startsWith("//")) "https:$rawImageUrl" else rawImageUrl
-    val painter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(context)
+    val imageRequest = remember(context, imageUrl) {
+        ImageRequest.Builder(context)
             .data(imageUrl)
             .size(Size.ORIGINAL)
             .crossfade(false)
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)
-            .build(),
+            .build()
+    }
+    val painter = rememberAsyncImagePainter(
+        model = imageRequest,
         contentScale = ContentScale.Crop
     )
 

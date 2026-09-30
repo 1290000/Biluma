@@ -4,7 +4,6 @@ import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppText
 import com.android.purebilibili.core.ui.components.AppHorizontalDivider
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -43,6 +42,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -68,6 +69,7 @@ import com.android.purebilibili.feature.video.ui.components.DolbyBadge
 import com.android.purebilibili.feature.video.ui.components.HiResBadge
 import com.android.purebilibili.feature.video.ui.components.NativeDanmakuToggleButton
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import com.android.purebilibili.feature.video.subtitle.SubtitleDisplayMode
 import com.android.purebilibili.feature.video.subtitle.SubtitleTrackOption
 import com.android.purebilibili.feature.video.subtitle.resolveSubtitleDisplayOptions
@@ -481,7 +483,8 @@ fun BottomControlBar(
     /** 紧凑布局：控制行更贴左右边缘，并更靠近进度条。 */
     compactPlayerChrome: Boolean = false,
 
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    seekPositionProvider: (() -> Long)? = null
 ) {
     val subtitleTrackAvailable = subtitleControlState.trackAvailable
     val subtitlePrimaryAvailable = subtitleControlState.primaryAvailable
@@ -697,7 +700,9 @@ fun BottomControlBar(
         resolveSubtitlePanelTrackOptions(subtitleTrackOptions)
     }
 
-    val displayedPositionMs = seekPositionMs.coerceAtLeast(0L)
+    val displayedPositionProvider: () -> Long = {
+        (seekPositionProvider?.invoke() ?: seekPositionMs).coerceAtLeast(0L)
+    }
     val resolvedBottomPaddingDp = remember(layoutPolicy.bottomPaddingDp, progressPlacement) {
         resolveBottomControlBarBottomPaddingDp(
             defaultBottomPaddingDp = layoutPolicy.bottomPaddingDp,
@@ -707,7 +712,8 @@ fun BottomControlBar(
     val progressBarContent: @Composable () -> Unit = {
         VideoProgressBar(
             currentPosition = progress.current,
-            displayPositionMs = displayedPositionMs,
+            displayPositionMs = seekPositionMs,
+            displayPositionProvider = displayedPositionProvider,
             duration = progress.duration,
             bufferedPosition = progress.buffered,
             isSeekScrubbing = isSeekScrubbing,
@@ -725,6 +731,7 @@ fun BottomControlBar(
             onChapterClick = onChapterClick,
             modifier = Modifier
                 .padding(horizontal = if (isFullscreen) 48.dp else 0.dp)
+                .semantics { testTagsAsResourceId = true }
                 .testTag("player_progress")
         )
     }
@@ -765,13 +772,7 @@ fun BottomControlBar(
 
             Spacer(modifier = Modifier.width(layoutPolicy.afterPlaySpacingDp.dp))
 
-            // Time
-            AppText(
-                text = "${FormatUtils.formatDuration((displayedPositionMs / 1000).toInt())} / ${FormatUtils.formatDuration((progress.duration / 1000).toInt())}",
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = layoutPolicy.timeFontSp.sp,
-                fontWeight = FontWeight.Medium
-            )
+            ProgressTimeText(displayedPositionProvider, progress.duration, layoutPolicy.timeFontSp)
 
             Spacer(modifier = Modifier.width(layoutPolicy.afterTimeSpacingDp.dp))
 
@@ -1542,7 +1543,8 @@ fun VideoProgressBar(
     pbpRidgeSamples: List<PbpRidgeSample> = emptyList(),
     currentChapter: String? = null,
     onChapterClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    displayPositionProvider: (() -> Long)? = null
 ) {
     var containerWidthPx by remember { mutableFloatStateOf(0f) }
     var dragTargetPositionMs by remember { mutableLongStateOf(displayPositionMs.coerceAtLeast(0L)) }
@@ -1581,15 +1583,13 @@ fun VideoProgressBar(
             assets.playerProgressIcon ?: assets.playerProgressStaticIcon
         }
     }
-    val activePositionMs = resolveSeekPreviewTargetPositionMs(
-        displayPositionMs = displayPositionMs,
-        dragTargetPositionMs = dragTargetPositionMs,
-        isSeekScrubbing = isSeekScrubbing
-    )
-    val displayProgress = resolveProgressFraction(
-        positionMs = activePositionMs,
-        durationMs = duration
-    )
+    val activePositionProvider: () -> Long = {
+        resolveSeekPreviewTargetPositionMs(
+            displayPositionMs = displayPositionProvider?.invoke() ?: displayPositionMs,
+            dragTargetPositionMs = dragTargetPositionMs,
+            isSeekScrubbing = isSeekScrubbing
+        )
+    }
     val bufferedProgress = resolveProgressFraction(
         positionMs = bufferedPosition,
         durationMs = duration
@@ -1638,25 +1638,8 @@ fun VideoProgressBar(
                     .padding(bottom = layoutPolicy.previewBottomPaddingDp.dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                if (videoshotData != null && videoshotData.isValid) {
-                    SeekPreviewBubble(
-                        videoshotData = videoshotData,
-                        targetPositionMs = activePositionMs,
-                        currentPositionMs = currentPosition,
-                        durationMs = duration,
-                        offsetX = 0f,
-                        containerWidth = 0f,
-                        placement = SeekPreviewBubblePlacement.Centered
-                    )
-                } else {
-                    SeekPreviewBubbleSimple(
-                        targetPositionMs = activePositionMs,
-                        currentPositionMs = currentPosition,
-                        offsetX = 0f,
-                        containerWidth = 0f,
-                        placement = SeekPreviewBubblePlacement.Centered
-                    )
-                }
+                ProgressSeekPreview(videoshotData, activePositionProvider, currentPosition, duration)
+
             }
         }
 
@@ -1783,141 +1766,84 @@ fun VideoProgressBar(
                         .height(layoutPolicy.touchContainerHeightDp.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
-            // 音频 ridge 两个 Path 跨帧复用(每帧 reset 重填),进度条频繁失效时避免逐帧分配。
-            val ridgePathScratch = remember { Path() }
-            val ridgeLinePathScratch = remember { Path() }
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(layoutPolicy.touchContainerHeightDp.dp)
-            ) {
-                val trackTop = ((size.height - trackHeightPx) / 2f).coerceAtLeast(0f)
-                val centerY = trackTop + trackHeightPx / 2f
-                val cornerRadius = CornerRadius(trackHeightPx / 2f, trackHeightPx / 2f)
-
-                fun drawTrack(width: Float, color: Color) {
-                    if (width <= 0f) return
-                    drawRoundRect(
-                        color = color,
-                        topLeft = Offset(0f, trackTop),
-                        size = Size(width.coerceAtLeast(trackHeightPx), trackHeightPx),
-                        cornerRadius = cornerRadius
+                    Spacer(
+                        Modifier.fillMaxWidth()
+                            .height(layoutPolicy.touchContainerHeightDp.dp)
+                            .drawWithCache {
+                                val trackTop = ((size.height - trackHeightPx) / 2f).coerceAtLeast(0f)
+                                val centerY = trackTop + trackHeightPx / 2f
+                                val cornerRadius = CornerRadius(trackHeightPx / 2f, trackHeightPx / 2f)
+                                val ridgeHeight = (size.height * 0.42f).coerceAtMost(18.dp.toPx())
+                                val ridgePoints = pbpRidgeSamples.map { sample ->
+                                    val intensity = when (sample.density) {
+                                        PbpRidgeDensity.QUIET -> sample.intensity * 0.78f
+                                        PbpRidgeDensity.NORMAL -> sample.intensity
+                                        PbpRidgeDensity.HOT -> sample.intensity * 1.14f
+                                    }.coerceIn(0f, 1f)
+                                    Offset(size.width * sample.fraction.coerceIn(0f, 1f), centerY - ridgeHeight * intensity)
+                                }
+                                val ridgePath = Path().apply {
+                                    moveTo(0f, centerY)
+                                    ridgePoints.forEach { lineTo(it.x, it.y) }
+                                    lineTo(size.width, centerY)
+                                    close()
+                                }
+                                val ridgeLinePath = Path().apply {
+                                    ridgePoints.forEachIndexed { index, point ->
+                                        if (index == 0) moveTo(point.x, point.y) else lineTo(point.x, point.y)
+                                    }
+                                }
+                                val hotSegments = (0 until (ridgePoints.size - 1).coerceAtLeast(0)).filter { index ->
+                                    pbpRidgeSamples[index].density == PbpRidgeDensity.HOT ||
+                                        pbpRidgeSamples[index + 1].density == PbpRidgeDensity.HOT
+                                }
+                                val ridgeBrush = Brush.verticalGradient(
+                                    listOf(primaryColor.copy(alpha = 0.18f), primaryColor.copy(alpha = 0.03f)),
+                                    startY = centerY - ridgeHeight, endY = centerY
+                                )
+                                val ridgeGlow = Stroke(trackHeightPx * 2.8f, cap = StrokeCap.Round)
+                                val ridgeStroke = Stroke(trackHeightPx * 0.9f, cap = StrokeCap.Round)
+                                val sponsorLines = resolvedSponsorMarkers.map { marker ->
+                                    Triple(Offset(size.width * marker.startFraction, centerY),
+                                        Offset(size.width * marker.endFraction, centerY), marker.color)
+                                }
+                                val chapterXs = if (duration > 0L) viewPoints.mapNotNull { point ->
+                                    resolveProgressFraction(point.fromMs, duration)
+                                        .takeIf { it in 0.01f..0.99f }?.let { size.width * it }
+                                } else emptyList()
+                                onDrawBehind {
+                                    fun drawTrack(width: Float, color: Color) {
+                                        if (width <= 0f) return
+                                        drawRoundRect(color, Offset(0f, trackTop),
+                                            Size(width.coerceAtLeast(trackHeightPx), trackHeightPx), cornerRadius)
+                                    }
+                                    if (ridgePoints.size >= 2 && size.width > 0f) {
+                                        drawPath(ridgePath, ridgeBrush)
+                                        drawPath(ridgeLinePath, primaryColor.copy(alpha = 0.14f), style = ridgeGlow)
+                                        drawPath(ridgeLinePath, primaryColor.copy(alpha = 0.46f), style = ridgeStroke)
+                                        hotSegments.forEach { index ->
+                                            drawLine(primaryColor.copy(alpha = 0.68f), ridgePoints[index],
+                                                ridgePoints[index + 1], trackHeightPx * 1.25f, StrokeCap.Round)
+                                        }
+                                    }
+                                    drawTrack(size.width, inactiveTrackColor)
+                                    drawTrack(size.width * bufferedProgress, bufferedTrackColor)
+                                    drawTrack(size.width * resolveProgressFraction(activePositionProvider(), duration), primaryColor)
+                                    sponsorLines.forEach { (start, end, color) ->
+                                        drawLine(color, start, end, trackHeightPx, StrokeCap.Round)
+                                    }
+                                    chapterXs.forEach { x ->
+                                        drawLine(Color.White.copy(alpha = 0.85f), Offset(x, trackTop - 2f),
+                                            Offset(x, trackTop + trackHeightPx + 2f),
+                                            if (isSeekScrubbing) 2f else 1.5f)
+                                    }
+                                }
+                            }
                     )
-                }
-
-                fun resolveRidgeY(
-                    baselineY: Float,
-                    ridgeHeightPx: Float,
-                    sample: PbpRidgeSample
-                ): Float {
-                    val visualIntensity = when (sample.density) {
-                        PbpRidgeDensity.QUIET -> sample.intensity * 0.78f
-                        PbpRidgeDensity.NORMAL -> sample.intensity
-                        PbpRidgeDensity.HOT -> sample.intensity * 1.14f
-                    }.coerceIn(0f, 1f)
-                    return baselineY - ridgeHeightPx * visualIntensity
-                }
-
-                if (pbpRidgeSamples.size >= 2 && size.width > 0f) {
-                    val ridgeHeightPx = (size.height * 0.42f).coerceAtMost(18.dp.toPx())
-                    val baselineY = centerY
-                    val ridgePath = ridgePathScratch.apply {
-                        reset()
-                        moveTo(0f, baselineY)
-                        pbpRidgeSamples.forEach { sample ->
-                            val x = size.width * sample.fraction.coerceIn(0f, 1f)
-                            val y = resolveRidgeY(baselineY, ridgeHeightPx, sample)
-                            lineTo(x, y)
-                        }
-                        lineTo(size.width, baselineY)
-                        close()
-                    }
-                    val ridgeLinePath = ridgeLinePathScratch.apply {
-                        reset()
-                        pbpRidgeSamples.forEachIndexed { index, sample ->
-                            val x = size.width * sample.fraction.coerceIn(0f, 1f)
-                            val y = resolveRidgeY(baselineY, ridgeHeightPx, sample)
-                            if (index == 0) moveTo(x, y) else lineTo(x, y)
-                        }
-                    }
-                    drawPath(
-                        path = ridgePath,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                primaryColor.copy(alpha = 0.18f),
-                                primaryColor.copy(alpha = 0.03f)
-                            ),
-                            startY = baselineY - ridgeHeightPx,
-                            endY = baselineY
-                        )
-                    )
-                    drawPath(
-                        path = ridgeLinePath,
-                        color = primaryColor.copy(alpha = 0.14f),
-                        style = Stroke(width = trackHeightPx * 2.8f, cap = StrokeCap.Round)
-                    )
-                    drawPath(
-                        path = ridgeLinePath,
-                        color = primaryColor.copy(alpha = 0.46f),
-                        style = Stroke(width = trackHeightPx * 0.9f, cap = StrokeCap.Round)
-                    )
-                    pbpRidgeSamples.zipWithNext().forEach { (start, end) ->
-                        if (start.density == PbpRidgeDensity.HOT || end.density == PbpRidgeDensity.HOT) {
-                            drawLine(
-                                color = primaryColor.copy(alpha = 0.68f),
-                                start = Offset(
-                                    x = size.width * start.fraction.coerceIn(0f, 1f),
-                                    y = resolveRidgeY(baselineY, ridgeHeightPx, start)
-                                ),
-                                end = Offset(
-                                    x = size.width * end.fraction.coerceIn(0f, 1f),
-                                    y = resolveRidgeY(baselineY, ridgeHeightPx, end)
-                                ),
-                                strokeWidth = trackHeightPx * 1.25f,
-                                cap = StrokeCap.Round
-                            )
-                        }
-                    }
-                }
-
-                drawTrack(size.width, inactiveTrackColor)
-                drawTrack(size.width * bufferedProgress, bufferedTrackColor)
-                drawTrack(size.width * displayProgress, primaryColor)
-
-                resolvedSponsorMarkers.forEach { marker ->
-                    val startX = size.width * marker.startFraction
-                    val endX = size.width * marker.endFraction
-                    drawLine(
-                        color = marker.color,
-                        start = Offset(startX, centerY),
-                        end = Offset(endX, centerY),
-                        strokeWidth = trackHeightPx,
-                        cap = StrokeCap.Round
-                    )
-                }
-
-                if (duration > 0L) {
-                    viewPoints.forEach { point ->
-                        val fraction = resolveProgressFraction(
-                            positionMs = point.fromMs,
-                            durationMs = duration
-                        )
-                        if (fraction in 0.01f..0.99f) {
-                            val x = size.width * fraction
-                            drawLine(
-                                color = Color.White.copy(alpha = 0.85f),
-                                start = Offset(x, trackTop - 2f),
-                                end = Offset(x, trackTop + trackHeightPx + 2f),
-                                strokeWidth = if (isSeekScrubbing) 2f else 1.5f
-                            )
-                        }
-                    }
-                }
-            }
 
                     if (duration > 0L && containerWidthPx > 0f) {
-                        val thumbOffsetPx = remember(containerWidthPx, displayProgress, thumbSizePx) {
-                            (containerWidthPx * displayProgress - thumbSizePx / 2f)
+                        val thumbOffsetProvider: () -> Int = {
+                            (containerWidthPx * resolveProgressFraction(activePositionProvider(), duration) - thumbSizePx / 2f)
                                 .coerceIn(0f, (containerWidthPx - thumbSizePx).coerceAtLeast(0f))
                                 .roundToInt()
                         }
@@ -1928,14 +1854,14 @@ fun VideoProgressBar(
                                 iterations = if (isSeekScrubbing) Int.MAX_VALUE else 1,
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
-                                    .offset { IntOffset(thumbOffsetPx, 0) },
+                                    .offset { IntOffset(thumbOffsetProvider(), 0) },
                                 contentDescription = null,
                             )
                         } else {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.CenterStart)
-                                    .offset { IntOffset(thumbOffsetPx, 0) }
+                                    .offset { IntOffset(thumbOffsetProvider(), 0) }
                                     .size(thumbSizeDp)
                                     .background(primaryColor, CircleShape)
                             )
@@ -1944,5 +1870,34 @@ fun VideoProgressBar(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ProgressTimeText(positionProvider: () -> Long, duration: Long, fontSp: Int) {
+    val seconds by remember(positionProvider) { derivedStateOf { positionProvider() / 1000L } }
+    AppText(
+        text = "${FormatUtils.formatDuration(seconds.toInt())} / ${FormatUtils.formatDuration((duration / 1000L).toInt())}",
+        color = Color.White.copy(alpha = 0.9f),
+        fontSize = fontSp.sp,
+        fontWeight = FontWeight.Medium
+    )
+}
+
+@Composable
+private fun ProgressSeekPreview(
+    videoshotData: com.android.purebilibili.data.model.response.VideoshotData?,
+    positionProvider: () -> Long,
+    currentPosition: Long,
+    duration: Long
+) {
+    val target = positionProvider()
+    if (videoshotData != null && videoshotData.isValid) {
+        SeekPreviewBubble(videoshotData = videoshotData, targetPositionMs = target,
+            currentPositionMs = currentPosition, durationMs = duration, offsetX = 0f,
+            containerWidth = 0f, placement = SeekPreviewBubblePlacement.Centered)
+    } else {
+        SeekPreviewBubbleSimple(targetPositionMs = target, currentPositionMs = currentPosition,
+            offsetX = 0f, containerWidth = 0f, placement = SeekPreviewBubblePlacement.Centered)
     }
 }

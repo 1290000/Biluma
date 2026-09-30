@@ -2200,6 +2200,7 @@ class DanmakuManager private constructor(
      * 仅用于显式 seek scrub，避免用户拖动时继续看到旧时间线弹幕。
      */
     fun prepareForSeekScrub() {
+        if (isSeekScrubbing) return
         isSeekScrubbing = true
         val ctrl = controller ?: return
         executeDanmakuSeekScrubStart(

@@ -662,6 +662,7 @@ fun VideoPlayerOverlay(
     //  [新增] 外部可接管 seek 行为（用于同步弹幕等）
     onSeekTo: ((Long) -> Unit)? = null,
     progressDisplayOverridePositionMs: Long? = null,
+    progressDisplayOverridePositionProvider: (() -> Long?)? = null,
     isPlaybackTransitionPending: Boolean = false,
     highFrequencyProgressActive: Boolean = false,
     // [New] Codec & Audio Params
@@ -1195,14 +1196,15 @@ fun VideoPlayerOverlay(
     val effectiveProgressState = remember(progressState, pluginPlaybackState) {
         resolveEffectivePlayerProgress(progressState, pluginPlaybackState)
     }
-    val displayedProgressState = remember(
-        effectiveProgressState,
-        progressDisplayOverridePositionMs
-    ) {
-        resolveDisplayedPlayerProgressWithOverride(
-            progress = effectiveProgressState,
-            overridePositionMs = progressDisplayOverridePositionMs
-        )
+    val latestProgressOverrideProvider = rememberUpdatedState(progressDisplayOverridePositionProvider)
+    val displayedProgressState = remember(effectiveProgressState, progressDisplayOverridePositionMs) {
+        derivedStateOf {
+            resolveDisplayedPlayerProgressWithOverride(
+                progress = effectiveProgressState,
+                overridePositionMs = latestProgressOverrideProvider.value?.invoke()
+                    ?: progressDisplayOverridePositionMs
+            )
+        }
     }
     val effectiveIsPlaying = remember(isPlaying, pluginPlaybackState) {
         resolveEffectivePlayingState(isPlaying, pluginPlaybackState)
@@ -1437,8 +1439,8 @@ fun VideoPlayerOverlay(
             )
         ) {
             PersistentBottomProgressBar(
-                current = displayedProgressState.current,
-                duration = displayedProgressState.duration,
+                current = displayedProgressState.value.current,
+                duration = displayedProgressState.value.duration,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(end = endDrawerReservedWidth)
@@ -1536,10 +1538,11 @@ fun VideoPlayerOverlay(
                         )
                     }
 
+                    key(player, bvid, cid) {
                     BottomControlBar(
                     viewportWidthDpOverride = viewportWidthDpOverride,
                     isPlaying = effectiveIsPlaying,
-                    progress = displayedProgressState,
+                    progress = effectiveProgressState,
                     isFullscreen = isFullscreen,
                     compactPlayerChrome = playerControlVisibility.compactPlayerChrome,
                     currentSpeed = currentSpeed,
@@ -1552,7 +1555,7 @@ fun VideoPlayerOverlay(
                     onSeekDragStart = onSeekDragStart,
                     onSeekDragUpdate = onSeekDragUpdate,
                     onSeekDragCancel = onSeekDragCancel,
-                    seekPositionMs = displayedProgressState.current,
+                    seekPositionProvider = { displayedProgressState.value.current },
                     isSeekScrubbing = isSeekScrubbing,
                     onSpeedClick = { showSpeedMenu = true },
                     onRatioClick = { showRatioMenu = true },
@@ -1627,6 +1630,7 @@ fun VideoPlayerOverlay(
                     },
                     progressPlacement = effectiveProgressPlacement
                 )
+                    }
                 }
             }
         }
@@ -2255,7 +2259,7 @@ fun VideoPlayerOverlay(
         if (showChapterList && viewPoints.isNotEmpty()) {
             ChapterListPanel(
                 viewPoints = viewPoints,
-                currentPositionMs = displayedProgressState.current,
+                currentPositionMs = displayedProgressState.value.current,
                 onSeek = commitSeek,
                 onDismiss = { showChapterList = false }
             )
