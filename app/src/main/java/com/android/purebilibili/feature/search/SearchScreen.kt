@@ -841,13 +841,18 @@ fun SearchScreen(
         searchContentWidth,
         listLayout.singleColumn,
         homeSettings.gridColumnCount,
+        homeSettings.gridColumnCountCompact,
         homeSettings.homeFeedCardWidthPreset,
         windowSizeClass.widthSizeClass
     ) {
         resolveSearchVideoGridColumns(
             singleColumn = listLayout.singleColumn,
             contentWidthDp = searchContentWidth.value.toInt(),
-            fixedColumnCount = homeSettings.gridColumnCount,
+            fixedColumnCount = com.android.purebilibili.feature.home.resolveHomeFeedStoredColumnCount(
+                widthSizeClass = windowSizeClass.widthSizeClass,
+                compactColumnCount = homeSettings.gridColumnCountCompact,
+                defaultColumnCount = homeSettings.gridColumnCount,
+            ),
             cardWidthPreset = homeSettings.homeFeedCardWidthPreset,
             widthSizeClass = windowSizeClass.widthSizeClass
         )
@@ -1594,7 +1599,11 @@ fun SearchScreen(
                                     val actualGridColumns = resolveSearchVideoGridColumns(
                                         singleColumn = listLayout.singleColumn,
                                         contentWidthDp = maxWidth.value.toInt(),
-                                        fixedColumnCount = homeSettings.gridColumnCount,
+                                        fixedColumnCount = com.android.purebilibili.feature.home.resolveHomeFeedStoredColumnCount(
+                                            widthSizeClass = windowSizeClass.widthSizeClass,
+                                            compactColumnCount = homeSettings.gridColumnCountCompact,
+                                            defaultColumnCount = homeSettings.gridColumnCount,
+                                        ),
                                         cardWidthPreset = homeSettings.homeFeedCardWidthPreset,
                                         widthSizeClass = windowSizeClass.widthSizeClass
                                     )
@@ -1609,7 +1618,7 @@ fun SearchScreen(
                                             contentWidthDp = maxWidth.value.toInt(),
                                         )
                                     }
-                                    LaunchedEffect(homeSettings.gridColumnCount) {
+                                    LaunchedEffect(homeSettings.gridColumnCount, homeSettings.gridColumnCountCompact) {
                                         interactiveColumns = null
                                     }
                                     val searchGridCardLayout = remember(
@@ -1659,7 +1668,11 @@ fun SearchScreen(
                                             },
                                             onGestureEnd = { finalColumns ->
                                                 scope.launch {
-                                                    SettingsManager.setGridColumnCount(context, finalColumns)
+                                                    if (com.android.purebilibili.feature.home.isCompactHomeFeedScreen(windowSizeClass.widthSizeClass)) {
+                                                        SettingsManager.setGridColumnCountCompact(context, finalColumns)
+                                                    } else {
+                                                        SettingsManager.setGridColumnCount(context, finalColumns)
+                                                    }
                                                 }
                                                 pinchPillDismissJob?.cancel()
                                                 pinchPillDismissJob = scope.launch {
@@ -1691,7 +1704,8 @@ fun SearchScreen(
                                             textKey = video.bvid,
                                             numericKey = video.id
                                         )
-                                    }
+                                    },
+                                    contentType = { _, video -> "search_video_${video.contentType}" }
                                 ) { index, video ->
                                         AnimatedVideoListItem(modifier = videoListItemModifier(enabled = cardAnimationEnabled), enabled = cardAnimationEnabled) {
                                             val highlightedTitle = rememberSearchHighlightedTitle(video)
@@ -1845,7 +1859,8 @@ fun SearchScreen(
                                                 index = index,
                                                 numericKey = upItem.mid
                                             )
-                                        }
+                                        },
+                                        contentType = { _, _ -> "search_up_card" }
                                     ) { index, upItem ->
                                         UpSearchResultCard(
                                             upItem = upItem,
@@ -1927,7 +1942,8 @@ fun SearchScreen(
                                                 numericKey = bangumiItem.seasonId,
                                                 secondaryNumericKey = bangumiItem.mediaId
                                             )
-                                        }
+                                        },
+                                        contentType = { _, _ -> "search_bangumi_card" }
                                     ) { index, bangumiItem ->
                                         BangumiSearchResultCard(
                                             item = bangumiItem,
@@ -2011,7 +2027,8 @@ fun SearchScreen(
                                                 numericKey = liveItem.roomid,
                                                 secondaryNumericKey = liveItem.uid
                                             )
-                                        }
+                                        },
+                                        contentType = { _, _ -> "search_live_card" }
                                     ) { index, liveItem ->
                                         LiveSearchResultCard(
                                             item = liveItem,
@@ -2091,7 +2108,8 @@ fun SearchScreen(
                                                 numericKey = item.uid,
                                                 secondaryNumericKey = item.roomid
                                             )
-                                        }
+                                        },
+                                        contentType = { _, _ -> "search_live_user_card" }
                                     ) { index, item ->
                                         LiveUserSearchResultCard(
                                             item = item,
@@ -2145,7 +2163,8 @@ fun SearchScreen(
                                                 index = index,
                                                 numericKey = articleItem.id
                                             )
-                                        }
+                                        },
+                                        contentType = { _, _ -> "search_article_card" }
                                     ) { index, articleItem ->
                                         ArticleSearchResultCard(
                                             item = articleItem,
@@ -2223,7 +2242,8 @@ fun SearchScreen(
                                                 index = index,
                                                 numericKey = item.topicId
                                             )
-                                        }
+                                        },
+                                        contentType = { _, _ -> "search_topic_card" }
                                     ) { index, item ->
                                         TopicSearchResultCard(
                                             item = item,
@@ -2268,7 +2288,8 @@ fun SearchScreen(
                                                 numericKey = item.id,
                                                 secondaryNumericKey = item.mid
                                             )
-                                        }
+                                        },
+                                        contentType = { _, _ -> "search_photo_card" }
                                     ) { index, item ->
                                         PhotoSearchResultCard(
                                             item = item,

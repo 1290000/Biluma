@@ -221,14 +221,19 @@ private object ImagePreviewOverlayController {
     fun show(request: ImagePreviewOverlayRequest) {
         val activeSourceRect = request.activeSourceRect ?: _preparedSourceRect.value
         _request.value = request.copy(activeSourceRect = activeSourceRect)
-        _activeSourceRect.value = activeSourceRect
+        // 不在这里发布 activeSourceRect：Dialog 窗口要晚 1-2 帧才画出第一帧，
+        // 若提交时立刻隐藏源缩略图，窗口出现前会露出一个"洞"（感知为顿挫）。
+        // 发布动作延迟到 overlay 首次组合的 SideEffect（同帧绘制，无缝衔接）。
         _preparedSourceRect.value = null
     }
 
     fun updateActiveSourceRect(token: Long, sourceRect: androidx.compose.ui.geometry.Rect?) {
         val current = _request.value ?: return
-        if (current.token == token && current.activeSourceRect != sourceRect) {
+        if (current.token != token) return
+        if (current.activeSourceRect != sourceRect) {
             _request.value = current.copy(activeSourceRect = sourceRect)
+        }
+        if (_activeSourceRect.value != sourceRect) {
             _activeSourceRect.value = sourceRect
         }
     }
@@ -239,6 +244,18 @@ private object ImagePreviewOverlayController {
             _request.value = null
             _activeSourceRect.value = null
             _preparedSourceRect.value = null
+        }
+    }
+
+    /**
+     * 回位落位后的交接第一步：在 Dialog 仍显示 Hero 末帧时先恢复源缩略图，
+     * 网格在其下方完成一帧重绘后再移除窗口。若把 request 清空与恢复缩略图
+     * 合在同一次状态变更，两个窗口的重绘帧不对齐，落点会漏出一帧空档（闪一下）。
+     */
+    fun revealSourceBeforeRemoval(token: Long) {
+        val current = _request.value ?: return
+        if (current.token == token && _activeSourceRect.value != null) {
+            _activeSourceRect.value = null
         }
     }
 }
@@ -302,7 +319,14 @@ fun ImagePreviewOverlayHost(
                 // The image itself already performs the return morph. The platform Dialog
                 // window animation would scale it a second time when the window is removed.
                 ((dialogView.parent as? DialogWindowProvider) ?: (dialogView as? DialogWindowProvider))
-                    ?.window?.setWindowAnimations(0)
+                    ?.window?.let { window ->
+                        window.setWindowAnimations(0)
+                        // 平台 Dialog 默认 FLAG_DIM_BEHIND 会在窗口挂上时把整个屏幕压暗、
+                        // 关闭时瞬间变亮；画廊自带进度 scrim，这层额外 dim 表现为点击
+                        // 放大/返回时的变暗闪烁，必须清掉。
+                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+                        window.setDimAmount(0f)
+                    }
             }
             ImagePreviewOverlayContent(
                 images = request.images,
@@ -503,7 +527,7 @@ private fun ImagePreviewOverlayContent(
             scope.launch {
                 val success = saveImageToGallery(context, imageUrl)
                 isSaving = false
-                withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Main.immediate) {
                     handleImageSaveResult(success)
                 }
             }
@@ -520,7 +544,7 @@ private fun ImagePreviewOverlayContent(
             scope.launch {
                 val success = saveMotionPhotoToGallery(context, imageUrl, videoUrl)
                 isSaving = false
-                withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Main.immediate) {
                     handleImageSaveResult(success, successMessage = "实况照片已保存到相册")
                 }
             }
@@ -537,7 +561,7 @@ private fun ImagePreviewOverlayContent(
             scope.launch {
                 val success = saveLivePhotoVideoToGallery(context, videoUrl)
                 isSaving = false
-                withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Main.immediate) {
                     handleImageSaveResult(success, successMessage = "实况视频已保存到相册")
                 }
             }
@@ -555,7 +579,7 @@ private fun ImagePreviewOverlayContent(
             scope.launch {
                 val success = urls.map { saveImageToGallery(context, it) }.all { it }
                 isSaving = false
-                withContext(Dispatchers.Main) { handleImageSaveResult(success) }
+                withContext(Dispatchers.Main.immediate) { handleImageSaveResult(success) }
             }
         } else {
             pendingSaveAction = { requestSaveAllImages() }
@@ -569,7 +593,7 @@ private fun ImagePreviewOverlayContent(
         scope.launch {
             val success = shareImageFromPreview(context, imageUrl)
             isSharing = false
-            withContext(Dispatchers.Main) {
+            withContext(Dispatchers.Main.immediate) {
                 handleImageShareResult(success)
             }
         }
@@ -676,6 +700,10 @@ private fun ImagePreviewOverlayContent(
                     )
                     // Keep the final Hero frame in the Dialog for one display frame so
                     // the source list can become visible before this window is removed.
+                    withFrameNanos { }
+                    // 交接两步走：先恢复源缩略图（Hero 末帧仍覆盖落点），让网格先重绘，
+                    // 再移除 Dialog 窗口，消除落位处两窗口重绘错帧的闪烁。
+                    ImagePreviewOverlayController.revealSourceBeforeRemoval(requestToken)
                     withFrameNanos { }
                     onDismiss()
                 }
@@ -2083,7 +2111,7 @@ suspend fun shareImageFromPreview(context: Context, imageUrl: String): Boolean {
         createImagePreviewShareFile(context, normalizedUrl, mimeType)
     } ?: return false
 
-    return withContext(Dispatchers.Main) {
+    return withContext(Dispatchers.Main.immediate) {
         try {
             val uri = FileProvider.getUriForFile(
                 context,
