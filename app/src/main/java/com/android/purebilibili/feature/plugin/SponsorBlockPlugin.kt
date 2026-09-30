@@ -220,28 +220,23 @@ class SponsorBlockPlugin : PlayerPluginApi {
         //  [修复] 加载配置
         loadConfigSuspend()
         
-        // 加载片段数据
-        try {
-            segments = normalizeSponsorSegments(
-                SponsorBlockRepository.getSegments(
-                    bvid = bvid,
-                    cid = cid,
-                    categories = config.requestedCategories,
-                    baseUrl = config.serverBaseUrl
-                )
-            ).filter { segment ->
-                config.behaviorFor(segment.category) != SponsorBlockSegmentBehavior.DISABLED &&
-                    (segment.actionType == com.android.purebilibili.data.model.response.SponsorActionType.FULL ||
-                        segment.duration >= config.minimumSegmentDurationSeconds)
-            }
-            progressMarkers = resolveSponsorProgressMarkers(segments, config.markerMode, config.categoryColorHex)
-            Logger.d(
-                TAG,
-                " Loaded ${segments.size} SponsorBlock segments for $bvid, autoSkip=${config.autoSkip}, markers=${progressMarkers.size}"
-            )
-        } catch (e: Exception) {
-            Logger.w(TAG, " 加载片段失败: ${e.message}")
+        // Failures must reach the owning ViewModel so it can retry this video.
+        val loadedSegments = SponsorBlockRepository.loadSegments(
+            bvid = bvid,
+            cid = cid,
+            categories = config.requestedCategories,
+            baseUrl = config.serverBaseUrl
+        )
+        segments = normalizeSponsorSegments(loadedSegments).filter { segment ->
+            config.behaviorFor(segment.category) != SponsorBlockSegmentBehavior.DISABLED &&
+                (segment.actionType == com.android.purebilibili.data.model.response.SponsorActionType.FULL ||
+                    segment.duration >= config.minimumSegmentDurationSeconds)
         }
+        progressMarkers = resolveSponsorProgressMarkers(segments, config.markerMode, config.categoryColorHex)
+        Logger.d(
+            TAG,
+            "Loaded ${segments.size} SponsorBlock segments for $bvid/$cid, autoSkip=${config.autoSkip}"
+        )
     }
     
     // 记录上次播放位置，用于检测回拉
@@ -492,6 +487,8 @@ class SponsorBlockPlugin : PlayerPluginApi {
                 config = SponsorBlockConfig(autoSkip = true)
             }
             Logger.d(TAG, "Loaded SponsorBlock config: autoSkip=${config.autoSkip}, markerMode=${config.markerMode}")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Logger.e(TAG, "Failed to load config", e)
             config = SponsorBlockConfig(autoSkip = true)
