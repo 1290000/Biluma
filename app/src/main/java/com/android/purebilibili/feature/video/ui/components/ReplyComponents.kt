@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Reply
 import androidx.compose.material.icons.filled.MoreVert
@@ -1650,7 +1651,8 @@ fun ReplyItemView(
                                 ReplyTextAction(
                                     label = "屏蔽该用户",
                                     appearance = appearance,
-                                    onClick = { confirmBlockUser = true }
+                                    onClick = { confirmBlockUser = true },
+                                    icon = Icons.Outlined.Block
                                 )
                                 ReplyTextAction(
                                     label = "举报",
@@ -1658,7 +1660,8 @@ fun ReplyItemView(
                                     onClick = {
                                         hatePromptHandled = true
                                         showReportDialog = true
-                                    }
+                                    },
+                                    icon = Icons.Outlined.Flag
                                 )
                             }
                         }
@@ -2737,7 +2740,8 @@ internal fun ReplySpecialLabelChip(text: String) {
 internal fun ReplyTextAction(
     label: String,
     appearance: VideoCommentAppearance,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    icon: ImageVector = Icons.AutoMirrored.Outlined.Reply
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -2747,7 +2751,7 @@ internal fun ReplyTextAction(
             .padding(end = 8.dp)
     ) {
         AppIcon(
-            imageVector = Icons.AutoMirrored.Outlined.Reply,
+            imageVector = icon,
             contentDescription = null,
             tint = appearance.actionTint,
             modifier = Modifier.size(17.dp)
