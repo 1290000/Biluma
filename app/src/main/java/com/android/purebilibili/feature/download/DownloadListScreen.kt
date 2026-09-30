@@ -1,5 +1,7 @@
 package com.android.purebilibili.feature.download
 
+import android.widget.Toast
+
 import com.android.purebilibili.core.ui.components.VideoListLayoutToggle
 import com.android.purebilibili.core.ui.components.resolveVideoListColumns
 import com.android.purebilibili.core.ui.components.rememberVideoListLayoutControl
@@ -122,6 +124,27 @@ fun DownloadListScreen(
                     }
                 },
                 actions = {
+                    val hasActive = taskList.any(::shouldPauseAllInclude)
+                    val hasResumable = taskList.any(::shouldContinueAllInclude)
+                    if (hasActive || hasResumable) {
+                        androidx.compose.material3.TextButton(onClick = {
+                            if (hasActive) {
+                                taskList.filter(::shouldPauseAllInclude).forEach {
+                                    DownloadManager.pauseDownload(it.id)
+                                }
+                            } else {
+                                taskList.filter(::shouldContinueAllInclude).forEach {
+                                    DownloadManager.startDownload(it.id)
+                                }
+                            }
+                        }) {
+                            AppText(
+                                text = if (hasActive) "暂停全部" else "继续全部",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                     VideoListLayoutToggle(
                         singleColumn = listLayout.singleColumn,
                         onClick = listLayout.toggle,
@@ -178,6 +201,14 @@ fun DownloadListScreen(
                             onClick = {
                                 when (resolveDownloadTaskClickTarget(task, isNetworkAvailable = isNetworkAvailable)) {
                                     DownloadTaskClickTarget.OfflinePlayer -> onOfflineVideoClick(task.id)
+                                    DownloadTaskClickTarget.OnlinePlayer -> {
+                                        Toast.makeText(
+                                            context,
+                                            "本地文件不可用，已切换在线播放",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        onVideoClick(task.bvid)
+                                    }
                                     null -> Unit
                                 }
                             },
