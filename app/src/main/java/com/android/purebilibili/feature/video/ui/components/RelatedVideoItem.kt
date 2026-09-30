@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import com.android.purebilibili.core.ui.components.AppSurface
 import com.android.purebilibili.core.ui.components.AppText
@@ -48,14 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import com.android.purebilibili.core.store.HomeDurationStyle
 import com.android.purebilibili.core.store.HomeFeedCardStyle
-import com.android.purebilibili.core.store.HomeSettings
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.store.TodayWatchDislikedVideoSnapshot
 import com.android.purebilibili.core.store.TodayWatchFeedbackStore
 import com.android.purebilibili.core.store.withDislikedVideoFeedback
-import com.android.purebilibili.feature.home.components.cards.resolveVideoCardDurationStatMinWidthDp
 import com.android.purebilibili.core.ui.AppAlertDialog
 import com.android.purebilibili.core.ui.AppDialogAction
 import com.android.purebilibili.core.ui.AppShapes
@@ -173,27 +169,7 @@ internal fun rememberRelatedVideoCardLayout(): HomeFeedCardLayout {
     }
 }
 
-/** 相关推荐卡片跟随的首页排版设置（数据贴封面/时长样式/发布时间） */
-internal data class RelatedVideoCardPresentation(
-    val compactStatsOnCover: Boolean,
-    val durationStyle: HomeDurationStyle,
-    val showPublishTime: Boolean,
-)
 
-@Composable
-internal fun rememberRelatedVideoCardPresentation(): RelatedVideoCardPresentation {
-    val context = LocalContext.current
-    val homeSettings by SettingsManager
-        .getHomeSettings(context)
-        .collectAsStateWithLifecycle(initialValue = HomeSettings())
-    return remember(homeSettings) {
-        RelatedVideoCardPresentation(
-            compactStatsOnCover = homeSettings.compactVideoStatsOnCover,
-            durationStyle = homeSettings.homeDurationStyle,
-            showPublishTime = homeSettings.showHomePublishTime
-        )
-    }
-}
 
 /**
  * 相关推荐单列横卡：点击时冻结来源标识、几何与 chrome，供整卡 Morph 及逐层返回。
@@ -207,9 +183,6 @@ fun RelatedVideoItem(
     showUpBadge: Boolean = true,
     coverAspectRatio: Float = RELATED_VIDEO_CARD_COVER_ASPECT_RATIO,
     stacked: Boolean = false,
-    compactStatsOnCover: Boolean = false,
-    durationStyle: HomeDurationStyle = HomeDurationStyle.OVERLAY_TEXT_ONLY,
-    showPublishTime: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onMoreClick: (() -> Unit)? = null
@@ -302,16 +275,12 @@ fun RelatedVideoItem(
                         // Related horizontal card keeps play/danmaku in the info column.
                         infoPresentation = com.android.purebilibili.core.ui.transition
                             .resolveVideoCardSourceInfoPresentation(
-                                publishTimeText = if (showPublishTime) {
-                                    FormatUtils.formatPublishTime(video.pubdate)
-                                } else {
-                                    ""
-                                },
-                                showStatsInInfo = !compactStatsOnCover,
+                                publishTimeText = FormatUtils.formatPublishTime(video.pubdate),
+                                showStatsInInfo = true,
                                 showOverflowMenu = onMoreClick != null,
                             ),
                         coverPresentation = VideoCardSourceCoverPresentation(
-                            showDurationOnCover = durationStyle != HomeDurationStyle.HIDDEN,
+                            showDurationOnCover = true,
                         ),
                         coverUrl = stationaryCoverUrl,
                         coverCacheKey = stationaryCoverUrl,
@@ -367,40 +336,21 @@ fun RelatedVideoItem(
                 )
             },
             coverOverlayContent = {
-                if (compactStatsOnCover) {
-                    // 预留右下角时长角标宽度，避免统计底衬与时长文字重叠
-                    // (与首页卡 VideoCard.kt 的 statsEndPaddingDp 预留同策略)
-                    val durationReserveDp =
-                        resolveVideoCardDurationStatMinWidthDp(FormatUtils.formatDuration(video.duration)) + 6f
-                    HorizontalVideoStatRow(
-                        playText = FormatUtils.formatStat(video.stat.view.toLong()),
-                        danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
-                        contentColor = Color.White,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(start = 6.dp, end = 6.dp + durationReserveDp.dp, bottom = 6.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color.Black.copy(alpha = 0.45f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
-                }
-                if (durationStyle != HomeDurationStyle.HIDDEN) {
-                    AppText(
-                        text = FormatUtils.formatDuration(video.duration),
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            shadow = Shadow(
-                                color = Color.Black.copy(alpha = 0.6f),
-                                blurRadius = 4f,
-                                offset = Offset(0f, 1f),
-                            ),
+                AppText(
+                    text = FormatUtils.formatDuration(video.duration),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.6f),
+                            blurRadius = 4f,
+                            offset = Offset(0f, 1f),
                         ),
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(6.dp),
-                    )
-                }
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp),
+                )
             },
             infoContent = {
                 AppText(
@@ -419,7 +369,7 @@ fun RelatedVideoItem(
                         horizontalArrangement = Arrangement.spacedBy(AppSpacingTokens.Small),
                     ) {
                         val publishTime = remember(video.pubdate) {
-                            if (showPublishTime) FormatUtils.formatPublishTime(video.pubdate) else ""
+                            FormatUtils.formatPublishTime(video.pubdate)
                         }
                         if (publishTime.isNotBlank()) {
                             AppText(
@@ -485,12 +435,10 @@ fun RelatedVideoItem(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    if (!compactStatsOnCover) {
-                        HorizontalVideoStatRow(
-                            playText = FormatUtils.formatStat(video.stat.view.toLong()),
-                            danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
-                        )
-                    }
+                    HorizontalVideoStatRow(
+                        playText = FormatUtils.formatStat(video.stat.view.toLong()),
+                        danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
+                    )
                 }
             },
             trailingContent = onMoreClick?.let { moreClick ->
@@ -541,7 +489,6 @@ internal fun RelatedVideoGridRow(
     }
     var isBlockingCreator by remember { mutableStateOf(false) }
     val blockedUpRepository = remember { BlockedUpRepository.getInstance(context) }
-    val presentation = rememberRelatedVideoCardPresentation()
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
@@ -557,9 +504,6 @@ internal fun RelatedVideoGridRow(
                 showUpBadge = showUpBadge,
                 coverAspectRatio = cardLayout.coverAspectRatio,
                 stacked = resolvedCardPresentation == RelatedVideoCardLayout.STACKED,
-                compactStatsOnCover = presentation.compactStatsOnCover,
-                durationStyle = presentation.durationStyle,
-                showPublishTime = presentation.showPublishTime,
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onVideoClick(video) },
                 onMoreClick = { actionVideo = video }
