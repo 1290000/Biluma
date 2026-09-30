@@ -147,6 +147,7 @@ import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.performance.isLowBlurBudgetForced
 import top.yukonga.miuix.kmp.blur.Backdrop as MiuixBackdrop
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 import com.android.purebilibili.core.database.entity.SearchHistory
 import com.android.purebilibili.core.ui.LocalGlobalWallpaperBackdropVisible
@@ -249,12 +250,36 @@ internal fun resolveSearchTopBarLayoutSpec(): SearchTopBarLayoutSpec {
     )
 }
 
+private const val SEARCH_INPUT_LINE_HEIGHT_SP = 20
+
+/** Total vertical padding around the search controls. */
 internal const val SEARCH_TOP_BAR_VERTICAL_PADDING_DP = 8
 
 internal fun resolveSearchTopBarRowMinHeightDp(
     inputHeightDp: Int,
     verticalPaddingDp: Int = SEARCH_TOP_BAR_VERTICAL_PADDING_DP
-): Int = maxOf(48, inputHeightDp + verticalPaddingDp)
+): Int = maxOf(48, inputHeightDp) + verticalPaddingDp
+
+internal fun resolveSearchInputHeightDp(
+    minHeightDp: Int,
+    lineHeightDp: Float,
+    fontSizeDp: Float,
+): Int = maxOf(minHeightDp, ceil(maxOf(lineHeightDp, fontSizeDp) + 8f).toInt())
+
+@Composable
+private fun rememberSearchInputHeightDp(minHeightDp: Int): Int {
+    val density = LocalDensity.current
+    val fontSize = MaterialTheme.typography.bodyLarge.fontSize
+    return remember(minHeightDp, density, fontSize) {
+        with(density) {
+            resolveSearchInputHeightDp(
+                minHeightDp = minHeightDp,
+                lineHeightDp = SEARCH_INPUT_LINE_HEIGHT_SP.sp.toDp().value,
+                fontSizeDp = fontSize.toDp().value,
+            )
+        }
+    }
+}
 
 internal fun shouldOmitSearchInputLeadingIcon(
     tabPresentation: AppTopTabPresentation,
@@ -314,59 +339,21 @@ internal fun resolveSearchChromeVisualSpec(
     chromePolicy: AppTopChromePolicy,
 ): SearchChromeVisualSpec {
     val compactChrome = chromePolicy.compactChromeSpec
-    // Shared semantic levels for all tab presentations — theme scale does the rest.
-    val actionShapeLevel = ContainerLevel.Pill
-    val suggestionShapeLevel = ContainerLevel.Card
-    val chipShapeLevel = ContainerLevel.Pill
-    return if (chromePolicy.tabPresentation == AppTopTabPresentation.TONAL_CAPSULE) {
-        SearchChromeVisualSpec(
-            inputHeightDp = compactChrome.primaryHeightDp,
-            actionShapeLevel = actionShapeLevel,
-            useFilledSearchAction = true,
-            suggestionShapeLevel = suggestionShapeLevel,
-            clearActionSizeDp = compactChrome.secondaryButtonSizeDp,
-            submitActionSizeDp = compactChrome.secondaryButtonSizeDp,
-            actionIconSizeDp = compactChrome.iconSizeDp,
-            horizontalGapDp = compactChrome.standardGapDp,
-            inputHorizontalPaddingDp = compactChrome.inputHorizontalPaddingDp,
-            chipHeightDp = compactChrome.chipHeightDp,
-            compactChipHeightDp = compactChrome.compactChipHeightDp,
-            chipShapeLevel = chipShapeLevel,
-            chipHorizontalPaddingDp = compactChrome.chipHorizontalPaddingDp
-        )
-    } else if (chromePolicy.tabPresentation == AppTopTabPresentation.MATERIAL_UNDERLINE) {
-        SearchChromeVisualSpec(
-            inputHeightDp = compactChrome.primaryHeightDp,
-            actionShapeLevel = actionShapeLevel,
-            useFilledSearchAction = true,
-            suggestionShapeLevel = suggestionShapeLevel,
-            clearActionSizeDp = compactChrome.secondaryButtonSizeDp,
-            submitActionSizeDp = compactChrome.secondaryButtonSizeDp,
-            actionIconSizeDp = compactChrome.iconSizeDp,
-            horizontalGapDp = compactChrome.standardGapDp,
-            inputHorizontalPaddingDp = compactChrome.inputHorizontalPaddingDp,
-            chipHeightDp = compactChrome.chipHeightDp,
-            compactChipHeightDp = compactChrome.compactChipHeightDp,
-            chipShapeLevel = chipShapeLevel,
-            chipHorizontalPaddingDp = compactChrome.chipHorizontalPaddingDp
-        )
-    } else {
-        SearchChromeVisualSpec(
-            inputHeightDp = compactChrome.primaryHeightDp,
-            actionShapeLevel = actionShapeLevel,
-            useFilledSearchAction = false,
-            suggestionShapeLevel = suggestionShapeLevel,
-            clearActionSizeDp = compactChrome.secondaryButtonSizeDp,
-            submitActionSizeDp = compactChrome.secondaryButtonSizeDp,
-            actionIconSizeDp = compactChrome.iconSizeDp,
-            horizontalGapDp = compactChrome.standardGapDp,
-            inputHorizontalPaddingDp = compactChrome.inputHorizontalPaddingDp,
-            chipHeightDp = compactChrome.chipHeightDp,
-            compactChipHeightDp = compactChrome.compactChipHeightDp,
-            chipShapeLevel = chipShapeLevel,
-            chipHorizontalPaddingDp = compactChrome.chipHorizontalPaddingDp
-        )
-    }
+    return SearchChromeVisualSpec(
+        inputHeightDp = minOf(compactChrome.primaryHeightDp, 48),
+        actionShapeLevel = ContainerLevel.Pill,
+        useFilledSearchAction = chromePolicy.tabPresentation != AppTopTabPresentation.MOVING_CAPSULE,
+        suggestionShapeLevel = ContainerLevel.Card,
+        clearActionSizeDp = minOf(compactChrome.secondaryButtonSizeDp, 40),
+        submitActionSizeDp = minOf(compactChrome.secondaryButtonSizeDp, 40),
+        actionIconSizeDp = minOf(compactChrome.iconSizeDp, 20),
+        horizontalGapDp = compactChrome.standardGapDp,
+        inputHorizontalPaddingDp = compactChrome.inputHorizontalPaddingDp,
+        chipHeightDp = compactChrome.chipHeightDp,
+        compactChipHeightDp = compactChrome.compactChipHeightDp,
+        chipShapeLevel = ContainerLevel.Pill,
+        chipHorizontalPaddingDp = compactChrome.chipHorizontalPaddingDp,
+    )
 }
 
 internal data class SearchHomeContentMotionSpec(
@@ -747,7 +734,8 @@ fun SearchScreen(
     // 2. 顶部避让高度计算
     val density = LocalDensity.current
     val statusBarHeight = WindowInsets.statusBars.getTop(density).let { with(density) { it.toDp() } }
-    val topBarHeight = 64.dp // 搜索栏高度
+    val inputHeightDp = rememberSearchInputHeightDp(searchChromeSpec.inputHeightDp)
+    val topBarHeight = resolveSearchTopBarRowMinHeightDp(inputHeightDp).dp
     val contentTopPadding = statusBarHeight + topBarHeight
     
     //  读取动画设置开关
@@ -2516,8 +2504,9 @@ fun SearchTopBar(
 ) {
     val topChromePolicy = rememberAppTopChromePolicy()
     val chromeSpec = remember(topChromePolicy) { resolveSearchChromeVisualSpec(topChromePolicy) }
-    val topBarRowMinHeightDp = remember(chromeSpec.inputHeightDp) {
-        resolveSearchTopBarRowMinHeightDp(chromeSpec.inputHeightDp)
+    val inputHeightDp = rememberSearchInputHeightDp(chromeSpec.inputHeightDp)
+    val topBarRowMinHeightDp = remember(inputHeightDp) {
+        resolveSearchTopBarRowMinHeightDp(inputHeightDp)
     }
     val searchInteractionSource = remember { MutableInteractionSource() }
     val isSearchFieldFocused by searchInteractionSource.collectIsFocusedAsState()
@@ -2672,7 +2661,7 @@ fun SearchTopBar(
                 modifier = Modifier
                     .responsiveContentWidth()
                     .heightIn(min = topBarRowMinHeightDp.dp)
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .padding(horizontal = 12.dp, vertical = (SEARCH_TOP_BAR_VERTICAL_PADDING_DP / 2).dp)
                     .padding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal).asPaddingValues())
                     .then(entryMotionModifier),
                 verticalAlignment = Alignment.CenterVertically
@@ -2716,14 +2705,13 @@ fun SearchTopBar(
                     placeholder = placeholder,
                     containerColor = containerColor,
                     fieldShape = inputShape,
-                    heightDp = chromeSpec.inputHeightDp,
                     focusRequester = focusRequester,
                     interactionSource = searchInteractionSource,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .height(chromeSpec.inputHeightDp.dp)
-                        .searchTopChromeGlass(inputShape, chromeSpec.inputHeightDp)
+                        .height(inputHeightDp.dp)
+                        .searchTopChromeGlass(inputShape, inputHeightDp)
                         .onFocusChanged { onFocusChanged(it.isFocused) }
                 )
 
@@ -2795,12 +2783,22 @@ private fun SearchTopBarIconButton(
     enabled: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    AppIconButton(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled,
-        content = content
-    )
+    Box(
+        modifier = Modifier.sizeIn(
+            minWidth = AppChromeSizeTokens.MinimumTouchTarget,
+            minHeight = AppChromeSizeTokens.MinimumTouchTarget,
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            AppIconButton(
+                onClick = onClick,
+                modifier = Modifier.matchParentSize(),
+                enabled = enabled,
+                content = content
+            )
+        }
+    }
 }
 
 @Composable
@@ -2811,7 +2809,6 @@ private fun SearchTopBarInputField(
     placeholder: String,
     containerColor: Color,
     fieldShape: androidx.compose.ui.graphics.Shape,
-    @Suppress("UNUSED_PARAMETER") heightDp: Int,
     focusRequester: androidx.compose.ui.focus.FocusRequester,
     interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier
@@ -2824,7 +2821,7 @@ private fun SearchTopBarInputField(
     val textStyle = MaterialTheme.typography.bodyLarge.copy(
         color = contentColor,
         // Explicit line height avoids type-scale clipping in single-line fields.
-        lineHeight = 20.sp
+        lineHeight = SEARCH_INPUT_LINE_HEIGHT_SP.sp
     )
     val cursorBrush = androidx.compose.ui.graphics.SolidColor(focusBorderColor)
 
