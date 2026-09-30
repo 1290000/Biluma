@@ -2811,7 +2811,7 @@ fun HomeScreen(
             .collectAsStateWithLifecycle()
         val undoPillBottomPadding = homeListBottomPadding + AppSpacingTokens.Medium +
             (if (nowPlayingBarOverlayVisible) 76.dp else 0.dp) +
-            (if (oldContentLocatorVisible) 44.dp else 0.dp)
+            (if (oldContentLocatorVisible) 52.dp else 0.dp)
         Box(
             modifier = Modifier
                 .fillMaxSize()
