@@ -102,6 +102,7 @@ import com.android.purebilibili.core.ui.UserAvatarCornerMarkBadge
 import com.android.purebilibili.core.ui.resolveOfficialVerifyBadge
 import com.android.purebilibili.core.ui.resolveUserAvatarCornerMark
 import com.android.purebilibili.core.ui.components.AppIconButton
+import com.android.purebilibili.core.ui.components.resolveUpNameColor
 import com.android.purebilibili.core.ui.components.AppSurface
 import androidx.compose.foundation.text.selection.SelectionContainer
 import java.net.URLEncoder
@@ -1573,11 +1574,12 @@ fun ReplyItemView(
                                 text = item.member.uname,
                                 fontSize = VideoCommentTypographyTokens.author,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (item.member.vip?.vipStatus == 1) {
-                                    appearance.accentColor
-                                } else {
-                                    appearance.primaryTextColor.copy(alpha = 0.9f)
-                                },
+                                color = resolveUpNameColor(
+                                    vipStatus = item.member.vip?.vipStatus ?: 0,
+                                    vipType = item.member.vip?.vipType ?: 0,
+                                    onSurface = appearance.primaryTextColor.copy(alpha = 0.9f),
+                                    secondary = MaterialTheme.colorScheme.secondary,
+                                ),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false)

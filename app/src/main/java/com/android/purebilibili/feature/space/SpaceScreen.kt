@@ -82,6 +82,7 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.ViewAgenda
 import com.android.purebilibili.core.ui.AppAlertDialog
 import com.android.purebilibili.core.ui.components.AppButton
+import com.android.purebilibili.core.ui.components.resolveUpNameColor
 import androidx.compose.material3.ButtonDefaults
 import com.android.purebilibili.core.ui.components.AppCheckbox
 import com.android.purebilibili.core.ui.components.AppCircularProgressIndicator
@@ -2978,13 +2979,12 @@ private fun SpaceHeaderIdentityInfo(
                         .weight(1f, fill = false)
                         .copyOnLongPress(userInfo.name, "UP主名称"),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = if (userInfo.vip.status == 1 && userInfo.vip.type == 2) {
-                        Color(0xFFFB7299)
-                    } else if (userInfo.vip.status == 1) {
-                        MaterialTheme.colorScheme.secondary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    color = resolveUpNameColor(
+                        vipStatus = userInfo.vip.status,
+                        vipType = userInfo.vip.type,
+                        onSurface = MaterialTheme.colorScheme.onSurface,
+                        secondary = MaterialTheme.colorScheme.secondary,
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

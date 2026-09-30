@@ -51,6 +51,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.appendInlineContent
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppSurface
+import com.android.purebilibili.core.ui.components.resolveUpNameColor
 import com.android.purebilibili.core.ui.components.AppIconButton
 import androidx.compose.material3.MaterialTheme
 import com.android.purebilibili.core.ui.components.AppText
@@ -1051,11 +1052,12 @@ private fun SubReplyDetailItem(
         }
     }
     val avatarSize = remember { resolveSubReplyDetailAvatarSizeDp().dp }
-    val nameColor = if (item.member.vip?.vipStatus == 1) {
-        appearance.accentColor
-    } else {
-        appearance.primaryTextColor
-    }
+    val nameColor = resolveUpNameColor(
+        vipStatus = item.member.vip?.vipStatus ?: 0,
+        vipType = item.member.vip?.vipType ?: 0,
+        onSurface = appearance.primaryTextColor,
+        secondary = MaterialTheme.colorScheme.secondary,
+    )
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val copyToClipboard = rememberClipboardCopyHandler()

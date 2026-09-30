@@ -151,6 +151,7 @@ data class CreatorCardStats(
     val followerCount: Int,
     val videoCount: Int,
     val vipStatus: Int = 0,
+    val vipType: Int = 0,
     val officialType: Int = -1,
     val pendantImage: String = "",
 )
@@ -1181,6 +1182,7 @@ object VideoRepository {
                     followerCount = data.follower.coerceAtLeast(0),
                     videoCount = data.archive_count.coerceAtLeast(0),
                     vipStatus = data.card?.vip?.status ?: 0,
+                    vipType = data.card?.vip?.type ?: 0,
                     officialType = data.card?.Official?.type ?: -1,
                     pendantImage = data.card?.pendant?.image.orEmpty(),
                 )

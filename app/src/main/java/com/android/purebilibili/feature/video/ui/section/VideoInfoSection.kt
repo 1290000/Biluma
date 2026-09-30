@@ -55,6 +55,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 //  已改用 MaterialTheme.colorScheme.primary
 import com.android.purebilibili.core.util.FormatUtils
+import com.android.purebilibili.data.repository.VideoRepository
 import com.android.purebilibili.data.model.response.UgcSeason
 import com.android.purebilibili.data.model.response.VideoStaff
 import com.android.purebilibili.data.model.response.ViewInfo
@@ -71,6 +72,7 @@ import com.android.purebilibili.core.ui.resolveUserAvatarCornerMark
 import com.android.purebilibili.core.ui.components.AppIconButton
 import com.android.purebilibili.core.ui.components.AppSurface
 import com.android.purebilibili.core.ui.components.resolveUpStatsText
+import com.android.purebilibili.core.ui.components.resolveUpNameColor
 import com.android.purebilibili.core.ui.components.UserUpBadge
 import com.android.purebilibili.core.theme.AppUiStyle
 import com.android.purebilibili.core.theme.LocalAppUiStyle
@@ -1165,12 +1167,38 @@ fun UpInfoSection(
                     }
                     Spacer(Modifier.width(4.dp))
                 }
+                val ownerStaff = info.staff.firstOrNull { it.mid == info.owner.mid }
+                val fallbackVipStatus = ownerStaff?.vip?.status ?: 0
+                val fallbackVipType = ownerStaff?.vip?.type ?: 0
+                val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+                val secondaryColor = MaterialTheme.colorScheme.secondary
+                val ownerNameColor by produceState<Color>(
+                    initialValue = resolveUpNameColor(
+                        vipStatus = fallbackVipStatus,
+                        vipType = fallbackVipType,
+                        onSurface = onSurfaceColor,
+                        secondary = secondaryColor,
+                    ),
+                    key1 = info.owner.mid,
+                ) {
+                    val card = if (info.owner.mid > 0L) {
+                        VideoRepository.getCreatorCardStats(info.owner.mid).getOrNull()
+                    } else {
+                        null
+                    }
+                    value = resolveUpNameColor(
+                        vipStatus = card?.vipStatus ?: fallbackVipStatus,
+                        vipType = card?.vipType ?: fallbackVipType,
+                        onSurface = onSurfaceColor,
+                        secondary = secondaryColor,
+                    )
+                }
                 SelectionContainer {
                     AppText(
                         text = info.owner.name,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = ownerNameColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = upNameModifier
