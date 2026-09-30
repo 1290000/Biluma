@@ -484,7 +484,10 @@ private fun ImagePreviewOverlayContent(
     
     // 竖滑跟手用状态值，避免每帧 launch snapTo 竞态导致滑不动。
     var verticalDismissOffsetYPx by remember { mutableFloatStateOf(0f) }
+    // 竖滑退出时手指横向漂移的实时位移：图片跟随手指移动到屏幕各处
+    var verticalDismissOffsetXPx by remember { mutableFloatStateOf(0f) }
     val verticalDismissSnapAnim = remember { androidx.compose.animation.core.Animatable(0f) }
+    val verticalDismissSnapAnimX = remember { androidx.compose.animation.core.Animatable(0f) }
 
     fun handleImageSaveResult(success: Boolean, successMessage: String = "图片已保存到相册") {
         haptic(resolveImagePreviewSaveFeedback(success))
@@ -534,7 +537,9 @@ private fun ImagePreviewOverlayContent(
         if (!isDismissing) {
             isVerticalDismissDragging = false
             verticalDismissOffsetYPx = 0f
+            verticalDismissOffsetXPx = 0f
             verticalDismissSnapAnim.snapTo(0f)
+            verticalDismissSnapAnimX.snapTo(0f)
             flightAnchorDisplayRect = null
         }
     }
@@ -758,7 +763,9 @@ private fun ImagePreviewOverlayContent(
                 isDismissing = true
                 scope.launch {
                     verticalDismissOffsetYPx = 0f
+                    verticalDismissOffsetXPx = 0f
                     verticalDismissSnapAnim.snapTo(0f)
+                    verticalDismissSnapAnimX.snapTo(0f)
                     val dismissMotion = imagePreviewDismissMotion()
                     // 临界阻尼 spring 回位：起步可携带手势松手速度，落地自带减速。
                     // 进度向 0 收敛，竖滑方向的速度在进度空间取反号以延续手势动量。
@@ -892,7 +899,9 @@ private fun ImagePreviewOverlayContent(
                         val dragScale = if (isDismissing) 1f else dragFrame.scale
                         scaleX = baseScaleX * dragScale
                         scaleY = baseScaleY * dragScale
-                        translationX = (flightRect.left + flightRect.right - size.width) / 2f
+                        // 竖滑拖拽期间双轴跟手（X/Y），dismiss 动画接管后由 flightRect 驱动
+                        translationX = (flightRect.left + flightRect.right - size.width) / 2f +
+                            if (isDismissing) 0f else verticalDismissOffsetXPx
                         translationY = (flightRect.top + flightRect.bottom - size.height) / 2f +
                             if (isDismissing) 0f else verticalDismissOffsetYPx
                         val cornerRadii = resolveImagePreviewCounterScaledCornerRadii(
@@ -911,7 +920,7 @@ private fun ImagePreviewOverlayContent(
                         ).fallbackScale * if (isDismissing) 1f else dragFrame.scale
                         scaleX = fallbackScale
                         scaleY = fallbackScale
-                        translationX = 0f
+                        translationX = if (isDismissing) 0f else verticalDismissOffsetXPx
                         translationY = if (isDismissing) 0f else verticalDismissOffsetYPx
                         shape = RoundedCornerShape(presentedCornerRadius.dp)
                         clip = true
@@ -1080,12 +1089,16 @@ private fun ImagePreviewOverlayContent(
                             onVerticalDismissDragStart = {
                                 if (page == pagerState.currentPage && !isDismissing) {
                                     isVerticalDismissDragging = true
-                                    scope.launch { verticalDismissSnapAnim.stop() }
+                                    scope.launch {
+                                        verticalDismissSnapAnim.stop()
+                                        verticalDismissSnapAnimX.stop()
+                                    }
                                 }
                             },
                             onVerticalDismissDrag = { dragDelta ->
                                 if (page == pagerState.currentPage && !isDismissing && isVerticalDismissDragging) {
-                                    verticalDismissOffsetYPx += dragDelta
+                                    verticalDismissOffsetYPx += dragDelta.y
+                                    verticalDismissOffsetXPx += dragDelta.x
                                 }
                             },
                             onVerticalDismissDragEnd = { releaseVelocityY ->
@@ -1100,6 +1113,7 @@ private fun ImagePreviewOverlayContent(
                                             currentTransitionProgress()
                                         ) ?: previewSurfaceRect,
                                         translationYPx = verticalDismissOffsetYPx,
+                                        translationXPx = verticalDismissOffsetXPx,
                                         scale = dragFrame.scale
                                     )
                                     when (
@@ -1115,12 +1129,23 @@ private fun ImagePreviewOverlayContent(
                                         )
                                         ImagePreviewVerticalDismissDecision.SNAP_BACK -> {
                                             scope.launch {
-                                                verticalDismissSnapAnim.snapTo(verticalDismissOffsetYPx)
-                                                verticalDismissSnapAnim.animateTo(
-                                                    targetValue = 0f,
-                                                    animationSpec = interactiveSnapSpring()
-                                                ) {
-                                                    verticalDismissOffsetYPx = value
+                                                launch {
+                                                    verticalDismissSnapAnim.snapTo(verticalDismissOffsetYPx)
+                                                    verticalDismissSnapAnim.animateTo(
+                                                        targetValue = 0f,
+                                                        animationSpec = interactiveSnapSpring()
+                                                    ) {
+                                                        verticalDismissOffsetYPx = value
+                                                    }
+                                                }
+                                                launch {
+                                                    verticalDismissSnapAnimX.snapTo(verticalDismissOffsetXPx)
+                                                    verticalDismissSnapAnimX.animateTo(
+                                                        targetValue = 0f,
+                                                        animationSpec = interactiveSnapSpring()
+                                                    ) {
+                                                        verticalDismissOffsetXPx = value
+                                                    }
                                                 }
                                             }
                                         }
@@ -1136,12 +1161,23 @@ private fun ImagePreviewOverlayContent(
                                 if (page == pagerState.currentPage && !isDismissing) {
                                     isVerticalDismissDragging = false
                                     scope.launch {
-                                        verticalDismissSnapAnim.snapTo(verticalDismissOffsetYPx)
-                                        verticalDismissSnapAnim.animateTo(
-                                            targetValue = 0f,
-                                            animationSpec = interactiveSnapSpring()
-                                        ) {
-                                            verticalDismissOffsetYPx = value
+                                        launch {
+                                            verticalDismissSnapAnim.snapTo(verticalDismissOffsetYPx)
+                                            verticalDismissSnapAnim.animateTo(
+                                                targetValue = 0f,
+                                                animationSpec = interactiveSnapSpring()
+                                            ) {
+                                                verticalDismissOffsetYPx = value
+                                            }
+                                        }
+                                        launch {
+                                            verticalDismissSnapAnimX.snapTo(verticalDismissOffsetXPx)
+                                            verticalDismissSnapAnimX.animateTo(
+                                                targetValue = 0f,
+                                                animationSpec = interactiveSnapSpring()
+                                            ) {
+                                                verticalDismissOffsetXPx = value
+                                            }
                                         }
                                     }
                                 }
