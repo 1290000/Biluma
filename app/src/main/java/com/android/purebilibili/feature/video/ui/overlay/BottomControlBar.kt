@@ -1079,9 +1079,8 @@ fun BottomControlBar(
                                 color = if (showMoreActionsPanel) MaterialTheme.colorScheme.primary else Color.White,
                                 fontSize = layoutPolicy.actionTextFontSp.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                // AppIconButton supplies a compact 48dp target. Keep the label
-                                // on one line so the final overflow action is never split as
-                                // “更”/“多” in landscape.
+                                // Keep the label on one line so the overflow action is never
+                                // split as “更”/“多” in landscape.
                                 maxLines = 1,
                                 softWrap = false,
                                 overflow = TextOverflow.Clip,

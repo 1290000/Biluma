@@ -966,12 +966,12 @@ enum class DanmakuSettingsScope(
     PORTRAIT(
         keyPrefix = "portrait",
         badgeLabel = "竖屏专用",
-        subtitle = "开关、字号和区域与横屏同步，其余样式独立"
+        subtitle = "开关、字号、行距和区域与横屏同步，其余样式独立"
     ),
     LANDSCAPE(
         keyPrefix = "landscape",
         badgeLabel = "横屏专用",
-        subtitle = "开关、字号和区域与竖屏同步，其余样式独立"
+        subtitle = "开关、字号、行距和区域与竖屏同步，其余样式独立"
     )
 }
 
@@ -4593,7 +4593,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         suffix: String
     ): String {
         // Keep the existing fullscreen values authoritative across playback modes.
-        val shared = suffix == "enabled" || suffix == "font_scale" || suffix == "area"
+        val shared = suffix == "enabled" || suffix == "font_scale" ||
+            suffix == "line_height" || suffix == "area"
         val prefix = if (shared) DanmakuSettingsScope.LANDSCAPE.keyPrefix else scope.keyPrefix
         return "danmaku_${prefix}_$suffix"
     }
@@ -4664,6 +4665,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         booleanPreferencesKey("danmaku_portrait_enabled")
     private fun keyDanmakuLegacyPortraitFontScale() =
         floatPreferencesKey("danmaku_portrait_font_scale")
+    private fun keyDanmakuLegacyPortraitLineHeight() =
+        floatPreferencesKey("danmaku_portrait_line_height")
     private fun keyDanmakuLegacyPortraitArea() =
         floatPreferencesKey("danmaku_portrait_area")
 
@@ -4785,9 +4788,10 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 )
             ),
             lineHeight = normalizeDanmakuLineHeight(
-                readScopedDanmakuPreference(
+                readSharedDanmakuPreference(
                     preferences = preferences,
                     scopeKey = keyDanmakuLineHeight(scope),
+                    legacyPortraitKey = keyDanmakuLegacyPortraitLineHeight(),
                     legacyKey = KEY_DANMAKU_LINE_HEIGHT,
                     defaultValue = DEFAULT_DANMAKU_LINE_HEIGHT
                 )
@@ -5109,9 +5113,10 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     ): Flow<Float> = context.settingsDataStore.data
         .map { preferences ->
             normalizeDanmakuLineHeight(
-                readScopedDanmakuPreference(
+                readSharedDanmakuPreference(
                     preferences = preferences,
                     scopeKey = keyDanmakuLineHeight(scope),
+                    legacyPortraitKey = keyDanmakuLegacyPortraitLineHeight(),
                     legacyKey = KEY_DANMAKU_LINE_HEIGHT,
                     defaultValue = DEFAULT_DANMAKU_LINE_HEIGHT
                 )
