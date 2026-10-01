@@ -211,7 +211,7 @@ cd BiliPai
 
 ## 最近更新
 
-当前源码版本为 `0.2.3.5 / versionCode 420`；完整变更见 [CHANGELOG.md](CHANGELOG.md)。安装包与公告见 [Telegram 频道](https://t.me/bilipai666) / [交流群](https://t.me/bilipai888/1)：
+当前源码版本为 `0.2.3.5 / versionCode 421`；完整变更见 [CHANGELOG.md](CHANGELOG.md)。安装包与公告见 [Telegram 频道](https://t.me/bilipai666) / [交流群](https://t.me/bilipai888/1)：
 
 - 收紧设置、搜索、动态和视频简介的布局间距，三连互动弹幕改为紧凑图标栏。
 - 统一各播放器的弹幕字号、行距和横竖屏设置，完善歌词匹配与听视频布局。

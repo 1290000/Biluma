@@ -1624,8 +1624,8 @@ fun VideoPlayerOverlay(
                 enter = fadeIn(OverlayControlFadeSpec),
                 exit = fadeOut(OverlayControlFadeSpec),
                 modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = overlayVisualPolicy.lockButtonEndPaddingDp.dp)
+                    .align(Alignment.CenterEnd)
+                    .padding(end = overlayVisualPolicy.lockButtonEndPaddingDp.dp)
             ) {
                 AppSurface(
                     onClick = onLockToggle,
@@ -1658,8 +1658,8 @@ fun VideoPlayerOverlay(
                 enter = fadeIn(OverlayControlFadeSpec),
                 exit = fadeOut(OverlayControlFadeSpec),
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = overlayVisualPolicy.lockButtonEndPaddingDp.dp)
+                    .align(Alignment.CenterStart)
+                    .padding(start = overlayVisualPolicy.lockButtonEndPaddingDp.dp)
             ) {
                 AppSurface(
                     onClick = onCaptureScreenshot,

@@ -218,7 +218,7 @@ import com.android.purebilibili.feature.video.usecase.togglePlayerPlaybackFromUs
 import com.android.purebilibili.feature.video.player.PlayerKeyAction
 import com.android.purebilibili.feature.video.player.calculateSeekTargetPositionMs
 import com.android.purebilibili.feature.video.player.resolvePlayerKeyAction
-import com.android.purebilibili.feature.video.util.captureAndSaveVideoScreenshot
+import com.android.purebilibili.feature.video.ui.components.rememberVideoScreenshotAction
 import com.android.purebilibili.feature.video.util.captureVideoAmbientFrame
 import com.android.purebilibili.feature.video.playback.session.PlaybackSeekSessionState
 import com.android.purebilibili.feature.video.playback.session.SEEK_PLAYBACK_RECOVERY_DELAY_MS
@@ -798,6 +798,7 @@ private fun VideoPlayerSectionContent(
     val onSubtitleTrackSelected = actions.onSubtitleTrackSelected
     val onRecallDanmaku = actions.onRecallDanmaku
     val context = LocalContext.current
+    val captureScreenshot = rememberVideoScreenshotAction()
     val localDensity = LocalDensity.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateAsState()
@@ -2006,20 +2007,12 @@ private fun VideoPlayerSectionContent(
                     PlayerKeyAction.TakeScreenshot -> {
                         val targetView = playerViewRef
                         if (targetView != null) {
-                            settingsScope.launch {
-                                val success = captureAndSaveVideoScreenshot(
-                                    context = context,
-                                    playerView = targetView,
-                                    videoWidth = videoSizeState.first,
-                                    videoHeight = videoSizeState.second,
-                                    videoTitle = (uiState as? VideoPlaybackUiState.Success)?.info?.title.orEmpty(),
-                                )
-                                Toast.makeText(
-                                    context,
-                                    if (success) "截图已保存到相册（PNG）" else "截图失败，请稍后重试",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            captureScreenshot(
+                                targetView,
+                                videoSizeState.first,
+                                videoSizeState.second,
+                                (uiState as? VideoPlaybackUiState.Success)?.info?.title.orEmpty(),
+                            )
                         }
                         true
                     }
@@ -5698,20 +5691,12 @@ private fun VideoPlayerSectionContent(
                         if (playerView == null) {
                             Toast.makeText(context, "截图失败：播放器未就绪", Toast.LENGTH_SHORT).show()
                         } else {
-                            scope.launch {
-                                val success = captureAndSaveVideoScreenshot(
-                                    context = context,
-                                    playerView = playerView,
-                                    videoWidth = videoSizeState.first,
-                                    videoHeight = videoSizeState.second,
-                                    videoTitle = uiState.info.title,
-                                )
-                                Toast.makeText(
-                                    context,
-                                    if (success) "截图已保存到相册（PNG）" else "截图失败，请稍后重试",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            captureScreenshot(
+                                playerView,
+                                videoSizeState.first,
+                                videoSizeState.second,
+                                uiState.info.title,
+                            )
                         }
                     },
                     onDownloadAudio = onDownloadAudio,
