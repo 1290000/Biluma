@@ -21,11 +21,7 @@ class SettingsSearchPolicyTest {
     }
 
     @Test
-    fun discoverAndPersonalizationSwitchesRemainSearchable() {
-        assertEquals(
-            SettingsSearchTarget.PRIVACY_PERMISSION,
-            resolveSettingsSearchResults("搜索发现").firstOrNull()?.target
-        )
+    fun personalizationSwitchRemainsSearchable() {
         assertEquals(
             SettingsSearchTarget.PRIVACY_PERMISSION,
             resolveSettingsSearchResults("个性化搜索推荐").firstOrNull()?.target

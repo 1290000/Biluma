@@ -158,7 +158,6 @@ internal data class SettingsRootCategoryActions(
     val onTipsClick: () -> Unit,
     val onOpenLinksClick: () -> Unit,
     val onPrivacyModeChange: (Boolean) -> Unit,
-    val onSearchDiscoverSectionChange: (Boolean) -> Unit,
     val onSearchSuggestionsChange: (Boolean) -> Unit,
     val onPrivacyContentAuthenticationChange: (Boolean) -> Unit,
     val onCrashTrackingChange: (Boolean) -> Unit,
@@ -181,7 +180,6 @@ internal data class SettingsRootCategoryActions(
 
 internal data class SettingsRootCategoryState(
     val privacyModeEnabled: Boolean,
-    val searchDiscoverSectionEnabled: Boolean,
     val searchSuggestionsEnabled: Boolean,
     val privacyContentAuthenticationEnabled: Boolean,
     val crashTrackingEnabled: Boolean,
@@ -534,11 +532,9 @@ internal fun SettingsRootCategoryContent(
                     SettingsDetailGroup(title = "隐私与权限") {
                         PrivacySection(
                             privacyModeEnabled = state.privacyModeEnabled,
-                            searchDiscoverSectionEnabled = state.searchDiscoverSectionEnabled,
                             searchSuggestionsEnabled = state.searchSuggestionsEnabled,
                             privacyContentAuthenticationEnabled = state.privacyContentAuthenticationEnabled,
                             onPrivacyModeChange = actions.onPrivacyModeChange,
-                            onSearchDiscoverSectionChange = actions.onSearchDiscoverSectionChange,
                             onSearchSuggestionsChange = actions.onSearchSuggestionsChange,
                             onPrivacyContentAuthenticationChange = actions.onPrivacyContentAuthenticationChange,
                             onPermissionClick = actions.onPermissionClick,
@@ -760,11 +756,9 @@ internal fun SettingsRootCategoryContent(
                     SettingsDetailGroup(title = "隐私与安全") {
                         PrivacySection(
                             privacyModeEnabled = state.privacyModeEnabled,
-                            searchDiscoverSectionEnabled = state.searchDiscoverSectionEnabled,
                             searchSuggestionsEnabled = state.searchSuggestionsEnabled,
                             privacyContentAuthenticationEnabled = state.privacyContentAuthenticationEnabled,
                             onPrivacyModeChange = actions.onPrivacyModeChange,
-                            onSearchDiscoverSectionChange = actions.onSearchDiscoverSectionChange,
                             onSearchSuggestionsChange = actions.onSearchSuggestionsChange,
                             onPrivacyContentAuthenticationChange = actions.onPrivacyContentAuthenticationChange,
                             onPermissionClick = actions.onPermissionClick,
@@ -1254,11 +1248,9 @@ internal fun resolveHomeRefreshSliderSteps(): Int {
 @Composable
 fun PrivacySection(
     privacyModeEnabled: Boolean,
-    searchDiscoverSectionEnabled: Boolean,
     searchSuggestionsEnabled: Boolean,
     privacyContentAuthenticationEnabled: Boolean,
     onPrivacyModeChange: (Boolean) -> Unit,
-    onSearchDiscoverSectionChange: (Boolean) -> Unit,
     onSearchSuggestionsChange: (Boolean) -> Unit,
     onPrivacyContentAuthenticationChange: (Boolean) -> Unit,
     onPermissionClick: () -> Unit,
@@ -1296,15 +1288,6 @@ fun PrivacySection(
         )
         SettingsAdaptiveDivider()
 
-        SettingSwitchItem(
-            icon = visibilityOffIcon,
-            title = "搜索发现",
-            subtitle = "在搜索页显示下方的搜索推荐栏",
-            checked = searchDiscoverSectionEnabled,
-            onCheckedChange = onSearchDiscoverSectionChange,
-            iconTint = siblingTints[0],
-        )
-        SettingsAdaptiveDivider()
         SettingSwitchItem(
             icon = visibilityOffIcon,
             title = "个性化搜索推荐",
