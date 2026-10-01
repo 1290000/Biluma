@@ -69,6 +69,20 @@ class BilibiliUrlParserShortLinkTest {
     }
 
     @Test
+    fun `resolveShortUrl supports servers that require a browser user agent`() = runBlocking {
+        val target = "https://www.bilibili.com/video/BV1FbKP6aEsY"
+        withRedirectServer({ exchange ->
+            if (exchange.requestHeaders.getFirst("User-Agent")?.startsWith("Mozilla/") == true) {
+                exchange.redirect(target)
+            } else {
+                exchange.sendResponseHeaders(403, -1)
+            }
+        }) { baseUrl ->
+            assertEquals(target, BilibiliUrlParser.resolveShortUrl(baseUrl))
+        }
+    }
+
+    @Test
     fun `resolveShortUrl ignores responses without redirect location`() = runBlocking {
         withRedirectServer({ it.sendResponseHeaders(200, -1) }) { baseUrl ->
             assertNull(BilibiliUrlParser.resolveShortUrl(baseUrl))
