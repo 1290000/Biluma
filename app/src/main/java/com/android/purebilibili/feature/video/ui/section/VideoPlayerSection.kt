@@ -4704,7 +4704,10 @@ private fun VideoPlayerSectionContent(
                             videoshotData = videoshotData,
                             targetPositionMs = seekTargetTime,
                             durationMs = playerState.player.duration,
-                            videoAspectRatio = com.android.purebilibili.feature.video.ui.components.PORTRAIT_SEEK_PREVIEW_ASPECT_RATIO,
+                            // 使用播放器实际视频宽比，避免横屏内容预览被压扁/裁切
+                            videoAspectRatio = playerState.player.videoSize.takeIf { it.width > 0 && it.height > 0 }
+                                ?.let { it.width.toFloat() / it.height.toFloat() }
+                                ?: com.android.purebilibili.feature.video.ui.components.PORTRAIT_SEEK_PREVIEW_ASPECT_RATIO,
                             containerHeightDp = LocalConfiguration.current.screenHeightDp
                         )
                     } else {
