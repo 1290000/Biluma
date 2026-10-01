@@ -23,6 +23,8 @@ import androidx.compose.material.icons.automirrored.outlined.Reply
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.foundation.background
@@ -52,6 +54,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.appendInlineContent
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppSurface
+import com.android.purebilibili.core.ui.components.resolveUpNameColor
 import com.android.purebilibili.core.ui.components.AppIconButton
 import androidx.compose.material3.MaterialTheme
 import com.android.purebilibili.core.ui.components.AppText
@@ -1079,11 +1082,12 @@ private fun SubReplyDetailItem(
         }
     }
     val avatarSize = remember { resolveSubReplyDetailAvatarSizeDp().dp }
-    val nameColor = if (item.member.vip?.vipStatus == 1) {
-        appearance.accentColor
-    } else {
-        appearance.primaryTextColor
-    }
+    val nameColor = resolveUpNameColor(
+        vipStatus = item.member.vip?.vipStatus ?: 0,
+        vipType = item.member.vip?.vipType ?: 0,
+        onSurface = appearance.primaryTextColor,
+        secondary = MaterialTheme.colorScheme.secondary,
+    )
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val copyToClipboard = rememberClipboardCopyHandler()
@@ -1345,7 +1349,8 @@ private fun SubReplyDetailItem(
                                 ReplyTextAction(
                                     label = "屏蔽该用户",
                                     appearance = appearance,
-                                    onClick = { confirmBlockUser = true }
+                                    onClick = { confirmBlockUser = true },
+                                    icon = Icons.Outlined.Block
                                 )
                                 ReplyTextAction(
                                     label = "举报",
@@ -1353,7 +1358,8 @@ private fun SubReplyDetailItem(
                                     onClick = {
                                         hatePromptHandled = true
                                         showReportDialog = true
-                                    }
+                                    },
+                                    icon = Icons.Outlined.Flag
                                 )
                             }
                         }

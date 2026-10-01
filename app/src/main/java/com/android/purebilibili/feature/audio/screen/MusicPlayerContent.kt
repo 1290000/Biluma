@@ -889,7 +889,9 @@ internal fun MusicPlayerContent(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
                                     .statusBarsPadding()
-                                    .padding(top = 12.dp, end = 20.dp)
+                                    // 顶部工具栏（音质/布局胶囊 + 更多按钮）高约 52dp，
+                                    // 迷你封面下移避开，防止被 ⋯ 按钮遮挡
+                                    .padding(top = 64.dp, end = 20.dp)
                                     .size(56.dp),
                                 coverStyle = MusicCoverStyle.APPLE_MUSIC_SQUARE,
                                 reduceMotion = effectiveReduceMotion,
@@ -1944,11 +1946,9 @@ private fun PlayerPage(
     val topPadding = if (compactLandscape) 0.dp else if (isExpandedLayout) 12.dp else 56.dp
     val bottomPadding = if (isExpandedLayout) 12.dp else 12.dp
     val horizontalPadding = if (isExpandedLayout) 16.dp else chromeSpec.horizontalPaddingDp.dp
-    val portraitArtworkSizeDp = if (!isExpandedLayout && !compactLandscape) {
-        (artworkSizeDp * 1.12f).roundToInt()
-    } else {
-        artworkSizeDp
-    }
+    // 竖屏封面不再额外放大：1.12 倍会让上半区超出可用高度，
+    // 底部「轻点查看完整歌词」预览行被 clipToBounds 裁切
+    val portraitArtworkSizeDp = artworkSizeDp
 
     Column(
         modifier = modifier
@@ -3090,7 +3090,9 @@ private fun LyricsPage(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .padding(top = 8.dp, start = 20.dp, end = 20.dp),
+                    .statusBarsPadding()
+                    // 下移一行，避开底层播放器顶栏（返回/AAC/布局/更多按钮）
+                    .padding(top = 56.dp, start = 20.dp, end = 20.dp),
                 enter = if (reduceMotion) EnterTransition.None else fadeIn() + slideInVertically { -it / 2 },
                 exit = if (reduceMotion) ExitTransition.None else fadeOut() + slideOutVertically { -it / 2 }
             ) {

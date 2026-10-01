@@ -10,6 +10,7 @@ import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppListItem
 import com.android.purebilibili.core.ui.components.AppText
 import com.android.purebilibili.core.ui.components.AppHorizontalDivider
+import com.android.purebilibili.core.ui.components.resolveUpNameColor
 
 import com.android.purebilibili.core.ui.UserAvatarCornerMarkBadge
 import com.android.purebilibili.core.ui.resolveUserAvatarCornerMark
@@ -503,7 +504,12 @@ fun DynamicCardV2(
                         author.name,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                        color = if (author.vip?.status == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        color = resolveUpNameColor(
+                            vipStatus = author.vip?.status ?: 0,
+                            vipType = author.vip?.type ?: 0,
+                            onSurface = MaterialTheme.colorScheme.onSurface,
+                            secondary = MaterialTheme.colorScheme.secondary,
+                        ),
                         modifier = Modifier.clickable(enabled = authorClickMid != null || (ugcSeason != null && ugcSeason.id > 0L && onCollectionClick != null)) {
                             onAuthorHeaderClick()
                         }
@@ -1137,6 +1143,7 @@ fun DynamicCardV2(
                     initialIndex = selectedImageIndex,
                     sourceRect = sourceAnchor?.rect,
                     sourceRects = sourceAnchor?.galleryRects.orEmpty(),
+                    sourceKey = sourceAnchor?.sourceKey,
                     sourceCornerRadiusDp = sourceAnchor?.cornerRadiusDp
                         ?: resolveDrawGridCornerRadiusDp().toFloat(),
                     textContent = drawPreviewText,

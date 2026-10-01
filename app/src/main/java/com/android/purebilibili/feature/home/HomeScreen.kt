@@ -41,6 +41,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import com.android.purebilibili.core.ui.components.AppIcon
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.compose.material3.DrawerValue
@@ -65,6 +69,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.android.purebilibili.core.ui.AdaptivePullToRefreshBox
 import com.android.purebilibili.core.ui.AppAlertDialog
 import com.android.purebilibili.core.ui.AppPullRefreshLoadingIndicator
@@ -131,7 +137,6 @@ import com.android.purebilibili.feature.home.policy.shouldTreatInitialHomePagerP
 import com.android.purebilibili.feature.home.policy.shouldUseInitialHomePagerSnap
 //  从 cards 子包导入卡片组件
 import com.android.purebilibili.feature.home.components.cards.ElegantVideoCard
-import com.android.purebilibili.feature.home.components.cards.LiveRoomCard
 import com.android.purebilibili.feature.home.components.cards.StoryVideoCard   //  故事卡片
 import com.android.purebilibili.core.ui.LoadingAnimation
 import com.android.purebilibili.core.ui.ErrorState as ModernErrorState
@@ -249,6 +254,7 @@ fun HomeScreen(
     onHistoryClick: () -> Unit = {},
     //  新增：分区回调
     onPartitionClick: () -> Unit = {},
+    onWeeklySeriesClick: () -> Unit = {},
     partitionVideoSourceRoute: String = "partition",
     onPartitionVideoClick: (VideoItem) -> Unit = { video ->
         onVideoClick(
@@ -2484,6 +2490,7 @@ fun HomeScreen(
                                      onTodayWatchUpClick = onTodayWatchUpClick,
                                      popularSubCategory = selectedPopularSubCategory,
                                      onPopularSubCategoryChange = onPopularSubCategoryChange,
+                                     onWeeklySeriesClick = onWeeklySeriesClick,
                                      onTodayWatchVideoClick = onTodayWatchVideoClick,
                                      firstGridItemModifier = Modifier
                                  )
@@ -2792,7 +2799,14 @@ fun HomeScreen(
         )
 
         //  [新增] 刷新撤销悬浮按钮（右下角，5秒后自动消失）
+        //  与「定位上次刷新」胶囊共用同一底部锚点：跟随听视频横条上浮，且在定位胶囊
+        //  可见时再抬一个胶囊位（胶囊高约 36dp + 8dp 间距），避免两者互相遮挡。
         val undoVisible = undoAvailable && currentCategory == HomeCategory.RECOMMEND
+        //  手动关闭撤销胶囊；下次撤销可用时自动复位
+        var undoDismissed by remember { androidx.compose.runtime.mutableStateOf(false) }
+        androidx.compose.runtime.LaunchedEffect(undoAvailable) {
+            if (!undoAvailable) undoDismissed = false
+        }
         val oldContentLocatorVisible = shouldShowRecommendOldContentDivider(
             currentCategory = currentCategory,
             refreshNewItemsKey = refreshNewItemsKey,
@@ -2801,6 +2815,13 @@ fun HomeScreen(
             oldContentStartIndex = recommendOldContentStartIndex,
             refreshTipVisible = homeSettings.homeRefreshTipVisible,
         )
+        val nowPlayingBarOverlayVisible by com.android.purebilibili.feature.audio.player
+            .AudioNowPlayingSession.barOverlayVisible
+            .collectAsStateWithLifecycle()
+        val undoPillBottomPadding = homeListBottomPadding + AppSpacingTokens.Medium +
+            120.dp +
+            (if (nowPlayingBarOverlayVisible) 76.dp else 0.dp) +
+            (if (oldContentLocatorVisible) 52.dp else 0.dp)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -2808,7 +2829,7 @@ fun HomeScreen(
             contentAlignment = Alignment.BottomEnd
         ) {
             AnimatedVisibility(
-                visible = undoVisible,
+                visible = undoVisible && !undoDismissed,
                 enter = fadeIn(animationSpec = tween(overlayMotionSpec.undoFabFadeDurationMillis)) + slideInVertically(
                     animationSpec = tween(overlayMotionSpec.undoFabSlideDurationMillis),
                     initialOffsetY = { it }
@@ -2819,8 +2840,7 @@ fun HomeScreen(
                 ),
                 modifier = Modifier.padding(
                     end = AppSpacingTokens.Large,
-                    bottom = homeListBottomPadding + AppSpacingTokens.Small +
-                        if (oldContentLocatorVisible) 64.dp else 0.dp,
+                    bottom = undoPillBottomPadding,
                 )
             ) {
             AppButton(
@@ -2853,6 +2873,20 @@ fun HomeScreen(
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
+                Spacer(modifier = Modifier.width(AppSpacingTokens.ExtraSmall))
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .clickable { undoDismissed = true },
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    AppIcon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "关闭",
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
             }
         }
@@ -3071,12 +3105,16 @@ fun HomeScreen(
         isDataSaverActive,
         preloadAheadCount,
         isReturningFromVideoDetail,
+        homeCoverRequestSpec,
+        isTopLevelActive,
+        lifecycleOwner,
     ) {
         // 📉 省流量模式下跳过预加载
         if (isDataSaverActive) return@LaunchedEffect
         if (preloadAheadCount <= 0) return@LaunchedEffect
         // 详情返回 morph 窗口：延后封面预加载，避免与 live surface + 景深抢 IO/主线程。
         if (isReturningFromVideoDetail) return@LaunchedEffect
+        if (!isTopLevelActive) return@LaunchedEffect
         
         val currentGridState = if (currentCategory == HomeCategory.POPULAR) {
             popularGridStates[popularSubCategory]
@@ -3084,50 +3122,59 @@ fun HomeScreen(
             gridStates[currentCategory]
         } ?: return@LaunchedEffect
         
-        snapshotFlow {
-            val visibleKeys = currentGridState.layoutInfo.visibleItemsInfo.map { it.key }
-            visibleKeys to currentGridState.isScrollInProgress
-        }
-            .distinctUntilChanged()
-            // Coalesce the burst of layout updates after a fling and wait until the feed has
-            // been settled briefly. A new scroll event cancels this pending preload batch.
-            .debounce(180)
-            .collect { (visibleKeys, isScrollInProgress) ->
-                val videos = viewModel.getPreloadVideosSnapshot(
-                    category = currentCategory,
-                    popularSubCategory = popularSubCategory
-                )
-                val visibleKeySet = visibleKeys.toSet()
-                val lastVisibleIndex = resolveHomeCategoryVideoGridKeys(videos)
-                    .indexOfLast { it in visibleKeySet }
-                val preloadRange = resolveHomeCoverPreloadRange(
-                    isDataSaverActive = isDataSaverActive,
-                    isScrollInProgress = isScrollInProgress,
-                    lastVisibleIndex = lastVisibleIndex,
-                    totalItemCount = videos.size,
-                    preloadAheadCount = preloadAheadCount
-                ) ?: return@collect
-                // Avoid enqueueing the same cover more than once when adjacent feed entries share
-                // a URL; Coil still handles caching, but deduping keeps the IO queue smaller.
-                val imageUrls = preloadRange
-                    .mapNotNull { index -> videos.getOrNull(index)?.pic }
-                    .distinct()
-                if (imageUrls.isEmpty()) return@collect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            snapshotFlow {
+                val visibleKeys = currentGridState.layoutInfo.visibleItemsInfo.map { it.key }
+                visibleKeys to currentGridState.isScrollInProgress
+            }
+                .distinctUntilChanged()
+                .collectLatest { (visibleKeys, isScrollInProgress) ->
+                    // Cancel the previous batch immediately when scrolling starts. Debouncing
+                    // upstream would keep that batch alive until the next settled emission.
+                    if (isScrollInProgress) return@collectLatest
+                    kotlinx.coroutines.delay(180)
+                    val videos = viewModel.getPreloadVideosSnapshot(
+                        category = currentCategory,
+                        popularSubCategory = popularSubCategory
+                    )
+                    val visibleKeySet = visibleKeys.toSet()
+                    val lastVisibleIndex = resolveHomeCategoryVideoGridKeys(videos)
+                        .indexOfLast { it in visibleKeySet }
+                    val preloadRange = resolveHomeCoverPreloadRange(
+                        isDataSaverActive = isDataSaverActive,
+                        isScrollInProgress = isScrollInProgress,
+                        lastVisibleIndex = lastVisibleIndex,
+                        totalItemCount = videos.size,
+                        preloadAheadCount = preloadAheadCount
+                    ) ?: return@collectLatest
+                    // Adjacent entries may share a cover; decode each cache identity only once.
+                    val sources = preloadRange
+                        .mapNotNull { index -> videos.getOrNull(index) }
+                        .map { video ->
+                            resolveHomeCoverImageSource(video, false, homeCoverRequestSpec)
+                        }
+                        .filter { it.url.isNotBlank() }
+                        .distinctBy { it.cacheKey }
+                    if (sources.isEmpty()) return@collectLatest
 
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    for (imageUrl in imageUrls) {
-                        val fixedUrl = com.android.purebilibili.core.util.FormatUtils.fixImageUrl(imageUrl)
-
-                        val request = coil3.request.ImageRequest.Builder(context)
-                            .data(fixedUrl)
-                            .size(360, 225)  //  预加载也使用限制尺寸
-                            .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
-                            .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
-                            .build()
-                        context.imageLoader.enqueue(request)
+                    kotlinx.coroutines.coroutineScope {
+                        for (source in sources) launch {
+                            val request = coil3.request.ImageRequest.Builder(context)
+                                .data(source.url)
+                                .size(homeCoverRequestSpec.widthPx, homeCoverRequestSpec.heightPx)
+                                .scale(coil3.size.Scale.FILL)
+                                .memoryCacheKey(source.cacheKey)
+                                .diskCacheKey(source.cacheKey)
+                                .memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
+                                .diskCachePolicy(coil3.request.CachePolicy.ENABLED)
+                                .build()
+                            // execute participates in this effect's cancellation; enqueue would
+                            // leave the work running after collectLatest/ON_STOP cancelled it.
+                            context.imageLoader.execute(request)
+                        }
                     }
                 }
-            }
+        }
     }
 
 

@@ -1,4 +1,6 @@
 package com.android.purebilibili.feature.settings
+
+import com.android.purebilibili.core.ui.components.AppIconButton
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppText
 
@@ -1193,7 +1195,7 @@ private fun FeedDynamicTabVisibilityItem(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                IconButton(
+                AppIconButton(
                     enabled = index > 0,
                     onClick = {
                         val newOrder = orderedTabs.map { it.id }.toMutableList()
@@ -1208,7 +1210,7 @@ private fun FeedDynamicTabVisibilityItem(
                         contentDescription = "上移${tab.title}"
                     )
                 }
-                IconButton(
+                AppIconButton(
                     enabled = index < orderedTabs.lastIndex,
                     onClick = {
                         val newOrder = orderedTabs.map { it.id }.toMutableList()
@@ -2111,7 +2113,7 @@ private fun AboutProjectOverviewCard(
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 22.sp
+
                 )
             }
             Spacer(modifier = Modifier.height(22.dp))

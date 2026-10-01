@@ -3761,45 +3761,30 @@ private enum class SearchResultTextRole {
 private fun SearchResultText(
     text: String,
     role: SearchResultTextRole,
-    legacyFontSize: TextUnit,
     modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
-    legacyFontWeight: FontWeight? = null,
-    legacyLineHeight: TextUnit = TextUnit.Unspecified,
+    fontWeight: FontWeight? = null,
     minLines: Int = 1,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
 ) {
-    if (isMiuixNonGlassEnabled()) {
-        val style = when (role) {
-            SearchResultTextRole.DENSE_TITLE -> MaterialTheme.typography.bodySmall
-            SearchResultTextRole.TITLE -> MaterialTheme.typography.titleSmall
-            SearchResultTextRole.BODY -> MaterialTheme.typography.bodySmall
-            SearchResultTextRole.METADATA -> MaterialTheme.typography.labelMedium
-            SearchResultTextRole.BADGE -> MaterialTheme.typography.labelSmall
-        }
-        AppText(
-            text = text,
-            modifier = modifier,
-            color = color,
-            style = style,
-            minLines = minLines,
-            maxLines = maxLines,
-            overflow = overflow,
-        )
-    } else {
-        AppText(
-            text = text,
-            modifier = modifier,
-            color = color,
-            fontSize = legacyFontSize,
-            fontWeight = legacyFontWeight,
-            lineHeight = legacyLineHeight,
-            minLines = minLines,
-            maxLines = maxLines,
-            overflow = overflow,
-        )
+    val style = when (role) {
+        SearchResultTextRole.DENSE_TITLE -> MaterialTheme.typography.bodySmall
+        SearchResultTextRole.TITLE -> MaterialTheme.typography.titleSmall
+        SearchResultTextRole.BODY -> MaterialTheme.typography.bodySmall
+        SearchResultTextRole.METADATA -> MaterialTheme.typography.labelMedium
+        SearchResultTextRole.BADGE -> MaterialTheme.typography.labelSmall
     }
+    AppText(
+        text = text,
+        modifier = modifier,
+        color = color,
+        style = style,
+        fontWeight = fontWeight,
+        minLines = minLines,
+        maxLines = maxLines,
+        overflow = overflow,
+    )
 }
 
 /**
@@ -3878,12 +3863,10 @@ fun SearchResultCard(
         SearchResultText(
             text = video.title,
             role = SearchResultTextRole.DENSE_TITLE,
-            legacyFontSize = 13.sp,
             minLines = 1,
             maxLines = videoCardTitleMaxLines(),
             overflow = videoCardTitleOverflow(),
-            legacyFontWeight = FontWeight.Medium,
-            legacyLineHeight = 18.sp,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 2.dp)
         )
@@ -3954,7 +3937,6 @@ fun SearchResultCard(
                 SearchResultText(
                     text = "· ${FormatUtils.formatPublishTime(video.pubdate)}",
                     role = SearchResultTextRole.BADGE,
-                    legacyFontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
@@ -4052,9 +4034,8 @@ internal fun UpSearchResultCard(
                     SearchResultText(
                         text = cleanedItem.uname,
                         role = SearchResultTextRole.TITLE,
-                        legacyFontSize = 14.sp,
                         modifier = Modifier.weight(1f, fill = false),
-                        legacyFontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -4074,7 +4055,6 @@ internal fun UpSearchResultCard(
                     text = "粉丝：${FormatUtils.formatStat(cleanedItem.fans.toLong())}  " +
                         "视频：${cleanedItem.videos}",
                     role = SearchResultTextRole.METADATA,
-                    legacyFontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
@@ -4087,7 +4067,6 @@ internal fun UpSearchResultCard(
                     SearchResultText(
                         text = verifyBadge.text,
                         role = SearchResultTextRole.METADATA,
-                        legacyFontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -4149,7 +4128,6 @@ internal fun BangumiSearchResultCard(
                             SearchResultText(
                                 text = categoryLabel,
                                 role = SearchResultTextRole.BADGE,
-                                legacyFontSize = 11.sp,
                             )
                         },
                         modifier = Modifier.height(24.dp)
@@ -4159,8 +4137,7 @@ internal fun BangumiSearchResultCard(
                 SearchResultText(
                     text = item.title,
                     role = SearchResultTextRole.TITLE,
-                    legacyFontSize = 15.sp,
-                    legacyFontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -4172,7 +4149,6 @@ internal fun BangumiSearchResultCard(
                         SearchResultText(
                             text = item.seasonTypeName,
                             role = SearchResultTextRole.METADATA,
-                            legacyFontSize = 12.sp,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -4184,7 +4160,6 @@ internal fun BangumiSearchResultCard(
                         SearchResultText(
                             text = item.indexShow,
                             role = SearchResultTextRole.METADATA,
-                            legacyFontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -4199,14 +4174,12 @@ internal fun BangumiSearchResultCard(
                             SearchResultText(
                                 text = "⭐ ${score.score}",
                                 role = SearchResultTextRole.METADATA,
-                                legacyFontSize = 12.sp,
                                 color = Color(0xFFFF9800)
                             )
                             Spacer(modifier = Modifier.width(AppSpacingTokens.ExtraSmall))
                             SearchResultText(
                                 text = "${score.userCount}人评分",
                                 role = SearchResultTextRole.BADGE,
-                                legacyFontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                         }
@@ -4218,7 +4191,6 @@ internal fun BangumiSearchResultCard(
                     SearchResultText(
                         text = item.desc,
                         role = SearchResultTextRole.BODY,
-                        legacyFontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -4278,7 +4250,6 @@ internal fun LiveSearchResultCard(
                         SearchResultText(
                             text = "直播中",
                             role = SearchResultTextRole.BADGE,
-                            legacyFontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onError,
                             modifier = Modifier.padding(
                                 horizontal = AppSpacingTokens.ExtraSmall,
@@ -4299,7 +4270,6 @@ internal fun LiveSearchResultCard(
                         SearchResultText(
                             text = FormatUtils.formatStat(item.online.toLong()),
                             role = SearchResultTextRole.BADGE,
-                            legacyFontSize = 10.sp,
                             color = Color.White,
                             modifier = Modifier.padding(
                                 horizontal = AppSpacingTokens.ExtraSmall,
@@ -4317,8 +4287,7 @@ internal fun LiveSearchResultCard(
                 SearchResultText(
                     text = item.title,
                     role = SearchResultTextRole.TITLE,
-                    legacyFontSize = 14.sp,
-                    legacyFontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -4328,7 +4297,6 @@ internal fun LiveSearchResultCard(
                 SearchResultText(
                     text = item.uname,
                     role = SearchResultTextRole.METADATA,
-                    legacyFontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -4343,7 +4311,6 @@ internal fun LiveSearchResultCard(
                     SearchResultText(
                         text = "${item.area_v2_parent_name} · ${item.area_v2_name}",
                         role = SearchResultTextRole.BADGE,
-                        legacyFontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -4454,8 +4421,7 @@ internal fun LiveUserSearchResultCard(
                     SearchResultText(
                         text = cleaned.uname,
                         role = SearchResultTextRole.TITLE,
-                        legacyFontSize = 16.sp,
-                        legacyFontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -4470,7 +4436,6 @@ internal fun LiveUserSearchResultCard(
                             SearchResultText(
                                 text = "直播中",
                                 role = SearchResultTextRole.BADGE,
-                                legacyFontSize = 10.sp,
                                 color = Color.White,
                                 modifier = Modifier.padding(
                                     horizontal = AppSpacingTokens.ExtraSmall,
@@ -4484,7 +4449,6 @@ internal fun LiveUserSearchResultCard(
                 SearchResultText(
                     text = "粉丝 ${FormatUtils.formatStat(cleaned.attentions.toLong())}",
                     role = SearchResultTextRole.METADATA,
-                    legacyFontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -4529,8 +4493,7 @@ internal fun TopicSearchResultCard(
                 SearchResultText(
                     text = cleaned.title,
                     role = SearchResultTextRole.TITLE,
-                    legacyFontSize = 15.sp,
-                    legacyFontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -4540,7 +4503,6 @@ internal fun TopicSearchResultCard(
                     SearchResultText(
                         text = cleaned.description,
                         role = SearchResultTextRole.BODY,
-                        legacyFontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -4550,7 +4512,6 @@ internal fun TopicSearchResultCard(
                 SearchResultText(
                     text = "浏览 ${FormatUtils.formatStat(cleaned.view.toLong())}",
                     role = SearchResultTextRole.METADATA,
-                    legacyFontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                 )
             }
@@ -4596,8 +4557,7 @@ internal fun PhotoSearchResultCard(
                 SearchResultText(
                     text = cleaned.title,
                     role = SearchResultTextRole.TITLE,
-                    legacyFontSize = 15.sp,
-                    legacyFontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -4606,7 +4566,6 @@ internal fun PhotoSearchResultCard(
                 SearchResultText(
                     text = cleaned.uname,
                     role = SearchResultTextRole.METADATA,
-                    legacyFontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -4615,7 +4574,6 @@ internal fun PhotoSearchResultCard(
                 SearchResultText(
                     text = "图片 ${cleaned.count} · 浏览 ${FormatUtils.formatStat(cleaned.view.toLong())} · 喜欢 ${FormatUtils.formatStat(cleaned.like.toLong())}",
                     role = SearchResultTextRole.BADGE,
-                    legacyFontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -4624,7 +4582,6 @@ internal fun PhotoSearchResultCard(
                 SearchResultText(
                     text = "暂不支持打开",
                     role = SearchResultTextRole.BADGE,
-                    legacyFontSize = 11.sp,
                     color = MaterialTheme.colorScheme.outline
                 )
             }
@@ -4674,8 +4631,7 @@ internal fun ArticleSearchResultCard(
                 SearchResultText(
                     text = item.title,
                     role = SearchResultTextRole.TITLE,
-                    legacyFontSize = 15.sp,
-                    legacyFontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -4685,7 +4641,6 @@ internal fun ArticleSearchResultCard(
                     SearchResultText(
                         text = item.description,
                         role = SearchResultTextRole.BODY,
-                        legacyFontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -4706,7 +4661,6 @@ internal fun ArticleSearchResultCard(
                     SearchResultText(
                         text = metaLine,
                         role = SearchResultTextRole.METADATA,
-                        legacyFontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -4714,7 +4668,6 @@ internal fun ArticleSearchResultCard(
                 SearchResultText(
                     text = "${FormatUtils.formatStat(item.view.toLong())}浏览 · ${FormatUtils.formatStat(item.reply.toLong())}评论 · ${FormatUtils.formatStat(item.like.toLong())}点赞",
                     role = SearchResultTextRole.METADATA,
-                    legacyFontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
             }

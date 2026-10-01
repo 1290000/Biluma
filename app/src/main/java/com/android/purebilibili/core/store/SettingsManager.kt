@@ -1001,6 +1001,7 @@ data class DanmakuSettings(
     val allowBottom: Boolean = true,
     val allowColorful: Boolean = true,
     val allowSpecial: Boolean = true,
+    val weightFilterLevel: Int = 0,
     val hideInteractiveCommands: Boolean = false,
     val blockAttentionCommands: Boolean = false,
     val smartOcclusion: Boolean = false,
@@ -4623,6 +4624,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_DANMAKU_BLOCK_ATTENTION_COMMANDS =
         booleanPreferencesKey("danmaku_block_attention_commands")
     private val KEY_DANMAKU_SMART_OCCLUSION = booleanPreferencesKey("danmaku_smart_occlusion")
+    private val KEY_DANMAKU_WEIGHT_FILTER_LEVEL = intPreferencesKey("danmaku_weight_filter_level")
     private val KEY_DANMAKU_FULLSCREEN_PANEL_WIDTH_MODE =
         intPreferencesKey("danmaku_fullscreen_panel_width_mode")
     private val KEY_DANMAKU_BLOCK_RULES = stringPreferencesKey("danmaku_block_rules")
@@ -4880,6 +4882,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 legacyKey = KEY_DANMAKU_ALLOW_SPECIAL,
                 defaultValue = true
             ),
+            weightFilterLevel = (preferences[KEY_DANMAKU_WEIGHT_FILTER_LEVEL] ?: 0).coerceIn(0, 10),
             hideInteractiveCommands = preferences[KEY_DANMAKU_BLOCK_ATTENTION_COMMANDS] ?: false,
             blockAttentionCommands = preferences[KEY_DANMAKU_BLOCK_ATTENTION_COMMANDS] ?: false,
             smartOcclusion = readScopedDanmakuPreference(
@@ -5272,6 +5275,18 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     ) {
         context.settingsDataStore.edit { preferences ->
             preferences[keyDanmakuAllowScroll(scope)] = value
+        }
+    }
+
+    // --- 弹幕智能云屏蔽等级 (0=关闭, 1~10) ---
+    fun getDanmakuWeightFilterLevel(context: Context): Flow<Int> =
+        context.settingsDataStore.data.map { preferences ->
+            (preferences[KEY_DANMAKU_WEIGHT_FILTER_LEVEL] ?: 0).coerceIn(0, 10)
+        }
+
+    suspend fun setDanmakuWeightFilterLevel(context: Context, value: Int) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_DANMAKU_WEIGHT_FILTER_LEVEL] = value.coerceIn(0, 10)
         }
     }
 

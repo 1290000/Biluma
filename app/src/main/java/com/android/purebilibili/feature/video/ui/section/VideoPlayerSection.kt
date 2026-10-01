@@ -760,6 +760,7 @@ private fun VideoPlayerSectionContent(
     val onSponsorDismiss = actions.onSponsorDismiss
     val onSponsorVote = actions.onSponsorVote
     val onSponsorContributionMarkBoundary = actions.onSponsorContributionMarkBoundary
+    val onSponsorContributionMarkWholeVideo = actions.onSponsorContributionMarkWholeVideo
     val onSponsorContributionCategoryChange = actions.onSponsorContributionCategoryChange
     val onSponsorContributionActionTypeChange = actions.onSponsorContributionActionTypeChange
     val onSponsorContributionSubmit = actions.onSponsorContributionSubmit
@@ -793,7 +794,6 @@ private fun VideoPlayerSectionContent(
     val onSubtitleDisplayModePreferenceOverrideChange =
         actions.onSubtitleDisplayModePreferenceOverrideChange
     val onSubtitleTrackSelected = actions.onSubtitleTrackSelected
-    val onLikeDanmaku = actions.onLikeDanmaku
     val onRecallDanmaku = actions.onRecallDanmaku
     val context = LocalContext.current
     val localDensity = LocalDensity.current
@@ -1503,6 +1503,13 @@ private fun VideoPlayerSectionContent(
             )
         )
     }
+    // Only interaction boundaries invalidate the player shell; positions stay in leaf readers.
+    val seekSliderMoving by remember(bvid, currentSeekSessionCid) {
+        derivedStateOf { sharedSeekSession.isSliderMoving }
+    }
+    val pendingSeekPosition by remember(bvid, currentSeekSessionCid) {
+        derivedStateOf { sharedSeekSession.pendingSeekPositionMs }
+    }
     var isGestureVisible by remember { mutableStateOf(false) }
     TrackJankStateFlag(
         stateName = "video_player:gesture_visible",
@@ -1562,7 +1569,7 @@ private fun VideoPlayerSectionContent(
     }
 
     LaunchedEffect(
-        sharedSeekSession.pendingSeekPositionMs,
+        pendingSeekPosition,
         playerState.player.playWhenReady,
         playerState.player.isPlaying,
         playerState.player.playbackState
@@ -4053,7 +4060,7 @@ private fun VideoPlayerSectionContent(
         isFirstFrameRendered,
         forceCoverDuringReturnAnimation,
         playerState.player.isPlaying,
-        sharedSeekSession.isSliderMoving
+        seekSliderMoving
     ) {
         if (
             shouldAutoHidePlayerChromeOnPlaybackStart(
@@ -4062,7 +4069,7 @@ private fun VideoPlayerSectionContent(
                 isPlaying = playerState.player.isPlaying,
                 isFirstFrameRendered = isFirstFrameRendered,
                 forceCoverDuringReturnAnimation = forceCoverDuringReturnAnimation,
-                isSeekScrubbing = sharedSeekSession.isSliderMoving
+                isSeekScrubbing = seekSliderMoving
             )
         ) {
             showControls = false
@@ -4440,23 +4447,42 @@ private fun VideoPlayerSectionContent(
                     player = playerState.player,
                     onFollowClick = onToggleFollow,
                     onTripleClick = onTriple,
-                    onVoteSubmit = { item, option ->
+                    onVoteSubmit = { item, option, optionIndex ->
                         val success = uiState as? VideoPlaybackUiState.Success
-                        val score = option.score
-                        if (success != null && score != null && item.voteId.isNotBlank()) {
+                        if (success != null && item.voteId.isNotBlank()) {
+                            val gradeScore = option.score
                             settingsScope.launch {
-                                val result = com.android.purebilibili.data.repository.DanmakuRepository.submitGradeDanmaku(
-                                    aid = success.info.aid,
-                                    cid = success.info.cid,
-                                    progress = item.startTimeMs,
-                                    gradeId = item.voteId,
-                                    gradeScore = score
-                                )
-                                if (result.isFailure) {
-                                    android.util.Log.w(
-                                        "VideoPlayerSection",
-                                        "Vote submit failed: ${result.exceptionOrNull()?.message}"
+                                if (gradeScore != null) {
+                                    val result = com.android.purebilibili.data.repository.DanmakuRepository.submitGradeDanmaku(
+                                        aid = success.info.aid,
+                                        cid = success.info.cid,
+                                        progress = item.startTimeMs,
+                                        gradeId = item.voteId,
+                                        gradeScore = gradeScore
                                     )
+                                    if (result.isFailure) {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            result.exceptionOrNull()?.message ?: "打分失败",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                } else {
+                                    // 互动投票弹幕的 vote_id 属于标准投票系统，复用 do_vote
+                                    val voteIdLong = item.voteId.toLongOrNull()
+                                    if (voteIdLong != null) {
+                                        val result = com.android.purebilibili.data.repository.DynamicVoteRepository.submitVote(
+                                            voteId = voteIdLong,
+                                            optionIndexes = listOf(optionIndex)
+                                        )
+                                        if (result.isFailure) {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                result.exceptionOrNull()?.message ?: "投票失败",
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -4683,7 +4709,8 @@ private fun VideoPlayerSectionContent(
                             videoshotData = videoshotData,
                             targetPositionMs = seekTargetTime,
                             durationMs = playerState.player.duration,
-                            videoAspectRatio = com.android.purebilibili.feature.video.ui.components.PORTRAIT_SEEK_PREVIEW_ASPECT_RATIO
+                            videoAspectRatio = com.android.purebilibili.feature.video.ui.components.PORTRAIT_SEEK_PREVIEW_ASPECT_RATIO,
+                            containerHeightDp = LocalConfiguration.current.screenHeightDp
                         )
                     } else {
                         // 普通播放器保留横向预览；竖屏全屏统一使用大尺寸 9:16 预览。
@@ -5105,7 +5132,7 @@ private fun VideoPlayerSectionContent(
                 viewportWidthDpOverride = uiLayoutWidthDp,
                 diagnosticEvents = diagnosticEvents,
                 pendingUserAction = pendingUserAction,
-                hasPendingSeekResume = sharedSeekSession.pendingSeekPositionMs != null,
+                hasPendingSeekResume = pendingSeekPosition != null,
                 playerDiagnosticLoggingEnabled = playerDiagnosticLoggingEnabled,
                 //  [新增] 传入清晰度切换状态和会员状态
                 isQualitySwitching = uiState.isQualitySwitching,
@@ -5160,6 +5187,7 @@ private fun VideoPlayerSectionContent(
                 danmakuDuplicateMergeWindowMs = danmakuDuplicateMergeWindowMs,
                 danmakuDuplicateMergeCountThreshold = danmakuDuplicateMergeCountThreshold,
                 danmakuAllowScroll = danmakuAllowScroll,
+                danmakuWeightFilterLevel = danmakuSettings.weightFilterLevel,
                 danmakuAllowTop = danmakuAllowTop,
                 danmakuAllowBottom = danmakuAllowBottom,
                 danmakuAllowColorful = danmakuAllowColorful,
@@ -5322,6 +5350,12 @@ private fun VideoPlayerSectionContent(
                             value,
                             activeDanmakuScope
                         )
+                    }
+                },
+                onDanmakuWeightFilterLevelChange = { value ->
+                    scope.launch {
+                        com.android.purebilibili.core.store.SettingsManager
+                            .setDanmakuWeightFilterLevel(context, value)
                     }
                 },
                 onDanmakuAllowScrollChange = { value ->
@@ -5561,7 +5595,7 @@ private fun VideoPlayerSectionContent(
                     sharedSeekSession = cancelPlaybackSeekInteraction(sharedSeekSession)
                     danmakuManager.cancelSeekScrub()
                 },
-                isSeekScrubbing = sharedSeekSession.isSliderMoving && gestureMode != VideoGestureMode.Seek,
+                isSeekScrubbing = seekSliderMoving && gestureMode != VideoGestureMode.Seek,
                 //  [加固] 显式同步弹幕到新进度，避免某些设备 seek 回调时机差导致短暂不同步
                 onSeekTo = { position ->
                     val commitResult = commitPlaybackSeekInteraction(
@@ -5578,12 +5612,12 @@ private fun VideoPlayerSectionContent(
                     danmakuManager.seekTo(commitResult.committedPositionMs)
                     onUserSeek(commitResult.committedPositionMs)
                 },
-                progressDisplayOverridePositionMs = resolveProgressDisplayOverridePositionMs(
+                progressDisplayOverridePositionProvider = { resolveProgressDisplayOverridePositionMs(
                     seekSession = sharedSeekSession,
                     pendingPlaybackTransitionPositionMs = uiState.pendingPlaybackTransitionPositionMs,
                     isLongPressing = isLongPressing,
                     longPressSpeedLocked = longPressSpeedLocked
-                ),
+                ) },
                 isPlaybackTransitionPending = uiState.pendingPlaybackTransitionPositionMs != null,
                 highFrequencyProgressActive = isLongPressing,
                 // [New] Codec & Audio
@@ -5721,6 +5755,7 @@ private fun VideoPlayerSectionContent(
             SponsorContributionOverlay(
                 state = sponsorContributionState,
                 onMarkBoundary = onSponsorContributionMarkBoundary,
+                onMarkWholeVideo = onSponsorContributionMarkWholeVideo,
                 onCategoryChange = onSponsorContributionCategoryChange,
                 onActionTypeChange = onSponsorContributionActionTypeChange,
                 onSubmit = onSponsorContributionSubmit,
@@ -5731,6 +5766,11 @@ private fun VideoPlayerSectionContent(
             )
 
             if (showDanmakuPoolSheet) {
+                val poolSheetDanmakuLikedIds by actions.likedDanmakuIds
+                    .collectAsStateWithLifecycle()
+                val poolSheetBlockRulesRaw by com.android.purebilibili.core.store.SettingsManager
+                    .getDanmakuBlockRulesRaw(context, activeDanmakuScope)
+                    .collectAsStateWithLifecycle(initialValue = "", lifecycle = lifecycleOwner.lifecycle)
                 DanmakuPoolSheet(
                     danmakuList = danmakuManager.getLoadedDanmakuList(),
                     currentPositionMs = playerState.player?.currentPosition ?: 0L,
@@ -5749,8 +5789,34 @@ private fun VideoPlayerSectionContent(
                         danmakuManager.seekTo(commitResult.committedPositionMs)
                         onUserSeek(commitResult.committedPositionMs)
                     },
-                    onLikeDanmaku = onLikeDanmaku,
+                    likedDanmakuIds = poolSheetDanmakuLikedIds,
+                    onLikeDanmaku = actions.onLikeDanmakuToggle,
                     onRecallDanmaku = onRecallDanmaku,
+                    onReportDanmaku = actions.onReportDanmaku,
+                    onBlockSender = { userHash ->
+                        val updatedRules = com.android.purebilibili.feature.video.danmaku
+                            .appendDanmakuUserHashBlockRule(
+                                rawRules = poolSheetBlockRulesRaw,
+                                userHash = userHash
+                            )
+                        scope.launch {
+                            com.android.purebilibili.core.store.SettingsManager.setDanmakuBlockRulesRaw(
+                                context,
+                                updatedRules,
+                                activeDanmakuScope
+                            )
+                        }
+                        Toast.makeText(
+                            context,
+                            com.android.purebilibili.feature.video.ui.components
+                                .resolveDanmakuBlockActionFeedbackMessage(
+                                    target = com.android.purebilibili.feature.video.ui.components
+                                        .DanmakuBlockActionTarget.USER,
+                                    changed = updatedRules != poolSheetBlockRulesRaw
+                                ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
                     onDismiss = { showDanmakuPoolSheet = false }
                 )
             }
