@@ -438,6 +438,11 @@ fun BottomControlBar(
     viewportWidthDpOverride: Int? = null,
     
     // Danmaku
+    sponsorContributionAvailable: Boolean = false,
+    sponsorContributionMarking: Boolean = false,
+    onSponsorContributionMarkBoundary: () -> Unit = {},
+    onSponsorContributionMarkWholeVideo: () -> Unit = {},
+    onSponsorContributionCancel: () -> Unit = {},
     danmakuEnabled: Boolean = true,
     onDanmakuToggle: () -> Unit = {},
     onDanmakuSettingsClick: () -> Unit = {},
@@ -1013,10 +1018,32 @@ fun BottomControlBar(
                     }
                 }
 
-                if (showMoreActionsButton) {
+                if (showMoreActionsButton || sponsorContributionAvailable) {
                     AppWindowActionMenu(
                         groups = listOf(
                             listOfNotNull(
+                                if (sponsorContributionAvailable) {
+                                    AppWindowAction(
+                                        label = if (sponsorContributionMarking) "结束标记片段" else "标记片段起点",
+                                        selected = sponsorContributionMarking,
+                                        onClick = {
+                                            showMoreActionsPanel = false
+                                            onSponsorContributionMarkBoundary()
+                                        },
+                                    )
+                                } else null,
+                                if (sponsorContributionAvailable && !sponsorContributionMarking) {
+                                    AppWindowAction(label = "标记整段恰饭", onClick = {
+                                        showMoreActionsPanel = false
+                                        onSponsorContributionMarkWholeVideo()
+                                    })
+                                } else null,
+                                if (sponsorContributionAvailable && sponsorContributionMarking) {
+                                    AppWindowAction(label = "取消片段标记", onClick = {
+                                        showMoreActionsPanel = false
+                                        onSponsorContributionCancel()
+                                    })
+                                } else null,
                                 if (showEpisodeInMoreActions) {
                                     AppWindowAction(label = "分集", onClick = {
                                             showMoreActionsPanel = false

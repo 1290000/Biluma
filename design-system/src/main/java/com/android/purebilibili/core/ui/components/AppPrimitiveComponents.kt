@@ -95,6 +95,8 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -656,6 +658,7 @@ fun AppOutlinedTextField(
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     minLines: Int = 1,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    focusRequester: FocusRequester? = null,
     shape: Shape = OutlinedTextFieldDefaults.shape,
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(),
 ) {
@@ -666,34 +669,43 @@ fun AppOutlinedTextField(
             hasSuffix = suffix != null,
         )
     ) {
-        val resolvedLabel = labelText ?: placeholderText.orEmpty()
-        MiuixTextField(
-            value = value,
-            onValueChange = onValueChange,
+        androidx.compose.foundation.layout.Column(
             modifier = modifier,
-            label = resolvedLabel,
-            useLabelAsPlaceholder = labelText == null && !placeholderText.isNullOrEmpty(),
-            enabled = enabled,
-            readOnly = readOnly,
-            textStyle = textStyle,
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
-            leadingIcon = leadingIcon,
-            trailingIcon = trailingIcon,
-            singleLine = singleLine,
-            maxLines = maxLines,
-            minLines = minLines,
-            visualTransformation = visualTransformation,
-            interactionSource = interactionSource,
-            colors = MiuixTextFieldDefaults.textFieldColors(
-                borderColor = if (isError) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MiuixTheme.colorScheme.primary
-                },
-            ),
-        )
-        supportingText?.invoke()
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+        ) {
+            if (labelText == null) label?.invoke()
+            val resolvedLabel = labelText ?: placeholderText.orEmpty()
+            MiuixTextField(
+                value = value,
+                onValueChange = onValueChange,
+                // focusRequester 需要落在真正可聚焦的输入框上；外层 Column 只承担布局
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
+                label = resolvedLabel,
+                useLabelAsPlaceholder = labelText == null && !placeholderText.isNullOrEmpty(),
+                enabled = enabled,
+                readOnly = readOnly,
+                textStyle = textStyle,
+                keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
+                leadingIcon = leadingIcon,
+                trailingIcon = trailingIcon,
+                singleLine = singleLine,
+                maxLines = maxLines,
+                minLines = minLines,
+                visualTransformation = visualTransformation,
+                interactionSource = interactionSource,
+                colors = MiuixTextFieldDefaults.textFieldColors(
+                    borderColor = if (isError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MiuixTheme.colorScheme.primary
+                    },
+                ),
+            )
+            supportingText?.invoke()
+        }
         return
     }
     val resolvedLabel = label ?: labelText?.let { text -> { Text(text) } }
@@ -701,7 +713,7 @@ fun AppOutlinedTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier.then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
         enabled = enabled,
         readOnly = readOnly,
         textStyle = textStyle,

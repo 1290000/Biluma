@@ -51,7 +51,6 @@ import com.android.purebilibili.core.store.HomeFeedCardStyle
 import com.android.purebilibili.core.store.HomeWallpaperEffectMode
 import com.android.purebilibili.core.ui.animation.DissolveAnimationPreset
 import com.android.purebilibili.core.ui.animation.MaybeDissolvableVideoCard
-import com.android.purebilibili.core.ui.animation.jiggleOnDissolve
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.ui.performance.TrackScrollJank
 import com.android.purebilibili.core.ui.components.UpBadgeName
@@ -192,6 +191,8 @@ internal fun HomeCategoryPageContent(
     onDismissVideo: (VideoItem) -> Unit,
     onWatchLater: (String, Long) -> Unit,
     onDissolveComplete: (String) -> Unit,
+    onDissolveReflowStarted: (String) -> Unit = {},
+    dissolveReflowEnabled: Boolean = true,
     longPressCallback: ((VideoItem) -> Unit)? = null, // [Feature] Long Press
     displayMode: Int,
     cardAnimationEnabled: Boolean,
@@ -255,6 +256,18 @@ internal fun HomeCategoryPageContent(
     firstGridItemModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
+    val cardReflowState = remember(category) { HomeCardReflowState() }
+    val cardReflowScope = rememberCoroutineScope()
+    var cardReflowActive by remember(category) { mutableStateOf(false) }
+    val latestReflowEnabled by rememberUpdatedState(dissolveReflowEnabled)
+    LaunchedEffect(dissolvingVideos, dissolveReflowEnabled) {
+        if (!dissolveReflowEnabled) {
+            cardReflowActive = false
+        } else if (dissolvingVideos.isEmpty()) {
+            kotlinx.coroutines.delay(500L)
+            cardReflowActive = false
+        }
+    }
     val sourceRoute = remember(category) {
         resolveHomeCategoryVideoSourceRoute(category)
     }
@@ -339,6 +352,7 @@ internal fun HomeCategoryPageContent(
     val videoGridKeys = remember(visibleGridVideos) {
         resolveHomeCategoryVideoGridKeys(visibleGridVideos)
     }
+    SideEffect { cardReflowState.retainKeys(videoGridKeys.toSet()) }
     val oldContentVideoIndex = oldContentAnchorBvid?.let { anchor ->
         visibleGridVideos.indexOfFirst { it.bvid == anchor }.takeIf { it >= 0 }
     } ?: oldContentStartIndex
@@ -415,16 +429,26 @@ internal fun HomeCategoryPageContent(
             onDissolveComplete = { onDissolveComplete(video.bvid) },
             cardId = video.bvid,
             preset = DissolveAnimationPreset.TELEGRAM_FAST,
+            publishGlobalDissolveState = false,
+            reflowDuringFinalTail = dissolveReflowEnabled,
+            onReflowStarted = {
+                cardReflowActive = dissolveReflowEnabled
+                onDissolveReflowStarted(video.bvid)
+            },
             preserveContentLayerWhenIdle = cardTransitionEnabled,
             modifier = itemModifier
+                .then(homeCardReflowModifier(
+                    key = videoGridKeys[index],
+                    state = cardReflowState,
+                    scope = cardReflowScope,
+                    enabledProvider = {
+                        latestReflowEnabled && cardReflowActive && !gridState.isScrollInProgress
+                    },
+                ))
                 .graphicsLayer {
                     scaleX = cardSquishScaleX
                     scaleY = cardSquishScaleY
                 }
-                .jiggleOnDissolve(
-                    cardId = video.bvid,
-                    isCurrentCardDissolving = isDissolving
-                )
                 .then(if (index == 0) firstGridItemModifier else Modifier)
         ) {
             when (displayMode) {
@@ -674,7 +698,7 @@ internal fun HomeCategoryPageContent(
                             renderVideoCard(
                                 index,
                                 video,
-                                videoListItemModifier(enabled = cardAnimationEnabled),
+                                videoListItemModifier(enabled = cardAnimationEnabled && !cardReflowActive),
                             )
                         }
                     }
@@ -705,7 +729,7 @@ internal fun HomeCategoryPageContent(
                             span = StaggeredGridItemSpan.FullLine,
                         ) {
                             Row(
-                                modifier = videoListItemModifier(enabled = cardAnimationEnabled)
+                                modifier = videoListItemModifier(enabled = cardAnimationEnabled && !cardReflowActive)
                                     .fillMaxWidth(),
                                 horizontalArrangement = horizontalArrangement,
                                 verticalAlignment = Alignment.Top,

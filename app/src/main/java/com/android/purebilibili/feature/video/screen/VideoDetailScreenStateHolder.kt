@@ -642,11 +642,12 @@ internal fun VideoDetailScreenStateHolder(
             openVideoNoteEditor = viewModel::openVideoNoteEditor,
             closeVideoNoteEditor = viewModel::closeVideoNoteEditor,
             updateVideoNoteEditorDocument = viewModel::updateVideoNoteEditorDocument,
-            insertCurrentPlaybackTimestampIntoNote = viewModel::insertCurrentPlaybackTimestampIntoNote,
+            currentVideoNoteTimestamp = viewModel::currentVideoNoteTimestamp,
             seekTo = viewModel::seekTo,
             saveVideoNote = viewModel::saveVideoNote,
             deleteVideoNote = viewModel::deleteVideoNote,
             retryVideoNote = viewModel::retryVideoNote,
+            loadMorePublicVideoNotes = viewModel::loadMorePublicVideoNotes,
             openRootCommentComposer = viewModel::openRootCommentComposer,
             replyTo = {
                 viewModel.setReplyingTo(it)
@@ -2563,6 +2564,7 @@ internal fun VideoDetailScreenStateHolder(
         if (usesInWindowFullscreen) return@LaunchedEffect
         val requestedOrientation = resolvePhoneVideoRequestedOrientation(
             autoRotateEnabled = sensorAutoRotateEnabled,
+            systemAutoRotateEnabled = systemAutoRotateEnabled,
             fullscreenMode = fullscreenMode,
             isCompactDevice = orientationPolicyDevice,
             isOrientationDrivenFullscreen = isOrientationDrivenFullscreen,
@@ -2618,16 +2620,14 @@ internal fun VideoDetailScreenStateHolder(
         isPortraitFullscreen,
         displayContext,
         isFullscreenPlayerLocked,
+        userRequestedFullscreen,
     ) {
         if (isFullscreenPlayerLocked) {
             lastPhoneAutoRotateLandscapeAppliedAtMs = null
             lastPhoneAutoRotatePortraitAppliedAtMs = null
             return@LaunchedEffect
         }
-        if (!systemAutoRotateEnabled ||
-            (!sensorAutoRotateEnabled && !displayContext.isFoldableCoverWindow &&
-                !manualPortraitHoldActive) ||
-            !shouldObservePhoneAutoRotate(
+        if (!shouldObservePhoneAutoRotate(
                 autoRotateEnabled = sensorAutoRotateEnabled,
                 isCompactDevice = orientationPolicyDevice,
                 isOrientationDrivenFullscreen = isOrientationDrivenFullscreen,
@@ -2638,6 +2638,8 @@ internal fun VideoDetailScreenStateHolder(
                 isPortraitFullscreen = isPortraitFullscreen,
                 observeWhenAutoRotateDisabled = displayContext.isFoldableCoverWindow,
                 isFullscreenMode = isFullscreenMode,
+                manualFullscreenRequested = userRequestedFullscreen,
+                systemAutoRotateEnabled = systemAutoRotateEnabled,
             )
         ) {
             lastPhoneAutoRotateLandscapeAppliedAtMs = null
@@ -2666,9 +2668,6 @@ internal fun VideoDetailScreenStateHolder(
         if (
             hostActivity == null ||
             isFullscreenPlayerLocked ||
-            !systemAutoRotateEnabled ||
-            (!sensorAutoRotateEnabled && !displayContext.isFoldableCoverWindow &&
-                !manualPortraitHoldActive) ||
             !shouldObservePhoneAutoRotate(
                 autoRotateEnabled = sensorAutoRotateEnabled,
                 isCompactDevice = orientationPolicyDevice,
@@ -2680,6 +2679,8 @@ internal fun VideoDetailScreenStateHolder(
                 isPortraitFullscreen = isPortraitFullscreen,
                 observeWhenAutoRotateDisabled = displayContext.isFoldableCoverWindow,
                 isFullscreenMode = isFullscreenMode,
+                manualFullscreenRequested = userRequestedFullscreen,
+                systemAutoRotateEnabled = systemAutoRotateEnabled,
             ) ||
             !isOrientationDrivenFullscreen
         ) {
@@ -2694,7 +2695,7 @@ internal fun VideoDetailScreenStateHolder(
                     }
                     return
                 }
-                if (!sensorAutoRotateEnabled && !isFullscreenMode) return
+                if (!sensorAutoRotateEnabled && !isFullscreenMode && !userRequestedFullscreen) return
                 val isCurrentlyLandscape =
                     hostActivity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
                 val targetOrientation = resolvePhoneAutoRotateRequestedOrientation(
@@ -2728,6 +2729,7 @@ internal fun VideoDetailScreenStateHolder(
                     if (shouldReleaseManualFullscreenRequestAfterSensorTarget(
                             manualFullscreenRequested = userRequestedFullscreen,
                             sensorTargetOrientation = targetToApply,
+                            autoRotateEnabled = sensorAutoRotateEnabled,
                         )
                     ) {
                         userRequestedFullscreen = false

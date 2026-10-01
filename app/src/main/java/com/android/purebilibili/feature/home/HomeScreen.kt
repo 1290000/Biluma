@@ -163,7 +163,7 @@ import com.android.purebilibili.core.ui.transition.videoCardTransitionOverlayDep
 import com.android.purebilibili.feature.home.components.BottomBarMatchedDockEdge
 import com.android.purebilibili.feature.home.components.BottomBarMatchedDockVisibility
 import com.android.purebilibili.core.ui.animation.DissolvableVideoCard  //  粒子消散动画
-import com.android.purebilibili.core.ui.animation.jiggleOnDissolve      // 📳 iOS 风格抖动效果
+import com.android.purebilibili.core.ui.animation.gl.isThanosEffectSupported
 import com.android.purebilibili.core.ui.blur.rememberRecoverableHazeState
 import com.android.purebilibili.core.ui.blur.recoverableBlurEnabled
 import com.android.purebilibili.core.ui.blur.shouldAllowRenderEffectBackedHazeEffect
@@ -352,6 +352,8 @@ fun HomeScreen(
     val subscriptionListState = rememberLazyStaggeredGridState()
     // [Feature] Video Preview State (Global Scope)
     val targetVideoItemState = remember { mutableStateOf<VideoItem?>(null) }
+    var dissolvingNotInterestedVideo by remember { mutableStateOf<VideoItem?>(null) }
+    var reflowingNotInterestedVideo by remember { mutableStateOf<VideoItem?>(null) }
     var pendingNotInterestedVideo by remember { mutableStateOf<VideoItem?>(null) }
     var pendingVideoShare by remember {
         mutableStateOf<com.android.purebilibili.feature.video.share.VideoSharePayload?>(null)
@@ -1060,6 +1062,52 @@ fun HomeScreen(
     // [统一门控] 系统「减弱动效」是所有界面动效的通用开关:开启时关闭卡片进场/消散等所有卡片动效,
     // 各功能面自身的开关(此处为卡片动画开关)仍各自独立。与设置页入场动画共用同一 reduce-motion 判定。
     val systemReduceMotion = rememberSystemReduceMotion()
+    val onDissolveCompleteCallback = remember(viewModel) {
+        { bvid: String ->
+            viewModel.completeVideoDissolve(bvid)
+            val video = dissolvingNotInterestedVideo
+            if (video?.bvid == bvid) {
+                dissolvingNotInterestedVideo = null
+                if (reflowingNotInterestedVideo?.bvid != bvid) {
+                    pendingNotInterestedVideo = video
+                }
+            }
+        }
+    }
+    val onDissolveReflowStartedCallback = remember {
+        { bvid: String ->
+            val video = dissolvingNotInterestedVideo
+            if (video?.bvid == bvid) reflowingNotInterestedVideo = video
+        }
+    }
+    LaunchedEffect(reflowingNotInterestedVideo, systemReduceMotion) {
+        val video = reflowingNotInterestedVideo ?: return@LaunchedEffect
+        // Open once the 180 ms particle tail has cleared; the 240 ms reflow is settling.
+        if (!systemReduceMotion) delay(180L)
+        pendingNotInterestedVideo = video
+    }
+    val onDismissVideoCallback = remember(viewModel, context, systemReduceMotion) {
+        { video: VideoItem ->
+            if (dissolvingNotInterestedVideo == null && pendingNotInterestedVideo == null) {
+                targetVideoItemState.value = null
+                reflowingNotInterestedVideo = null
+                dissolvingNotInterestedVideo = video
+                if (!systemReduceMotion && isThanosEffectSupported(context)) {
+                    viewModel.startVideoDissolve(video.bvid)
+                } else {
+                    onDissolveCompleteCallback(video.bvid)
+                }
+            }
+        }
+    }
+    LaunchedEffect(dissolvingNotInterestedVideo) {
+        val video = dissolvingNotInterestedVideo ?: return@LaunchedEffect
+        // A lazy card can leave composition before mounting its particle effect.
+        delay(6_000L)
+        if (dissolvingNotInterestedVideo?.bvid == video.bvid) {
+            onDissolveCompleteCallback(video.bvid)
+        }
+    }
     val cardAnimationEnabled = homePerformanceConfig.cardAnimationEnabled && !systemReduceMotion
     // 过渡由用户设置控制；系统“减弱动效”开启时统一关闭。
     val cardTransitionEnabled = homePerformanceConfig.cardTransitionEnabled && !systemReduceMotion
@@ -2348,13 +2396,7 @@ fun HomeScreen(
                                  // Data Content
                                  // [性能优化] Stabilize event callbacks to prevent recomposition on scroll
                                  val onLoadMoreCallback = remember(viewModel) { { viewModel.loadMore() } }
-                                 val onDismissVideoCallback = remember {
-                                     { video: VideoItem ->
-                                         pendingNotInterestedVideo = video
-                                     }
-                                 }
                                  val onWatchLaterCallback = remember(viewModel) { { bvid: String, aid: Long -> viewModel.addToWatchLater(bvid, aid) } }
-                                 val onDissolveCompleteCallback = remember(viewModel) { { bvid: String -> viewModel.completeVideoDissolve(bvid) } }
                                   val onLongPressCallback = remember(
                                       targetVideoItemState,
                                       homeSettings.videoCardLongPressActionEnabled
@@ -2413,6 +2455,8 @@ fun HomeScreen(
                                      onDismissVideo = onDismissVideoCallback,
                                      onWatchLater = onWatchLaterCallback,
                                      onDissolveComplete = onDissolveCompleteCallback,
+                                     onDissolveReflowStarted = onDissolveReflowStartedCallback,
+                                     dissolveReflowEnabled = !systemReduceMotion,
                                      longPressCallback = onLongPressCallback, // [Feature] Pass callback
                                      displayMode = displayMode,
                                      // 刷新数据换位时不再同时启动整屏卡片 placement spring。
@@ -2962,10 +3006,7 @@ fun HomeScreen(
                     )
                     targetVideoItemState.value = null
                 },
-                onNotInterested = {
-                    pendingNotInterestedVideo = item
-                    targetVideoItemState.value = null
-                },
+                onNotInterested = { onDismissVideoCallback(item) },
                 onBlockCreator = {
                     viewModel.blockCreator(item)
                     targetVideoItemState.value = null
@@ -3216,14 +3257,28 @@ fun HomeScreen(
                 reasons = resolveHomeNotInterestedReasons(video),
                 onReasonSelected = { reason ->
                     pendingNotInterestedVideo = null
+                    reflowingNotInterestedVideo = null
+                    if (dissolvingNotInterestedVideo?.bvid == video.bvid) {
+                        dissolvingNotInterestedVideo = null
+                    }
                     viewModel.markNotInterested(
                         video = video,
                         reason = reason,
-                        cardAnimationEnabled = cardAnimationEnabled
+                        // The card has already dissolved before the reason sheet opened.
+                        dissolveAnimationEnabled = false
                     )
                 },
                 onDismissRequest = {
                     pendingNotInterestedVideo = null
+                    reflowingNotInterestedVideo = null
+                    if (dissolvingNotInterestedVideo?.bvid == video.bvid) {
+                        dissolvingNotInterestedVideo = null
+                    }
+                    viewModel.markNotInterested(
+                        video = video,
+                        reason = resolveDefaultHomeNotInterestedReason(),
+                        dissolveAnimationEnabled = false,
+                    )
                 }
             )
         }

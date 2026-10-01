@@ -14,7 +14,7 @@
 </p>
 
 <p>
-  <img src="https://img.shields.io/badge/Release-0.2.3-007AFF?style=flat-square&labelColor=ffffff" alt="Release 0.2.3" />
+  <img src="https://img.shields.io/badge/Release-0.2.3.5-007AFF?style=flat-square&labelColor=ffffff" alt="Release 0.2.3.5" />
   <img src="https://img.shields.io/badge/Android-8.0%2B-34C759?style=flat-square&logo=android&logoColor=white" alt="Android 8.0+" />
   <img src="https://img.shields.io/badge/Kotlin-100%25-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin" />
   <img src="https://img.shields.io/badge/License-Non--Commercial-FF3B30?style=flat-square" alt="Non-Commercial License" />
@@ -190,7 +190,7 @@ cd BiliPai
 ./gradlew :app:assembleDev
 ```
 
-完成后可安装交付包位于 `app/build/outputs/bilipai/dev/BiliPai-0.2.3-dev.apk`。正式发布构建对应输出 `app/build/outputs/bilipai/release/BiliPai-0.2.3.apk`；AGP 内部的 `app-*.apk` 不作为交付文件。
+完成后可安装交付包位于 `app/build/outputs/bilipai/dev/BiliPai-0.2.3.5-dev.apk`。正式发布构建对应输出 `app/build/outputs/bilipai/release/BiliPai-0.2.3.5.apk`；AGP 内部的 `app-*.apk` 不作为交付文件。
 
 `google-services.json` 是可选项：放入 `app/` 后启用 Firebase Crashlytics / Analytics；缺失时构建脚本会跳过相关能力。
 
@@ -211,11 +211,11 @@ cd BiliPai
 
 ## 最近更新
 
-当前源码版本为 `0.2.3 / versionCode 415`；完整变更见 [CHANGELOG.md](CHANGELOG.md)。安装包与公告见 [Telegram 频道](https://t.me/bilipai666) / [交流群](https://t.me/bilipai888/1)：
+当前源码版本为 `0.2.3.5 / versionCode 419`；完整变更见 [CHANGELOG.md](CHANGELOG.md)。安装包与公告见 [Telegram 频道](https://t.me/bilipai666) / [交流群](https://t.me/bilipai888/1)：
 
-- BGM 音频详情页、横屏章节进度条、收藏夹抽屉升级与离线缓存体验大改已加入。
-- 弹幕功能全面对齐 PiliPlus，首页滚动性能与内存占用持续优化。
-- release 包启动崩溃、搜索胶囊收起、图片预览卡顿与高刷耗电问题已修复。
+- 收紧设置、搜索、动态和视频简介的布局间距，三连互动弹幕改为紧凑图标栏。
+- 统一各播放器的弹幕字号、行距和横竖屏设置，完善歌词匹配与听视频布局。
+- 首页刷新定位与撤销提示调整位置并支持手动关闭，评论屏蔽和举报图标更清晰。
 
 ## 路线图
 

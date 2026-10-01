@@ -5796,6 +5796,18 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     // --- 订阅文章阅读字号 (0=小 1=标准 2=大) ---
     private val KEY_SUBSCRIPTION_ARTICLE_FONT_SCALE = intPreferencesKey("subscription_article_font_scale")
 
+    private val KEY_SUBSCRIPTION_ARTICLE_WALLPAPER_ENABLED =
+        booleanPreferencesKey("subscription_article_wallpaper_enabled")
+
+    fun getSubscriptionArticleWallpaperEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
+        .map { preferences -> preferences[KEY_SUBSCRIPTION_ARTICLE_WALLPAPER_ENABLED] ?: false }
+
+    suspend fun setSubscriptionArticleWallpaperEnabled(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_SUBSCRIPTION_ARTICLE_WALLPAPER_ENABLED] = enabled
+        }
+    }
+
     fun getSubscriptionArticleFontScale(context: Context): Flow<Int> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SUBSCRIPTION_ARTICLE_FONT_SCALE] ?: 1 }
 

@@ -266,6 +266,7 @@ internal fun shouldResumePlaybackAfterSponsorBlockSkip(
 }
 
 private const val SPONSOR_SKIP_END_GUARD_MS = 1_000L
+private const val PUBLIC_VIDEO_NOTE_PAGE_SIZE = 10
 
 internal fun resolveSponsorBlockSkipTargetPositionMs(
     requestedPositionMs: Long,
@@ -6618,10 +6619,15 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                                         title = note.title,
                                         summary = note.summary,
                                         authorName = note.author?.name.orEmpty(),
+                                        authorMid = note.author?.mid ?: 0L,
+                                        authorFace = note.author?.face.orEmpty(),
+                                        authorLevel = note.author?.level ?: 0,
+                                        pubtime = note.pubtime,
                                         webUrl = note.webUrl,
                                         likes = note.likes
                                     )
-                                }
+                                },
+                                publicNotesEnd = snapshot.publicNotes.size >= snapshot.publicNoteTotal
                             )
                         )
                     }
@@ -6648,6 +6654,63 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         } ?: true
         if (!shouldLoadVideoNote(videoNoteEnabled, current.info.aid)) return
         loadVideoNote(loadedBvid = current.info.bvid, loadedAid = current.info.aid)
+    }
+
+    fun loadMorePublicVideoNotes() {
+        val current = _uiState.value as? VideoPlaybackUiState.Success ?: return
+        val noteState = current.videoNoteState
+        if (noteState.publicNotesLoadingMore || noteState.publicNotesEnd) return
+        val nextPage = noteState.publicNotes.size / PUBLIC_VIDEO_NOTE_PAGE_SIZE + 1
+        _uiState.update { state ->
+            val success = state as? VideoPlaybackUiState.Success ?: return@update state
+            success.copy(
+                videoNoteState = success.videoNoteState.copy(publicNotesLoadingMore = true)
+            )
+        }
+        viewModelScope.launch {
+            VideoNoteRepository.getPublicVideoNotePage(current.info.aid, nextPage)
+                .onSuccess { page ->
+                    _uiState.update { state ->
+                        val success = state as? VideoPlaybackUiState.Success ?: return@update state
+                        if (success.info.aid != current.info.aid) return@update state
+                        val existing = success.videoNoteState.publicNotes
+                        val knownCvids = existing.mapTo(mutableSetOf()) { it.cvid }
+                        val appended = page.notes
+                            .filter { it.cvid !in knownCvids }
+                            .map { note ->
+                                VideoNotePublicPreview(
+                                    cvid = note.cvid,
+                                    title = note.title,
+                                    summary = note.summary,
+                                    authorName = note.author?.name.orEmpty(),
+                                    authorMid = note.author?.mid ?: 0L,
+                                    authorFace = note.author?.face.orEmpty(),
+                                    authorLevel = note.author?.level ?: 0,
+                                    pubtime = note.pubtime,
+                                    webUrl = note.webUrl,
+                                    likes = note.likes
+                                )
+                            }
+                        val merged = existing + appended
+                        success.copy(
+                            videoNoteState = success.videoNoteState.copy(
+                                publicNotes = merged,
+                                publicNoteCount = page.total,
+                                publicNotesLoadingMore = false,
+                                publicNotesEnd = merged.size >= page.total || page.notes.isEmpty()
+                            )
+                        )
+                    }
+                }
+                .onFailure {
+                    _uiState.update { state ->
+                        val success = state as? VideoPlaybackUiState.Success ?: return@update state
+                        success.copy(
+                            videoNoteState = success.videoNoteState.copy(publicNotesLoadingMore = false)
+                        )
+                    }
+                }
+        }
     }
 
     fun openVideoNoteEditor() {
@@ -6686,19 +6749,15 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun insertCurrentPlaybackTimestampIntoNote() {
-        val current = _uiState.value as? VideoPlaybackUiState.Success ?: return
+    fun currentVideoNoteTimestamp(): VideoNoteBlock.Timestamp? {
+        val current = _uiState.value as? VideoPlaybackUiState.Success ?: return null
         val positionSeconds = ((exoPlayer?.currentPosition ?: 0L) / 1000L).coerceAtLeast(0L)
         val pageIndex = current.info.pages.indexOfFirst { it.cid == current.info.cid }.coerceAtLeast(0)
-        val timestamp = VideoNoteBlock.Timestamp(
+        return VideoNoteBlock.Timestamp(
             seconds = positionSeconds,
             cid = current.info.cid,
             index = pageIndex,
             cidCount = current.info.pages.size.coerceAtLeast(1)
-        )
-        val document = current.videoNoteState.editorDocument
-        updateVideoNoteEditorDocument(
-            document.copy(blocks = document.blocks + timestamp + VideoNoteBlock.Text(" "))
         )
     }
 
