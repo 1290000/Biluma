@@ -378,7 +378,7 @@ object BilibiliUrlParser {
     
     /**
      * 解析 b23.tv 短链接 (需要在 IO 线程调用)
-     * 
+     *
      * @param shortUrl b23.tv 短链接
      * @return 完整 URL 或 null
      */
@@ -391,16 +391,22 @@ object BilibiliUrlParser {
                 connection.connectTimeout = 5000
                 connection.readTimeout = 5000
                 connection.requestMethod = "HEAD"
-                
+
                 val responseCode = connection.responseCode
-                if (responseCode in 300..399) {
-                    val redirectUrl = connection.getHeaderField("Location")
-                    Logger.d(TAG, "Short URL redirected to: $redirectUrl")
-                    connection.disconnect()
-                    redirectUrl
-                } else {
-                    connection.disconnect()
+                val location = connection.getHeaderField("Location")
+                connection.disconnect()
+
+                if (responseCode !in 200..399 || location.isNullOrBlank()) {
                     null
+                } else {
+                    //  相对 Location 需要基于原链接补全；b23 偶尔返回 /BVxxxx 这类相对路径
+                    val resolved = if (location.startsWith("http", ignoreCase = true)) {
+                        location
+                    } else {
+                        runCatching { URI(shortUrl).resolve(location).toString() }.getOrNull()
+                    }
+                    Logger.d(TAG, "Short URL redirected to: $resolved")
+                    resolved?.trimEnd('/')
                 }
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to resolve short URL: ${e.message}")

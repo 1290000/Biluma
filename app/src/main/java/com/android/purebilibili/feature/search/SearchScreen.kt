@@ -28,7 +28,7 @@ import com.android.purebilibili.core.ui.common.verticalPriorityHorizontalPagerSw
 import com.android.purebilibili.navigation.animatePagerSelection
 import com.android.purebilibili.core.util.BilibiliNavigationTarget
 import com.android.purebilibili.navigation.SearchSubmitAction
-import com.android.purebilibili.navigation.resolveSearchSubmitActionWithRedirect
+import com.android.purebilibili.navigation.resolveSearchSubmitAction
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -749,7 +749,6 @@ fun SearchScreen(
     }.collectAsStateWithLifecycle(initialValue = true)
     val displayedSearchHint = state.defaultSearchHint.takeIf { searchHintEnabled }.orEmpty()
     val scope = rememberCoroutineScope()
-    var submitJob by remember { mutableStateOf<Job?>(null) }
     val savedSearchFilterTabOrder by SettingsManager
         .getSearchFilterTabOrder(context)
         .collectAsStateWithLifecycle(
@@ -1039,20 +1038,16 @@ fun SearchScreen(
         autoFocusConsumed = true
     }
     val submitSearch: (String) -> Unit = { keyword ->
-        submitJob?.cancel()
-        submitJob = scope.launch {
-            when (val action = resolveSearchSubmitActionWithRedirect(keyword)) {
-                SearchSubmitAction.Ignore -> Unit
-                is SearchSubmitAction.OpenSearch -> viewModel.search(action.keyword)
-                is SearchSubmitAction.OpenNativeTarget -> {
-                    viewModel.dismissSuggestions()
-                    if (!onNavigateSearchTarget(action.target)) viewModel.search(keyword)
-                }
+        when (val action = resolveSearchSubmitAction(keyword)) {
+            SearchSubmitAction.Ignore -> Unit
+            is SearchSubmitAction.OpenSearch -> viewModel.search(action.keyword)
+            is SearchSubmitAction.OpenNativeTarget -> {
+                viewModel.dismissSuggestions()
+                if (!onNavigateSearchTarget(action.target)) viewModel.search(keyword)
             }
         }
         dismissSearchKeyboardAndFocus()
     }
-
 
     val handleSearchBack = {
         when (
@@ -1265,12 +1260,10 @@ fun SearchScreen(
                                                 query = state.query,
                                                 onBack = handleSearchBack,
                                                 onQueryChange = {
-                                                    submitJob?.cancel()
                                                     viewModel.onQueryChange(it)
                                                 },
                                                 onSearch = submitSearch,
                                                 onClearQuery = {
-                                                    submitJob?.cancel()
                                                     viewModel.onQueryChange("")
                                                     viewModel.exitResultsToLanding()
                                                 },
@@ -2387,12 +2380,10 @@ fun SearchScreen(
                 query = state.query,
                 onBack = handleSearchBack,
                 onQueryChange = {
-                    submitJob?.cancel()
                     viewModel.onQueryChange(it)
                 },
                 onSearch = submitSearch,
                 onClearQuery = {
-                    submitJob?.cancel()
                     viewModel.onQueryChange("")
                     viewModel.exitResultsToLanding()
                 },
