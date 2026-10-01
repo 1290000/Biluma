@@ -12,6 +12,8 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -2053,6 +2055,26 @@ private fun VideoContentTabBar(
             allowLabelOverflow = true,
         )
     }
+    // Tab 数量多时整条超出屏宽（如"UP投稿"被截在右缘）：横向可滚，选中项
+    // 自动滚入可视区——点击与 Pager 滑动切页都会驱动 selectedTabIndex。
+    val tabBarScrollState = rememberScrollState()
+    val tabBarDensity = LocalDensity.current
+    LaunchedEffect(selectedTabIndex, tabItemWidth, tabs.size, tabBarScrollState.maxValue) {
+        if (tabBarScrollState.maxValue <= 0) return@LaunchedEffect
+        val tabWidthPx = with(tabBarDensity) { tabItemWidth.toPx() }
+        // ScrollState 不暴露视口宽；内容宽已知，maxValue = 内容宽 - 视口宽。
+        val viewportPx = tabWidthPx * tabs.size - tabBarScrollState.maxValue
+        if (viewportPx <= 0f) return@LaunchedEffect
+        val tabLeft = selectedTabIndex * tabWidthPx
+        val tabRight = tabLeft + tabWidthPx
+        val scroll = tabBarScrollState.value.toFloat()
+        val target = when {
+            tabRight > scroll + viewportPx -> tabRight - viewportPx
+            tabLeft < scroll -> tabLeft
+            else -> return@LaunchedEffect
+        }
+        tabBarScrollState.animateScrollTo(target.coerceIn(0f, tabBarScrollState.maxValue.toFloat()).toInt())
+    }
     Column(
         modifier = modifier
     ) {
@@ -2080,10 +2102,17 @@ private fun VideoContentTabBar(
                 Arrangement.Start
             }
         ) {
+            // 视口容器：weight(fill=false) 让 tab 条在剩余空间内被裁剪成可滚动；
+            // 内容不足整行时按内容宽度展开，无滚动。
             Box(
-                modifier = Modifier.width(tabItemWidth * tabs.size),
-                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .horizontalScroll(tabBarScrollState),
             ) {
+                Box(
+                    modifier = Modifier.width(tabItemWidth * tabs.size),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
                 AppThemeAdaptiveTabRow(
                     options = tabs.mapIndexed { index, label -> AppSegmentOption(index, label) },
                     selectedValue = selectedTabIndex,
@@ -2100,6 +2129,7 @@ private fun VideoContentTabBar(
                     indicatorPositionProvider = indicatorPositionProvider,
                     isScrollInProgressProvider = isScrollInProgressProvider,
                 )
+                }
             }
 
             if (shouldShowVideoContentTabBarDanmakuActions(selectedTabIndex)) {
