@@ -30,6 +30,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +42,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items as lazyListItems
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -126,6 +130,7 @@ import com.android.purebilibili.feature.video.note.VideoNoteContentCodec
 import com.android.purebilibili.feature.video.note.VideoNoteEditorDocument
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.store.HomeWallpaperEffectMode
+import com.android.purebilibili.core.ui.LocalBottomBarContentPadding
 import com.android.purebilibili.core.ui.LocalBottomBarVisible
 import com.android.purebilibili.core.ui.LocalSetBottomBarVisible
 import com.android.purebilibili.core.ui.LocalGlobalWallpaperBackdropVisible
@@ -247,7 +252,7 @@ fun SubscriptionFeedPage(
     var reloadToken by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(scrollToTopRequestId) {
-        if (scrollToTopRequestId > 0) listState.animateScrollToTop()
+        if (scrollToTopRequestId > 0 && !isArticleOpen) listState.animateScrollToTop()
     }
     LaunchedEffect(reloadToken, subscriptionRevision) {
         loading = true
@@ -303,6 +308,7 @@ fun SubscriptionFeedPage(
             if (article != null) {
                 SubscriptionArticleScreen(
                     item = article,
+                    scrollToTopRequestId = scrollToTopRequestId,
                     contentPadding = articleContentPadding,
                     cachedBody = cachedBodies[feedItemKey(article)],
                     isRead = feedItemKey(article) in readKeys,
@@ -585,6 +591,7 @@ private fun FeedCoverImage(
 @Composable
 private fun SubscriptionArticleScreen(
     item: ParsedFeedItem,
+    scrollToTopRequestId: Int,
     contentPadding: PaddingValues,
     cachedBody: String?,
     isRead: Boolean,
@@ -604,6 +611,18 @@ private fun SubscriptionArticleScreen(
 ) {
     val context = LocalContext.current
     val articleScope = rememberCoroutineScope()
+    val articleListState = rememberLazyListState()
+    // Consume only new presses: opening another article must not replay an old request.
+    var lastScrollToTopRequestId by remember(item.sourceId, item.id, item.link) {
+        mutableIntStateOf(scrollToTopRequestId)
+    }
+    LaunchedEffect(scrollToTopRequestId) {
+        if (scrollToTopRequestId != lastScrollToTopRequestId) {
+            lastScrollToTopRequestId = scrollToTopRequestId
+            // Match the recommendation tab's atomic return-to-top, regardless of distance.
+            articleListState.scrollToItem(0)
+        }
+    }
     var articleHtml by remember(item.sourceId, item.id, item.link) {
         mutableStateOf(cachedBody ?: item.htmlContent.ifBlank { item.summary })
     }
@@ -825,153 +844,174 @@ private fun SubscriptionArticleScreen(
         tonalElevation = 0.dp,
     ) {
         Box(Modifier.fillMaxSize()) {
-            HomeWallpaperBackdrop(
-                wallpaperUri = wallpaperUri,
-                appearance = wallpaperAppearance,
-                baseColor = articleBackground,
-                isDataSaverActive = dataSaverActive,
-            )
             CompositionLocalProvider(LocalGlobalWallpaperBackdropVisible provides false) {
                 ImmersiveAppScaffold(
                     containerColor = Color.Transparent,
                     topBarSurfaceColor = articleBackground,
-                    topBar = articleTopBar.takeIf { readingChromeVisible },
+                    topBar = {
+                        if (readingChromeVisible) {
+                            articleTopBar()
+                        } else {
+                            // Pure reading hides controls, while preserving status-bar chrome
+                            // and its existing progressive/Haze source and render-mode policy.
+                            Spacer(
+                                Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars)
+                            )
+                        }
+                    },
                 ) { scaffoldPadding ->
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(
-                                if (pureReading) Modifier.pointerInput(Unit) {
-                                    detectTapGestures(onTap = { readerControlsVisible = !readerControlsVisible })
-                                } else Modifier
+                    // The scaffold records its content for both progressive blur and Haze.
+                    // Capture the opaque wallpaper base with the article, not transparent
+                    // text alone; chrome stays outside this source so it cannot sample itself.
+                    Box(Modifier.fillMaxSize()) {
+                        HomeWallpaperBackdrop(
+                            wallpaperUri = wallpaperUri,
+                            appearance = wallpaperAppearance,
+                            baseColor = articleBackground,
+                            isDataSaverActive = dataSaverActive,
+                        )
+                        LazyColumn(
+                            state = articleListState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(
+                                    if (pureReading) Modifier.pointerInput(Unit) {
+                                        detectTapGestures(onTap = { readerControlsVisible = !readerControlsVisible })
+                                    } else Modifier
+                                ),
+                            contentPadding = PaddingValues(
+                                start = contentPadding.calculateStartPadding(layoutDirection),
+                                top = scaffoldPadding.calculateTopPadding() + 8.dp,
+                                end = contentPadding.calculateEndPadding(layoutDirection),
+                                bottom = if (pureReading) scaffoldPadding.calculateBottomPadding() + 16.dp
+                                    else contentPadding.calculateBottomPadding(),
                             ),
-                        contentPadding = PaddingValues(
-                            start = contentPadding.calculateStartPadding(layoutDirection),
-                            top = if (readingChromeVisible) scaffoldPadding.calculateTopPadding() + 8.dp
-                                else contentPadding.calculateTopPadding() + 8.dp,
-                            end = contentPadding.calculateEndPadding(layoutDirection),
-                            bottom = if (pureReading) scaffoldPadding.calculateBottomPadding() + 16.dp
-                                else contentPadding.calculateBottomPadding(),
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        item {
-                            Column(
-                                modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                AppText(item.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                                if (!pureReading) {
-                                    AppText(
-                                        text = listOf(item.sourceTitle, item.author, formatFeedAge(item.publishedEpochSec))
-                                            .filter { it.isNotBlank() }
-                                            .joinToString(" · "),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    if (loadingBody) {
-                                        FeedBodySkeleton()
+                            verticalArrangement = Arrangement.spacedBy(18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            item {
+                                Column(
+                                    modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    AppText(item.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                                    if (!pureReading) {
+                                        AppText(
+                                            text = listOf(item.sourceTitle, item.author, formatFeedAge(item.publishedEpochSec))
+                                                .filter { it.isNotBlank() }
+                                                .joinToString(" · "),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        if (loadingBody) {
+                                            FeedBodySkeleton()
+                                        }
                                     }
                                 }
                             }
-                        }
-                        lazyListItems(readingBlocks) { block ->
-                            val excerptText = if (excerptMode) feedBlockExcerptText(block) else null
-                            val excerptSelected = excerptText != null && excerptText in pendingExcerpts
-                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Box(modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().then(
-                                    if (excerptText != null) {
-                                        Modifier
-                                            .clip(MaterialTheme.shapes.medium)
-                                            .background(
-                                                if (excerptSelected) MaterialTheme.colorScheme.primaryContainer
-                                                else Color.Transparent
-                                            )
-                                            .clickable {
-                                                if (excerptSelected) {
-                                                    pendingExcerpts.remove(excerptText)
-                                                } else {
-                                                    pendingExcerpts.add(excerptText)
+                            lazyListItems(readingBlocks) { block ->
+                                val excerptText = if (excerptMode) feedBlockExcerptText(block) else null
+                                val excerptSelected = excerptText != null && excerptText in pendingExcerpts
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    Box(modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().then(
+                                        if (excerptText != null) {
+                                            Modifier
+                                                .clip(MaterialTheme.shapes.medium)
+                                                .background(
+                                                    if (excerptSelected) MaterialTheme.colorScheme.primaryContainer
+                                                    else Color.Transparent
+                                                )
+                                                .clickable {
+                                                    if (excerptSelected) {
+                                                        pendingExcerpts.remove(excerptText)
+                                                    } else {
+                                                        pendingExcerpts.add(excerptText)
+                                                    }
                                                 }
+                                        } else {
+                                            Modifier
+                                        }
+                                    )) {
+                                        when (block) {
+                                            is FeedBlock.Heading -> SelectionContainer {
+                                                FeedInlineText(
+                                                    block.inlines,
+                                                    fontScale = textScale,
+                                                    onLinkClick = onReadingLinkClick,
+                                                    style = when (block.level) {
+                                                        1 -> MaterialTheme.typography.headlineSmall
+                                                        2 -> MaterialTheme.typography.titleLarge
+                                                        else -> MaterialTheme.typography.titleMedium
+                                                    },
+                                                )
                                             }
-                                    } else {
-                                        Modifier
-                                    }
-                                )) {
-                                    when (block) {
-                                        is FeedBlock.Heading -> SelectionContainer {
-                                            FeedInlineText(
-                                                block.inlines,
-                                                fontScale = textScale,
-                                                onLinkClick = onReadingLinkClick,
-                                                style = when (block.level) {
-                                                    1 -> MaterialTheme.typography.headlineSmall
-                                                    2 -> MaterialTheme.typography.titleLarge
-                                                    else -> MaterialTheme.typography.titleMedium
+                                            is FeedBlock.Paragraph -> SelectionContainer {
+                                                FeedInlineText(block.inlines, fontScale = textScale, onLinkClick = onReadingLinkClick)
+                                            }
+                                            is FeedBlock.Quote -> SelectionContainer {
+                                                FeedInlineText(
+                                                    block.inlines,
+                                                    modifier = Modifier.padding(start = 12.dp),
+                                                    italic = true,
+                                                    fontScale = textScale,
+                                                    onLinkClick = onReadingLinkClick,
+                                                )
+                                            }
+                                            is FeedBlock.Code -> SelectionContainer {
+                                                AppText(
+                                                    block.text,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                        .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
+                                                        .horizontalScroll(rememberScrollState())
+                                                        .padding(12.dp),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                )
+                                            }
+                                            is FeedBlock.Image -> FeedArticleImage(
+                                                url = block.url,
+                                                alt = block.alt,
+                                                pageIndex = imageUrls.indexOf(block.url).coerceAtLeast(0),
+                                                galleryRects = imageSourceRects,
+                                                onClick = { rect ->
+                                                    val index = imageUrls.indexOf(block.url).coerceAtLeast(0)
+                                                    onOpenImages(imageUrls, index, rect, imageSourceRects.toMap())
                                                 },
                                             )
-                                        }
-                                        is FeedBlock.Paragraph -> SelectionContainer {
-                                            FeedInlineText(block.inlines, fontScale = textScale, onLinkClick = onReadingLinkClick)
-                                        }
-                                        is FeedBlock.Quote -> SelectionContainer {
-                                            FeedInlineText(
-                                                block.inlines,
-                                                modifier = Modifier.padding(start = 12.dp),
-                                                italic = true,
-                                                fontScale = textScale,
-                                                onLinkClick = onReadingLinkClick,
-                                            )
-                                        }
-                                        is FeedBlock.Code -> SelectionContainer {
-                                            AppText(
-                                                block.text,
-                                                modifier = Modifier.fillMaxWidth()
-                                                    .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
-                                                    .horizontalScroll(rememberScrollState())
-                                                    .padding(12.dp),
-                                                style = MaterialTheme.typography.bodySmall,
-                                            )
-                                        }
-                                        is FeedBlock.Image -> FeedArticleImage(
-                                            url = block.url,
-                                            alt = block.alt,
-                                            pageIndex = imageUrls.indexOf(block.url).coerceAtLeast(0),
-                                            galleryRects = imageSourceRects,
-                                            onClick = { rect ->
-                                                val index = imageUrls.indexOf(block.url).coerceAtLeast(0)
-                                                onOpenImages(imageUrls, index, rect, imageSourceRects.toMap())
-                                            },
-                                        )
-                                        is FeedBlock.BulletList -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            block.items.forEach { line ->
-                                                Row {
-                                                    AppText("• ")
-                                                    FeedInlineText(line, modifier = Modifier.weight(1f), fontScale = textScale, onLinkClick = onReadingLinkClick)
+                                            is FeedBlock.BulletList -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                block.items.forEach { line ->
+                                                    Row {
+                                                        AppText("• ")
+                                                        FeedInlineText(line, modifier = Modifier.weight(1f), fontScale = textScale, onLinkClick = onReadingLinkClick)
+                                                    }
                                                 }
                                             }
-                                        }
-                                        is FeedBlock.NumberedList -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            block.items.forEachIndexed { index, line ->
-                                                Row {
-                                                    AppText("${index + 1}. ")
-                                                    FeedInlineText(line, modifier = Modifier.weight(1f), fontScale = textScale, onLinkClick = onReadingLinkClick)
+                                            is FeedBlock.NumberedList -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                block.items.forEachIndexed { index, line ->
+                                                    Row {
+                                                        AppText("${index + 1}. ")
+                                                        FeedInlineText(line, modifier = Modifier.weight(1f), fontScale = textScale, onLinkClick = onReadingLinkClick)
+                                                    }
                                                 }
                                             }
+                                            is FeedBlock.EmbeddedLink -> AppTextButton(
+                                                onClick = { onOpenUrl(block.url) },
+                                                modifier = Modifier.heightIn(min = 48.dp),
+                                            ) { AppText(block.title) }
                                         }
-                                        is FeedBlock.EmbeddedLink -> AppTextButton(
-                                            onClick = { onOpenUrl(block.url) },
-                                            modifier = Modifier.heightIn(min = 48.dp),
-                                        ) { AppText(block.title) }
                                     }
                                 }
                             }
+                            item { Spacer(Modifier.height(28.dp)) }
                         }
-                        item { Spacer(Modifier.height(28.dp)) }
                     }
                 }
             }
             if (excerptMode) {
+                // 摘录提示按钮悬浮于文章层之上：需要让出底栏（含导航栏）与音频播放条的
+                // 高度，否则会被两者盖住。64dp ≈ 音频横条自身高度。
+                val excerptBottomClearance = maxOf(
+                    32.dp,
+                    LocalBottomBarContentPadding.current + 64.dp,
+                )
                 AppButton(
                     onClick = {
                         notePrefillDocument = buildArticleExcerptDocument(
@@ -985,7 +1025,7 @@ private fun SubscriptionArticleScreen(
                     enabled = pendingExcerpts.isNotEmpty(),
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 32.dp),
+                        .padding(bottom = excerptBottomClearance),
                 ) {
                     AppText(
                         if (pendingExcerpts.isEmpty()) "摘录模式：点选段落加入笔记"

@@ -270,24 +270,26 @@ internal fun ArticleNoteEditorSheet(
         }
     }
 
-    AppAlertDialog(
-        onDismissRequest = { confirmDelete = false },
-        title = { AppText("删除文章笔记") },
-        text = { AppText("本地保存的这篇笔记将被删除，确认要删除吗？") },
-        confirmButton = {
-            AppTextButton(onClick = {
-                confirmDelete = false
-                onDelete()
-            }) {
-                AppText("删除")
+    if (confirmDelete) {
+        AppAlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { AppText("删除文章笔记") },
+            text = { AppText("本地保存的这篇笔记将被删除，确认要删除吗？") },
+            confirmButton = {
+                AppTextButton(onClick = {
+                    confirmDelete = false
+                    onDelete()
+                }) {
+                    AppText("删除")
+                }
+            },
+            dismissButton = {
+                AppTextButton(onClick = { confirmDelete = false }) {
+                    AppText("取消")
+                }
             }
-        },
-        dismissButton = {
-            AppTextButton(onClick = { confirmDelete = false }) {
-                AppText("取消")
-            }
-        }
-    )
+        )
+    }
 }
 
 internal fun documentToHtmlForArticle(document: VideoNoteEditorDocument): String {
