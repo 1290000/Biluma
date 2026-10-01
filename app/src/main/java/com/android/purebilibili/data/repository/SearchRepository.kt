@@ -1,7 +1,9 @@
 package com.android.purebilibili.data.repository
 
+import com.android.purebilibili.core.network.AppSignUtils
 import com.android.purebilibili.core.network.NetworkModule
 import com.android.purebilibili.core.network.WbiUtils
+import com.android.purebilibili.core.store.TokenManager
 import com.android.purebilibili.data.model.response.HotItem
 import com.android.purebilibili.data.model.response.SearchArticleItem
 import com.android.purebilibili.data.model.response.SearchLiveUserItem
@@ -21,6 +23,32 @@ data class SearchTrendingBundle(
 ) {
     val allItems: List<HotItem>
         get() = pinnedItems + items
+}
+
+internal fun buildSearchRecommendParams(
+    accessToken: String?,
+    accessTokenPlatform: String,
+    timestampSeconds: Long
+): Map<String, String> {
+    val params = linkedMapOf(
+        "build" to "8430300",
+        "channel" to "master",
+        "version" to "8.43.0",
+        "c_locale" to "zh_CN",
+        "mobi_app" to "android",
+        "platform" to "android",
+        "s_locale" to "zh_CN",
+        "from" to "2",
+        "ts" to timestampSeconds.toString()
+    )
+    accessToken?.takeIf { it.isNotBlank() }?.let { params["access_key"] = it }
+    return if (!accessToken.isNullOrBlank() &&
+        accessTokenPlatform == TokenManager.ACCESS_TOKEN_PLATFORM_TV
+    ) {
+        AppSignUtils.signForTvApi(params)
+    } else {
+        AppSignUtils.signForAndroidHdLogin(params)
+    }
 }
 
 object SearchRepository {
@@ -593,7 +621,14 @@ object SearchRepository {
         }
         return withContext(Dispatchers.IO) {
             try {
-                val response = api.getSearchRecommend()
+                TokenManager.awaitRestore()
+                val response = api.getSearchRecommend(
+                    buildSearchRecommendParams(
+                        accessToken = TokenManager.accessTokenCache,
+                        accessTokenPlatform = TokenManager.accessTokenPlatformCache,
+                        timestampSeconds = AppSignUtils.getTimestamp()
+                    )
+                )
                 if (response.code != 0) {
                     return@withContext Result.failure(createSearchError(response.code, response.message))
                 }

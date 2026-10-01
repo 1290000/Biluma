@@ -1545,14 +1545,7 @@ interface SearchApi {
 
     @GET("https://app.bilibili.com/x/v2/search/recommend")
     suspend fun getSearchRecommend(
-        @Query("build") build: Int = 8430300,
-        @Query("channel") channel: String = "master",
-        @Query("version") version: String = "8.43.0",
-        @Query("c_locale") cLocale: String = "zh_CN",
-        @Query("mobi_app") mobiApp: String = "android",
-        @Query("platform") platform: String = "android",
-        @Query("s_locale") sLocale: String = "zh_CN",
-        @Query("from") from: Int = 2
+        @QueryMap params: Map<String, String>
     ): com.android.purebilibili.data.model.response.SearchRecommendResponse
 
     //  综合搜索 (不支持排序)
