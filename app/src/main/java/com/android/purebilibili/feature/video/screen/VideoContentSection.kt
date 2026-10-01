@@ -2102,39 +2102,37 @@ private fun VideoContentTabBar(
                 Arrangement.Start
             }
         ) {
-            // 视口容器：weight(fill=false) 让 tab 条在剩余空间内被裁剪成可滚动；
-            // 内容不足整行时按内容宽度展开，无滚动。
+            // 页签视口独占操作按钮以外的剩余宽度，避免与 Spacer 平分后裁切。
+            // 内容不足时靠左显示，超出视口时才允许横向滚动。
             Box(
                 modifier = Modifier
-                    .weight(1f, fill = false)
+                    .weight(1f)
                     .horizontalScroll(tabBarScrollState),
             ) {
                 Box(
                     modifier = Modifier.width(tabItemWidth * tabs.size),
                     contentAlignment = Alignment.CenterStart,
                 ) {
-                AppThemeAdaptiveTabRow(
-                    options = tabs.mapIndexed { index, label -> AppSegmentOption(index, label) },
-                    selectedValue = selectedTabIndex,
-                    onSelectionChange = onTabSelected,
-                    modifier = Modifier.fillMaxWidth(),
-                    compactMiuixWhenTwoOptions = false,
-                    height = liquidChromeSpec.segmentedControlHeightDp.dp,
-                    indicatorHeight = liquidChromeSpec.segmentedControlIndicatorHeightDp.dp,
-                    labelFontSize = liquidChromeSpec.labelFontSizeSp.sp,
-                    // 该栏的指示器由 HorizontalPager 实时位置驱动，禁止自身再 settle 一次。
-                    dragSelectionEnabled = true,
-                    tapPressRefractionEnabled = true,
-                    miuixBackdrop = miuixBackdrop,
-                    indicatorPositionProvider = indicatorPositionProvider,
-                    isScrollInProgressProvider = isScrollInProgressProvider,
-                )
+                    AppThemeAdaptiveTabRow(
+                        options = tabs.mapIndexed { index, label -> AppSegmentOption(index, label) },
+                        selectedValue = selectedTabIndex,
+                        onSelectionChange = onTabSelected,
+                        modifier = Modifier.fillMaxWidth(),
+                        compactMiuixWhenTwoOptions = false,
+                        height = liquidChromeSpec.segmentedControlHeightDp.dp,
+                        indicatorHeight = liquidChromeSpec.segmentedControlIndicatorHeightDp.dp,
+                        labelFontSize = liquidChromeSpec.labelFontSizeSp.sp,
+                        // 该栏的指示器由 HorizontalPager 实时位置驱动，禁止自身再 settle 一次。
+                        dragSelectionEnabled = true,
+                        tapPressRefractionEnabled = true,
+                        miuixBackdrop = miuixBackdrop,
+                        indicatorPositionProvider = indicatorPositionProvider,
+                        isScrollInProgressProvider = isScrollInProgressProvider,
+                    )
                 }
             }
 
             if (shouldShowVideoContentTabBarDanmakuActions(selectedTabIndex)) {
-                Spacer(modifier = Modifier.weight(1f))
-
                 AnimatedVisibility(
                     visible = shouldShowDanmakuSendInput(isPlayerCollapsed = isPlayerCollapsed),
                     enter = fadeIn() + expandHorizontally(expandFrom = Alignment.Start),
