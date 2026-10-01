@@ -18,7 +18,6 @@ import com.android.purebilibili.core.ui.rememberAppSegmentedControlPolicy
 import com.android.purebilibili.core.ui.roundMatchedLiquidIndicatorHeightDp
 import com.android.purebilibili.core.ui.renderer.material3.AppMaterial3SegmentedControl
 import com.android.purebilibili.core.ui.renderer.material3.AppMaterial3TabRow
-import androidx.compose.foundation.isSystemInDarkTheme
 import com.android.purebilibili.core.ui.isMiuixNonGlassEnabled
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixSegmentedControl
 import com.android.purebilibili.core.ui.renderer.miuix.AppMiuixTabRow
@@ -27,6 +26,15 @@ data class AppSegmentOption<T>(
     val value: T,
     val label: String,
 )
+
+/**
+ * MD3 非玻璃 Tab 行的指示器形态:下划线(PiliPlus 首页/视频详情)或
+ * tonal 胶囊(PiliPlus 搜索页)。MIUIX 与液态玻璃分支不消费该参数。
+ */
+enum class AppTabRowIndicatorPresentation {
+    UNDERLINE,
+    TONAL_PILL,
+}
 
 enum class AppSegmentedChrome {
     LIQUID,
@@ -85,6 +93,14 @@ fun resolveAppSegmentedLabelFontSizeSp(
     longestLabelLength >= 5 -> 14f
     else -> 15f
 }
+
+/** Preserve compact-label ratios while honoring the active theme and app font scale. */
+fun resolveAppSegmentedLabelFontSize(
+    themeLabelFontSize: androidx.compose.ui.unit.TextUnit,
+    optionCount: Int,
+    longestLabelLength: Int,
+): androidx.compose.ui.unit.TextUnit =
+    themeLabelFontSize * (resolveAppSegmentedLabelFontSizeSp(optionCount, longestLabelLength) / 15f)
 
 fun shouldFillMaxWidthAppSegmentedControl(
     optionCount: Int,
@@ -248,6 +264,10 @@ fun resolveAppMiuixSegmentedColors(
     selectedContentColor = colors.activeContentColor,
 )
 
+/** Only individual outlined items need opaque fills over scrolling chrome; the track stays clear. */
+fun shouldUseOpaqueMiuixTabBackdrop(nonGlassMiuix: Boolean, immersiveTopChrome: Boolean): Boolean =
+    nonGlassMiuix && immersiveTopChrome
+
 fun resolveAppMiuixTabTrackColor(
     nonGlassMiuix: Boolean,
     trackColor: Color,
@@ -281,14 +301,13 @@ fun <T> AppNativeSegmentedControl(
     val materialColors = MaterialTheme.colorScheme
     val isImmersiveTopChrome = LocalImmersiveTopChromeActive.current
     val isMiuixNonGlass = isMiuixNonGlassEnabled()
-    val isDark = isSystemInDarkTheme()
     val trackColor = if (isImmersiveTopChrome || isMiuixNonGlass) {
         Color.Transparent
     } else {
         AppSurfaceTokens.surfaceContainerHigh()
     }
     val activeCardColor = if (isMiuixNonGlass) {
-        if (isDark) Color(0xFF383838) else AppSurfaceTokens.surfaceContainer()
+        AppSurfaceTokens.surfaceContainerHigh()
     } else {
         AppSurfaceTokens.surfaceContainer()
     }
@@ -345,6 +364,7 @@ fun <T> AppNativeTabRow(
     height: Dp? = null,
     allowLabelOverflow: Boolean = false,
     forceMaterial3: Boolean = false,
+    indicatorPresentation: AppTabRowIndicatorPresentation = AppTabRowIndicatorPresentation.UNDERLINE,
     indicatorPositionProvider: (() -> Float)? = null,
     miuixNonGlassItemWidthMode: MiuixNonGlassTabItemWidthMode =
         MiuixNonGlassTabItemWidthMode.CONTENT,
@@ -382,14 +402,13 @@ fun <T> AppNativeTabRow(
     val materialColors = MaterialTheme.colorScheme
     val isImmersiveTopChrome = LocalImmersiveTopChromeActive.current
     val isMiuixNonGlass = isMiuixNonGlassEnabled()
-    val isDark = isSystemInDarkTheme()
     val trackColor = if (isImmersiveTopChrome || isMiuixNonGlass) {
         Color.Transparent
     } else {
         AppSurfaceTokens.surfaceContainerHigh()
     }
     val activeCardColor = if (isMiuixNonGlass) {
-        if (isDark) Color(0xFF383838) else AppSurfaceTokens.surfaceContainer()
+        AppSurfaceTokens.surfaceContainerHigh()
     } else {
         AppSurfaceTokens.surfaceContainer()
     }
@@ -421,6 +440,7 @@ fun <T> AppNativeTabRow(
             // Miuix keeps the touch/content floor above.
             minTabWidth = resolvePiliPlusScrollableUnderlineMinWidth(),
             allowLabelOverflow = allowLabelOverflow,
+            indicatorPresentation = indicatorPresentation,
             indicatorPositionProvider = indicatorPositionProvider,
             modifier = viewportBoundedModifier,
             onSelectionChange = onSelectionChange,

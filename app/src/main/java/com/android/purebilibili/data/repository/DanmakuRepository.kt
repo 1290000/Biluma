@@ -14,6 +14,17 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
+data class DanmakuCloudFilterRule(
+    val id: Long,
+    val type: Int,
+    val filter: String
+)
+
+data class DanmakuCloudFilterRules(
+    val rules: List<DanmakuCloudFilterRule>,
+    val toast: String? = null
+)
+
 internal data class DanmakuThumbupState(
     val likes: Int,
     val liked: Boolean
@@ -456,6 +467,84 @@ object DanmakuRepository {
         }
         bytes
     }
+
+    /** UP主关闭弹幕的 cid 集合（来自 DmSegMobileReply.state == 1） */
+    private val serverDisabledDanmakuCids =
+        java.util.Collections.synchronizedSet(mutableSetOf<Long>())
+
+    fun markDanmakuServerDisabled(cid: Long) {
+        serverDisabledDanmakuCids.add(cid)
+    }
+
+    fun isDanmakuServerDisabled(cid: Long): Boolean = cid in serverDisabledDanmakuCids
+
+    /** 拉取云端弹幕屏蔽规则（关键词/正则/UID），未登录返回失败 */
+    suspend fun getDanmakuCloudFilterRules(): Result<DanmakuCloudFilterRules> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = api.getDanmakuFilterRules()
+                if (response.code != 0) {
+                    return@withContext Result.failure(Exception(response.message.ifEmpty { "同步云端弹幕屏蔽规则失败" }))
+                }
+                val data = response.data
+                    ?: return@withContext Result.failure(Exception("同步云端弹幕屏蔽规则失败"))
+                val rules = buildList {
+                    addAll(data.rule)
+                    addAll(data.rule1)
+                    addAll(data.rule2)
+                }.map { DanmakuCloudFilterRule(id = it.id, type = it.type, filter = it.filter) }
+                Result.success(DanmakuCloudFilterRules(rules = rules, toast = data.toast))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    /** 添加云端弹幕屏蔽规则（type: 0=关键词, 1=正则, 2=UID crc32 hex） */
+    suspend fun addDanmakuCloudFilterRule(type: Int, filter: String): Result<DanmakuCloudFilterRule> =
+        withContext(Dispatchers.IO) {
+            try {
+                val csrf = com.android.purebilibili.core.store.TokenManager.csrfCache
+                if (csrf.isNullOrEmpty()) {
+                    return@withContext Result.failure(Exception("请先登录"))
+                }
+                val response = api.addDanmakuFilterRule(type = type, filter = filter, csrf = csrf)
+                if (response.code != 0) {
+                    return@withContext Result.failure(Exception(response.message.ifEmpty { "添加云端弹幕屏蔽规则失败" }))
+                }
+                val data = response.data
+                    ?: return@withContext Result.failure(Exception("添加云端弹幕屏蔽规则失败"))
+                Result.success(
+                    DanmakuCloudFilterRule(id = data.id, type = data.type, filter = data.filter)
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    /** 删除云端弹幕屏蔽规则 */
+    suspend fun deleteDanmakuCloudFilterRule(id: Long): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val csrf = com.android.purebilibili.core.store.TokenManager.csrfCache
+                if (csrf.isNullOrEmpty()) {
+                    return@withContext Result.failure(Exception("请先登录"))
+                }
+                val response = api.deleteDanmakuFilterRule(ids = id, csrf = csrf)
+                if (response.code != 0) {
+                    Result.failure(Exception(response.message.ifEmpty { "删除云端弹幕屏蔽规则失败" }))
+                } else {
+                    Result.success(Unit)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
 
     /** Full-video loading is retained only for offline asset export. Playback uses single segments. */
     suspend fun getDanmakuSegments(
@@ -979,18 +1068,30 @@ object DanmakuRepository {
                 return@withContext Result.failure(Exception("无可用弹幕服务器"))
             }
             
-            // 2. 选择最佳服务器 (优先 wss, 默认 443 端口)
-            val bestHost = hosts.find { it.wss_port == 443 } 
-                ?: hosts.find { it.wss_port != 0 }
-                ?: hosts.first()
-                
-            val port = if (bestHost.wss_port != 0) bestHost.wss_port else bestHost.ws_port
-            val schema = if (bestHost.wss_port != 0) "wss" else "ws"
-            val webSocketUrl = "$schema://${bestHost.host}:$port/sub"
-            
-            com.android.purebilibili.core.util.Logger.d("DanmakuRepo", "🔗 Connecting to Live Danmaku: $webSocketUrl")
-            
-            if (webSocketUrl.isNotEmpty()) {
+            // Try the secure 443 endpoint first, then the remaining secure endpoints and
+            // finally plain WebSocket endpoints returned by the live service.
+            val orderedHosts = hosts.sortedWith(
+                compareBy<com.android.purebilibili.data.model.response.LiveDanmuHost> {
+                    when {
+                        it.wss_port == 443 -> 0
+                        it.wss_port != 0 -> 1
+                        it.ws_port != 0 -> 2
+                        else -> 3
+                    }
+                }
+            )
+            val webSocketUrls = orderedHosts.mapNotNull { host ->
+                val port = if (host.wss_port != 0) host.wss_port else host.ws_port
+                if (host.host.isBlank() || port == 0) null
+                else "${if (host.wss_port != 0) "wss" else "ws"}://${host.host}:$port/sub"
+            }.distinct()
+
+            com.android.purebilibili.core.util.Logger.d(
+                "DanmakuRepo",
+                "🔗 Connecting to live danmaku with ${webSocketUrls.size} server candidates"
+            )
+
+            if (webSocketUrls.isNotEmpty()) {
             val client = com.android.purebilibili.core.network.socket.LiveDanmakuClient(scope) // Removed onMessage and onPopularity as they are not defined in the original context
             
             // uid 与 token 必须同一账号；账号状态不完整时退回游客 uid=0，避免认证后强制断连
@@ -998,7 +1099,7 @@ object DanmakuRepository {
             val uid = if (hasSess) (com.android.purebilibili.core.store.TokenManager.midCache ?: 0L) else 0L
             com.android.purebilibili.core.util.Logger.d("DanmakuRepo", "🔌 Connecting with UID: $uid")
             
-            client.connect(webSocketUrl, token, realRoomId, uid)
+            client.connect(webSocketUrls, token, realRoomId, uid)
             // liveDanmakuClient = client // liveDanmakuClient is not defined in the original context
             Result.success(client)
         } else {

@@ -3,6 +3,8 @@ package com.android.purebilibili.feature.video.ui.section
 
 import coil3.request.crossfade
 import com.android.purebilibili.core.ui.components.AppIcon
+import com.android.purebilibili.core.ui.motion.folmeExpandEnterTransition
+import com.android.purebilibili.core.ui.motion.folmeExpandExitTransition
 import com.android.purebilibili.core.ui.components.AppText
 
 import androidx.compose.animation.animateContentSize
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +38,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
@@ -51,12 +55,12 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 //  已改用 MaterialTheme.colorScheme.primary
 import com.android.purebilibili.core.util.FormatUtils
+import com.android.purebilibili.data.repository.VideoRepository
 import com.android.purebilibili.data.model.response.UgcSeason
 import com.android.purebilibili.data.model.response.VideoStaff
 import com.android.purebilibili.data.model.response.ViewInfo
 import com.android.purebilibili.data.model.response.VideoTag
 import com.android.purebilibili.core.ui.common.TextSelectionPolicy
-import com.android.purebilibili.core.ui.common.detectTapWithSelectionFriendly
 import com.android.purebilibili.core.ui.common.copyOnLongPress
 import com.android.purebilibili.feature.video.ui.components.VideoCardSkeleton
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -68,6 +72,7 @@ import com.android.purebilibili.core.ui.resolveUserAvatarCornerMark
 import com.android.purebilibili.core.ui.components.AppIconButton
 import com.android.purebilibili.core.ui.components.AppSurface
 import com.android.purebilibili.core.ui.components.resolveUpStatsText
+import com.android.purebilibili.core.ui.components.resolveUpNameColor
 import com.android.purebilibili.core.ui.components.UserUpBadge
 import com.android.purebilibili.core.theme.AppUiStyle
 import com.android.purebilibili.core.theme.LocalAppUiStyle
@@ -98,9 +103,14 @@ import com.android.purebilibili.feature.video.ui.components.ShimmerContainer
 import com.android.purebilibili.feature.video.ui.components.SkeletonBox
 import com.android.purebilibili.feature.video.ui.VideoDetailShapes
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.ContainerLevel
+
+private val useMiuixSpring: Boolean
+    @Composable get() = com.android.purebilibili.core.theme.LocalAppUiStyle.current ==
+        com.android.purebilibili.core.theme.AppUiStyle.MIUIX
 
 internal const val VIDEO_DESCRIPTION_URL_TAG = "VIDEO_DESCRIPTION_URL"
 private val VIDEO_DESCRIPTION_URL_PATTERN =
@@ -109,10 +119,58 @@ private val VIDEO_DESCRIPTION_INLINE_BVID_PATTERN =
     Regex("""(?<![A-Za-z0-9])BV[a-zA-Z0-9]{10}(?![A-Za-z0-9])""", RegexOption.IGNORE_CASE)
 private val VIDEO_DESCRIPTION_TOPIC_PATTERN =
     Regex("""#([^#\n\r\t]+)#""")
+private val VIDEO_DESCRIPTION_MENTION_PATTERN =
+    Regex("""@[^\s@,，。:：;；!！?？/\\]{1,32}""")
 
 internal fun buildVideoDescriptionAnnotatedString(
     desc: String,
-    urlColor: Color
+    urlColor: Color,
+    linkListener: androidx.compose.ui.text.LinkInteractionListener? = null
+): AnnotatedString = buildVideoDescriptionAnnotatedString(
+    desc = desc,
+    descV2 = emptyList(),
+    urlColor = urlColor,
+    linkListener = linkListener
+)
+
+/**
+ * 构建简介富文本。descV2 非空时按分段渲染:type=2 的 @提及带 biz_id,
+ * 点击直达 space.bilibili.com/{mid};纯文本回退时 @xxx 高亮并跳用户搜索。
+ */
+internal fun buildVideoDescriptionAnnotatedString(
+    desc: String,
+    descV2: List<com.android.purebilibili.data.model.response.VideoDescSegment>,
+    urlColor: Color,
+    linkListener: androidx.compose.ui.text.LinkInteractionListener? = null
+): AnnotatedString {
+    if (descV2.isEmpty()) {
+        return buildRawDescriptionAnnotatedString(desc, urlColor, linkListener)
+    }
+    return buildAnnotatedString {
+        descV2.forEach { segment ->
+            if (segment.type == 2 && segment.bizId > 0 && segment.rawText.isNotBlank()) {
+                withLink(
+                    androidx.compose.ui.text.LinkAnnotation.Clickable(
+                        tag = "https://space.bilibili.com/${segment.bizId}",
+                        styles = null,
+                        linkInteractionListener = linkListener,
+                    )
+                ) {
+                    withStyle(SpanStyle(color = urlColor, textDecoration = TextDecoration.Underline)) {
+                        append("@${segment.rawText}")
+                    }
+                }
+            } else {
+                append(buildRawDescriptionAnnotatedString(segment.rawText, urlColor, linkListener))
+            }
+        }
+    }
+}
+
+private fun buildRawDescriptionAnnotatedString(
+    desc: String,
+    urlColor: Color,
+    linkListener: androidx.compose.ui.text.LinkInteractionListener?
 ): AnnotatedString {
     data class LinkMatch(
         val range: IntRange,
@@ -160,6 +218,24 @@ internal fun buildVideoDescriptionAnnotatedString(
             }
         }
     }
+    VIDEO_DESCRIPTION_MENTION_PATTERN.findAll(desc).forEach { match ->
+        val overlapsUrl = matches.any { existing ->
+            match.range.first <= existing.range.last && match.range.last >= existing.range.first
+        }
+        if (!overlapsUrl) {
+            val mention = match.value.removePrefix("@").trim()
+            if (mention.isNotEmpty()) {
+                val encoded = java.net.URLEncoder.encode(mention, java.nio.charset.StandardCharsets.UTF_8.name())
+                matches += LinkMatch(
+                    range = match.range,
+                    // desc_v2 缺失时拿不到 mid,回退到站内用户搜索页。
+                    annotation = "https://search.bilibili.com/upuser?keyword=$encoded",
+                    displayText = match.value,
+                    priority = 2
+                )
+            }
+        }
+    }
     matches.sortWith(compareBy<LinkMatch> { it.range.first }.thenBy { it.priority })
 
     return buildAnnotatedString {
@@ -168,11 +244,17 @@ internal fun buildVideoDescriptionAnnotatedString(
             if (lastIndex < match.range.first) {
                 append(desc.substring(lastIndex, match.range.first))
             }
-            pushStringAnnotation(tag = VIDEO_DESCRIPTION_URL_TAG, annotation = match.annotation)
-            withStyle(SpanStyle(color = urlColor, textDecoration = TextDecoration.Underline)) {
-                append(match.displayText)
+            withLink(
+                androidx.compose.ui.text.LinkAnnotation.Clickable(
+                    tag = match.annotation,
+                    styles = null,
+                    linkInteractionListener = linkListener,
+                )
+            ) {
+                withStyle(SpanStyle(color = urlColor, textDecoration = TextDecoration.Underline)) {
+                    append(match.displayText)
+                }
             }
-            pop()
             lastIndex = match.range.last + 1
         }
         if (lastIndex < desc.length) {
@@ -202,6 +284,8 @@ internal fun resolveVideoInfoInitialExpandedState(
 private const val BGM_DISCOVERY_LOAD_DELAY_MS = 420L
 private const val BGM_RECOMMEND_PAGE_SIZE = 5
 private const val BGM_RECOMMEND_ROW_START_INDEX = 4
+/** 悬浮音频播放条的高度余量，避免底部面板内容被遮挡。 */
+private const val AUDIO_NOW_PLAYING_BAR_CLEARANCE_DP = 64
 private val BGM_DETAIL_CARD_HEIGHT = 168.dp
 
 /**
@@ -309,6 +393,48 @@ fun VideoTitleSection(
  */
 
 
+/**
+ * PiliPlus 风格的标题前缀徽标：盾牌+播放角标图标 + 类别文案（如“赞助/恰饭”）。
+ */
+@Composable
+fun VideoDetailSponsorLabelChip(
+    label: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 1,
+) {
+    AppSurface(
+        modifier = modifier,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                AppIcon(
+                    imageVector = Icons.Outlined.Shield,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp)
+                )
+                AppIcon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(9.dp)
+                )
+            }
+            AppText(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                lineHeight = MaterialTheme.typography.labelSmall.fontSize,
+                maxLines = maxLines
+            )
+        }
+    }
+}
+
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class, androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 fun VideoTitleWithDesc(
@@ -324,7 +450,11 @@ fun VideoTitleWithDesc(
     onDescriptionUrlClick: ((String) -> Unit)? = null,
     onBgmClick: (BgmInfo) -> Unit = {},
     onTagClick: (String) -> Unit = {},
-    onRelatedVideoClick: (String, android.os.Bundle?) -> Unit = { _, _ -> }
+    onRelatedVideoClick: (String, android.os.Bundle?) -> Unit = { _, _ -> },
+    // PiliPlus 式标题前缀徽标（赞助/恰饭等），空串不展示
+    sponsorLabel: String = "",
+    // 信息行末尾的紧凑入口插槽（AI 总结 / 视频笔记图标）
+    trailingStatsContent: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current
     val isMaterial3 = LocalAppUiStyle.current == AppUiStyle.MATERIAL3
@@ -332,6 +462,9 @@ fun VideoTitleWithDesc(
     val defaultExpanded by com.android.purebilibili.core.store.SettingsManager
         .getVideoInfoDefaultExpanded(context)
         .collectAsStateWithLifecycle(initialValue = false)
+    val argueMsgShown by com.android.purebilibili.core.store.SettingsManager
+        .getVideoArgueMsgShown(context)
+        .collectAsStateWithLifecycle(initialValue = true)
     var expanded by remember(info.bvid, info.desc, videoTags.size, defaultExpanded) {
         mutableStateOf(
             resolveVideoInfoInitialExpandedState(
@@ -353,6 +486,10 @@ fun VideoTitleWithDesc(
             partitionName = info.tname,
             title = info.title
         )
+    }
+    // PiliPlus 同款：信息行直接展示完整 yyyy-MM-dd HH:mm
+    val fullPublishTimeText = remember(info.pubdate) {
+        FormatUtils.formatPrecisePublishTime(timestampSeconds = info.pubdate)
     }
     val onlineCountText = remember(showOnlineCount, onlineCount) {
         resolveVideoDetailOnlineCountText(
@@ -396,15 +533,23 @@ fun VideoTitleWithDesc(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = horizontalPadding, vertical = if (isMaterial3) 8.dp else 6.dp)
+            .padding(horizontal = horizontalPadding, vertical = if (isMaterial3) 4.dp else 3.dp)
     ) {
-        // Title row (expandable)
+        val stackSponsorLabel = sponsorLabel.isNotBlank() && shouldStackSponsorLabelAboveTitle(sponsorLabel)
+        if (stackSponsorLabel) {
+            // 长徽标独立成行，避免挤压标题
+            VideoDetailSponsorLabelChip(
+                label = sponsorLabel,
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 2,
+            )
+        }
+        // Title row (expandable); top-aligned so the sponsor badge lines up with the first title line
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
                 .clickable(role = Role.Button) { expanded = !expanded },
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             //  共享元素过渡 - 标题
             var titleModifier = if (animateLayout) Modifier.animateContentSize() else Modifier
@@ -431,6 +576,12 @@ fun VideoTitleWithDesc(
                 }
             }
 
+            if (sponsorLabel.isNotBlank() && !stackSponsorLabel) {
+                VideoDetailSponsorLabelChip(
+                    label = sponsorLabel,
+                    modifier = Modifier.padding(end = 6.dp, top = 2.dp)
+                )
+            }
             SelectionContainer(modifier = Modifier.weight(1f)) {
                 AppText(
                     text = info.title,
@@ -453,18 +604,21 @@ fun VideoTitleWithDesc(
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier
+                    .align(Alignment.CenterVertically)
                     .rotate(rotateAngle)
                     .size(20.dp)
                     .padding(4.dp)
             )
         }
         
-        Spacer(Modifier.height(if (isMaterial3) 6.dp else 4.dp))
+        Spacer(Modifier.height(if (isMaterial3) 4.dp else 3.dp))
         
         // Stats row
+        Row(verticalAlignment = Alignment.CenterVertically) {
         androidx.compose.foundation.layout.FlowRow(
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
-            horizontalArrangement = Arrangement.spacedBy(if (isMaterial3) 10.dp else 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             itemVerticalAlignment = Alignment.CenterVertically
         ) {
             // Stats Row split for shared element transitions
@@ -491,18 +645,22 @@ fun VideoTitleWithDesc(
                         )
                     }
                 }
-                AppText(
-                    text = "${FormatUtils.formatStat(info.stat.view.toLong())}播放",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = viewsModifier
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = viewsModifier) {
+                    AppIcon(
+                        imageVector = Icons.Outlined.PlayCircleOutline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(Modifier.width(2.dp))
+                    AppText(
+                        text = FormatUtils.formatStat(info.stat.view.toLong()),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-                AppText(
-                    text = "  •  ",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
+                Spacer(Modifier.width(10.dp))
 
                 // Danmaku
                 var danmakuModifier = Modifier.wrapContentSize()
@@ -526,12 +684,20 @@ fun VideoTitleWithDesc(
                         )
                     }
                 }
-                AppText(
-                    text = "${FormatUtils.formatStat(info.stat.danmaku.toLong())}弹幕",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = danmakuModifier
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = danmakuModifier) {
+                    AppIcon(
+                        imageVector = Icons.Outlined.Subtitles,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(Modifier.width(2.dp))
+                    AppText(
+                        text = FormatUtils.formatStat(info.stat.danmaku.toLong()),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
             }
             if (onlineCountText.isNotBlank()) {
@@ -561,7 +727,7 @@ fun VideoTitleWithDesc(
                     }
                 } else {
                     AppText(
-                        text = publishTimeRowText,
+                        text = fullPublishTimeText.ifBlank { publishTimeRowText },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
@@ -569,16 +735,18 @@ fun VideoTitleWithDesc(
                 }
             }
         }
+        trailingStatsContent?.invoke()
+        }
 
         androidx.compose.animation.AnimatedVisibility(
             visible = expanded,
             enter = if (animateLayout) {
-                androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn()
+                folmeExpandEnterTransition(useMiuixSpring)
             } else {
                 androidx.compose.animation.EnterTransition.None
             },
             exit = if (animateLayout) {
-                androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
+                folmeExpandExitTransition(useMiuixSpring)
             } else {
                 androidx.compose.animation.ExitTransition.None
             }
@@ -608,9 +776,59 @@ fun VideoTitleWithDesc(
             }
         }
 
+        // 视频荣誉徽标(全站排行榜/每周必看/入站必刷/热门):可点击跳转对应榜单页
+        val honorChips = info.honorReply?.honor.orEmpty().mapNotNull { honor ->
+            resolveVideoHonorChipText(
+                type = honor.type,
+                honorName = honor.honorName,
+                descContent = honor.desc?.content,
+                weeklyRecommendNum = honor.weeklyRecommendNum
+            )?.let { text ->
+                val jumpUrl = resolveVideoHonorJumpUrl(
+                    type = honor.type,
+                    honorUrl = honor.honorUrl,
+                    weeklyRecommendNum = honor.weeklyRecommendNum,
+                    honorText = "${honor.honorName} ${honor.desc?.content.orEmpty()}"
+                ) ?: return@mapNotNull null
+                Triple(honor, text, jumpUrl)
+            }
+        }
+        if (honorChips.isNotEmpty()) {
+            // 紧跟统计行/徽标区:上方无徽标时收紧到 3dp,避免与播放量行隔离太远。
+            Spacer(Modifier.height(if (videoBadges.isNotEmpty()) 6.dp else 3.dp))
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                honorChips.forEach { (honor, text, jumpUrl) ->
+                    VideoHonorChip(
+                        text = text,
+                        onClick = { onDescriptionUrlClick?.invoke(jumpUrl) }
+                    )
+                }
+            }
+        }
+
+        // UP 主视频声明(PiliPlus argue_msg)+ 禁止转载(rights.no_reprint):
+        // 声明小字置于 BGM 胶囊之上,与荣誉胶囊形成"胶囊区→声明区"的统一观感。
+        val argueMsg = info.argueInfo?.argueMsg.orEmpty()
+        val noReprint = info.rights.noReprint == 1
+        if (argueMsgShown && (argueMsg.isNotBlank() || noReprint)) {
+            Spacer(Modifier.height(6.dp))
+            if (argueMsg.isNotBlank()) {
+                VideoArgueMsgRow(argueMsg = argueMsg)
+            }
+            if (argueMsg.isNotBlank() && noReprint) {
+                Spacer(Modifier.height(4.dp))
+            }
+            if (noReprint) {
+                VideoArgueMsgRow(argueMsg = "未经作者授权，请勿转载")
+            }
+        }
+
         // [新增] BGM Info Row
         if (bgmList.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             InlineBgmSection(
                 bgmList = bgmList,
                 onBgmClick = onBgmClick,
@@ -622,12 +840,12 @@ fun VideoTitleWithDesc(
         androidx.compose.animation.AnimatedVisibility(
             visible = expanded && info.desc.isNotBlank(),
             enter = if (animateLayout) {
-                androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn()
+                folmeExpandEnterTransition(useMiuixSpring)
             } else {
                 androidx.compose.animation.EnterTransition.None
             },
             exit = if (animateLayout) {
-                androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
+                folmeExpandExitTransition(useMiuixSpring)
             } else {
                 androidx.compose.animation.ExitTransition.None
             }
@@ -635,41 +853,39 @@ fun VideoTitleWithDesc(
             Column {
                 Spacer(Modifier.height(6.dp))
                 val descriptionUrlColor = MaterialTheme.colorScheme.primary
-                val descriptionText = remember(info.desc, descriptionUrlColor) {
-                    buildVideoDescriptionAnnotatedString(
-                        desc = info.desc,
-                        urlColor = descriptionUrlColor
-                    )
-                }
-                var descriptionTextLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
-                val descriptionModifier = if (onDescriptionUrlClick != null) {
-                    Modifier.pointerInput(descriptionText, info.desc, onDescriptionUrlClick) {
-                        detectTapWithSelectionFriendly { offset ->
-                            val layoutResult = descriptionTextLayout ?: return@detectTapWithSelectionFriendly
-                            val position = layoutResult.getOffsetForPosition(offset)
-                            val searchStart = maxOf(0, position - 1)
-                            val searchEnd = minOf(descriptionText.length, position + 1)
-                            descriptionText.getStringAnnotations(
-                                tag = VIDEO_DESCRIPTION_URL_TAG,
-                                start = searchStart,
-                                end = searchEnd
-                            ).firstOrNull()?.let { annotation ->
-                                onDescriptionUrlClick(annotation.item)
-                            }
+                val descriptionLinkListener = remember(onDescriptionUrlClick) {
+                    onDescriptionUrlClick?.let { handler ->
+                        androidx.compose.ui.text.LinkInteractionListener { link ->
+                            handler((link as androidx.compose.ui.text.LinkAnnotation.Clickable).tag)
                         }
                     }
+                }
+                val descriptionText = remember(
+                    info.desc,
+                    info.descV2,
+                    descriptionUrlColor,
+                    descriptionLinkListener
+                ) {
+                    buildVideoDescriptionAnnotatedString(
+                        desc = info.desc,
+                        descV2 = info.descV2,
+                        urlColor = descriptionUrlColor,
+                        linkListener = descriptionLinkListener
+                    )
+                }
+                val descriptionModifier = if (animateLayout) {
+                    Modifier.animateContentSize()
                 } else {
                     Modifier
                 }
-                // [新增] 使用 SelectionContainer 支持滑动复制
+                // 原生链接分发：链接点击在 Text 内部处理，与划选（SelectionContainer）
+                // 和外层手势不再竞争，恢复无条件划选容器。
                 SelectionContainer {
                     AppText(
                         text = descriptionText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        onTextLayout = { descriptionTextLayout = it },
-                        modifier = (if (animateLayout) Modifier.animateContentSize() else Modifier)
-                            .then(descriptionModifier)
+                        modifier = descriptionModifier
                     )
                 }
             }
@@ -679,12 +895,12 @@ fun VideoTitleWithDesc(
         androidx.compose.animation.AnimatedVisibility(
             visible = expanded && videoTags.isNotEmpty(),
             enter = if (animateLayout) {
-                androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn()
+                folmeExpandEnterTransition(useMiuixSpring)
             } else {
                 androidx.compose.animation.EnterTransition.None
             },
             exit = if (animateLayout) {
-                androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
+                folmeExpandExitTransition(useMiuixSpring)
             } else {
                 androidx.compose.animation.ExitTransition.None
             }
@@ -698,19 +914,23 @@ fun VideoTitleWithDesc(
                 .resolveAppTagChipMetrics(videoTagSize)
             Column {
                 Spacer(Modifier.height(8.dp))
-                androidx.compose.foundation.layout.FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(tagMetrics.itemSpacingHorizontal),
-                    verticalArrangement = Arrangement.Top
-                ) {
-                    videoTags.take(10).forEach { tag ->
-                        com.android.purebilibili.core.ui.components.AppTagChip(
-                            label = tag.tag_name,
-                            onClick = { onTagClick(tag.tag_name) },
-                            modifier = Modifier
-                                .padding(bottom = tagMetrics.itemSpacingVertical)
-                                .copyOnLongPress(tag.tag_name, "标签"),
-                            size = videoTagSize,
-                        )
+                // Keep native touch expansion without reserving a 48dp layout box per tag.
+                CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                    androidx.compose.foundation.layout.FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(tagMetrics.itemSpacingHorizontal),
+                        verticalArrangement = Arrangement.spacedBy(tagMetrics.itemSpacingVertical)
+                    ) {
+                        videoTags.take(10).forEach { tag ->
+                            com.android.purebilibili.core.ui.components.AppTagChip(
+                                label = if (tag.tag_type == "bgm") tag.tag_name.replaceFirst("发现", "♫ BGM：") else tag.tag_name,
+                                onClick = {
+                                    val bgm = resolveBgmTagInfo(tag)
+                                    if (bgm != null) onBgmClick(bgm) else onTagClick(tag.tag_name)
+                                },
+                                modifier = Modifier.copyOnLongPress(tag.tag_name, "标签"),
+                                size = videoTagSize,
+                            )
+                        }
                     }
                 }
             }
@@ -727,6 +947,54 @@ private fun VideoDetailBadgeChip(
         label = text,
         emphasized = emphasized,
     )
+}
+
+/**
+ * UP 主视频声明行(PiliPlus argue_msg 样式):
+ * error_outline 小图标 + 12sp 次要色文本,如"虚构演绎,请勿过度解读"。
+ */
+@Composable
+private fun VideoArgueMsgRow(argueMsg: String) {
+    Row(
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)
+    ) {
+        androidx.compose.material3.Icon(
+            imageVector = Icons.Outlined.ErrorOutline,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(13.dp)
+        )
+        AppText(
+            text = argueMsg,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * 视频荣誉徽标(全站排行榜最高第N名/每周必看等):
+ * 着色小胶囊,有跳转链接时可点击,走通用的 B 站链接路由进入对应原生榜单页面。
+ */
+@Composable
+private fun VideoHonorChip(
+    text: String,
+    onClick: (() -> Unit)? = null
+) {
+    AppSurface(
+        onClick = onClick ?: {},
+        enabled = onClick != null,
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        AppText(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
+    }
 }
 
 /**
@@ -792,7 +1060,7 @@ fun UpInfoSection(
 
         val avatarContent: @Composable () -> Unit = {
             if (showOwnerAvatar) {
-                val avatarSize = if (isCompact) 36.dp else 40.dp
+                val avatarSize = if (isCompact) 32.dp else 35.dp
                 var sharedFaceModifier: Modifier = Modifier
                 if (metadataSharedEnabled) {
                     with(requireNotNull(sharedTransitionScope)) {
@@ -822,7 +1090,7 @@ fun UpInfoSection(
                         faceUrl = info.owner.face,
                         ownerMid = info.owner.mid,
                         modifier = Modifier.size(avatarSize),
-                        badgeSize = if (isCompact) 12.dp else 14.dp,
+                        badgeSize = if (isCompact) 11.dp else 12.dp,
                         fallbackOfficialType = ownerStaff?.official?.type,
                         fallbackVipStatus = ownerStaff?.vip?.status,
                         faceModifier = sharedFaceModifier,
@@ -900,12 +1168,38 @@ fun UpInfoSection(
                     }
                     Spacer(Modifier.width(4.dp))
                 }
+                val ownerStaff = info.staff.firstOrNull { it.mid == info.owner.mid }
+                val fallbackVipStatus = ownerStaff?.vip?.status ?: 0
+                val fallbackVipType = ownerStaff?.vip?.type ?: 0
+                val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+                val secondaryColor = MaterialTheme.colorScheme.secondary
+                val ownerNameColor by produceState<Color>(
+                    initialValue = resolveUpNameColor(
+                        vipStatus = fallbackVipStatus,
+                        vipType = fallbackVipType,
+                        onSurface = onSurfaceColor,
+                        secondary = secondaryColor,
+                    ),
+                    key1 = info.owner.mid,
+                ) {
+                    val card = if (info.owner.mid > 0L) {
+                        VideoRepository.getCreatorCardStats(info.owner.mid).getOrNull()
+                    } else {
+                        null
+                    }
+                    value = resolveUpNameColor(
+                        vipStatus = card?.vipStatus ?: fallbackVipStatus,
+                        vipType = card?.vipType ?: fallbackVipType,
+                        onSurface = onSurfaceColor,
+                        secondary = secondaryColor,
+                    )
+                }
                 SelectionContainer {
                     AppText(
                         text = info.owner.name,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = ownerNameColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = upNameModifier
@@ -915,7 +1209,7 @@ fun UpInfoSection(
         }
 
         val followButtonContent: @Composable () -> Unit = {
-            var followActionModifier = Modifier.heightIn(min = if (isCompact) 28.dp else 32.dp)
+            var followActionModifier = Modifier.heightIn(min = if (isCompact) 26.dp else 28.dp)
             if (metadataSharedEnabled) {
                 with(requireNotNull(sharedTransitionScope)) {
                     followActionModifier = followActionModifier.sharedBounds(
@@ -1018,7 +1312,7 @@ fun UpInfoSection(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onUpClick(info.owner.mid) }
-                        .padding(horizontal = horizontalPadding, vertical = 8.dp),
+                        .padding(horizontal = horizontalPadding, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     avatarContent()
@@ -1054,6 +1348,7 @@ fun UpInfoSection(
             if (shouldShowCreatorTeamSection(info)) {
                 CreatorTeamSection(
                     staff = info.staff,
+                    ownerMid = info.owner.mid,
                     onMemberClick = onUpClick
                 )
             }
@@ -1064,9 +1359,27 @@ fun UpInfoSection(
 @Composable
 private fun CreatorTeamSection(
     staff: List<VideoStaff>,
+    ownerMid: Long,
     onMemberClick: (Long) -> Unit
 ) {
     if (staff.isEmpty()) return
+    // 每个成员的关注状态:null=查询中;经 followStateChanges 与全局动作同步。
+    val followStates = remember(staff) { mutableStateMapOf<Long, Boolean>() }
+    LaunchedEffect(staff) {
+        staff.filter { it.mid > 0L && it.mid != ownerMid }.forEach { member ->
+            followStates[member.mid] =
+                com.android.purebilibili.data.repository.ActionRepository
+                    .checkFollowStatus(member.mid)
+        }
+    }
+    LaunchedEffect(Unit) {
+        com.android.purebilibili.data.repository.ActionRepository.followStateChanges.collect { change ->
+            if (followStates.containsKey(change.mid)) {
+                followStates[change.mid] = change.isFollowing
+            }
+        }
+    }
+    val scope = rememberCoroutineScope()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1099,6 +1412,17 @@ private fun CreatorTeamSection(
             staff.forEach { member ->
                 CreatorTeamMemberChip(
                     member = member,
+                    showFollow = member.mid > 0L && member.mid != ownerMid,
+                    isFollowing = followStates[member.mid] ?: false,
+                    onFollowToggle = {
+                        scope.launch {
+                            val target = !(followStates[member.mid] ?: false)
+                            val ok = com.android.purebilibili.data.repository.ActionRepository
+                                .followUser(member.mid, target)
+                                .getOrDefault(false)
+                            if (ok) followStates[member.mid] = target
+                        }
+                    },
                     onClick = { onMemberClick(member.mid) }
                 )
             }
@@ -1109,8 +1433,18 @@ private fun CreatorTeamSection(
 @Composable
 private fun CreatorTeamMemberChip(
     member: VideoStaff,
+    showFollow: Boolean,
+    isFollowing: Boolean,
+    onFollowToggle: () -> Unit,
     onClick: () -> Unit
 ) {
+    val followDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val followVisualPolicy = remember(isFollowing, followDarkTheme) {
+        resolveVideoFollowVisualPolicy(
+            isFollowing = isFollowing,
+            darkTheme = followDarkTheme,
+        )
+    }
     val officialBadge = remember(member.official) {
         resolveOfficialVerifyBadgeFromRole(
             type = member.official.type,
@@ -1182,6 +1516,39 @@ private fun CreatorTeamMemberChip(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+        }
+        if (showFollow) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clickable(role = Role.Button, onClick = onFollowToggle),
+                contentAlignment = Alignment.Center
+            ) {
+                AppSurface(
+                    color = when (followVisualPolicy.detailButtonTone) {
+                        FollowButtonTone.PRIMARY -> MaterialTheme.colorScheme.primary
+                        FollowButtonTone.PRIMARY_CONTAINER -> MaterialTheme.colorScheme.primaryContainer
+                    },
+                    shape = VideoDetailShapes.action(),
+                    modifier = Modifier.heightIn(min = 28.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    ) {
+                        AppText(
+                            text = if (isFollowing) "已关注" else "关注",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = when (followVisualPolicy.detailTextTone) {
+                                FollowTextTone.ON_PRIMARY -> MaterialTheme.colorScheme.onPrimary
+                                FollowTextTone.ON_PRIMARY_CONTAINER -> MaterialTheme.colorScheme.onPrimaryContainer
+                            },
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }
@@ -1266,15 +1633,21 @@ private fun InlineBgmSection(
                 append(bgmList.size)
                 append("首音乐")
             }
+            // PiliPlus 式单行：艺人内联，避免双行卡片
+            val actor = leadSong.actor.takeIf { it.isNotBlank() && bgmList.size == 1 }
+            if (actor != null) {
+                append(" · ")
+                append(actor)
+            }
         }
     }
 
     BgmInfoRow(
         title = headerText,
-        subtitle = leadSong.actor.takeIf { it.isNotBlank() && bgmList.size == 1 },
+        subtitle = null,
         showIndicator = false,
         onClick = {
-            showSheet = true
+            if (bgmList.size == 1) onBgmClick(leadSong) else showSheet = true
         }
     )
 
@@ -1317,16 +1690,16 @@ fun BgmInfoRow(
             .clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AppIcon(
                 imageVector = Icons.Outlined.MusicNote,
                 contentDescription = "BGM",
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(14.dp)
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 AppText(
                     text = title,
@@ -1466,7 +1839,12 @@ private fun BgmSelectionSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.68f),
-            contentPadding = PaddingValues(bottom = 20.dp)
+            // 底部额外预留系统导航栏与悬浮播放条的高度，
+            // 避免「使用该音乐的视频」最后一张卡片被遮挡。
+            contentPadding = PaddingValues(
+                bottom = 20.dp + WindowInsets.navigationBars.asPaddingValues()
+                    .calculateBottomPadding() + AUDIO_NOW_PLAYING_BAR_CLEARANCE_DP.dp
+            )
         ) {
             item {
                 Row(
@@ -1819,6 +2197,8 @@ private fun BgmDetailCard(
     }
 
     AppSurface(
+        onClick = onOpenMusic,
+        enabled = !isLoading,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
@@ -2047,6 +2427,11 @@ private fun resolveBgmRecommendRowKey(
 private fun resolveBgmRecommendRowItemIndex(rowIndex: Int): Int {
     return BGM_RECOMMEND_ROW_START_INDEX + rowIndex
 }
+
+internal fun resolveBgmTagInfo(tag: com.android.purebilibili.data.model.response.VideoTag): BgmInfo? =
+    if (tag.tag_type == "bgm" && (tag.music_id.isNotBlank() || tag.jump_url.isNotBlank())) {
+        BgmInfo(musicId = tag.music_id, musicTitle = tag.tag_name, jumpUrl = tag.jump_url, coverUrl = tag.cover)
+    } else null
 
 internal fun resolveDisplayBgmList(
     bgmInfo: BgmInfo?,

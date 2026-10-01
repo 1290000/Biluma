@@ -35,6 +35,8 @@ internal enum class BiliPaiNavEntryContentRole {
     WATCH_LATER,
     ONBOARDING,
     FOLLOWING,
+    UPOWER_RANK,
+    MEMBER_GUARD,
     DOWNLOAD_LIST,
     OFFLINE_VIDEO_PLAYER,
     LIVE_LIST,
@@ -56,6 +58,8 @@ internal enum class BiliPaiNavEntryContentRole {
     SEASON_SERIES_DETAIL,
     BANGUMI,
     BANGUMI_PLAYER,
+    WEEKLY_SERIES,
+    BGM_DETAIL,
     MUSIC_DETAIL,
     NATIVE_MUSIC,
     SPACE,
@@ -110,6 +114,10 @@ internal fun resolveBiliPaiNavEntryContentRole(key: BiliPaiNavKey): BiliPaiNavEn
         is BiliPaiNavKey.WatchLaterSearch -> BiliPaiNavEntryContentRole.WATCH_LATER
         BiliPaiNavKey.Onboarding -> BiliPaiNavEntryContentRole.ONBOARDING
         is BiliPaiNavKey.Following -> BiliPaiNavEntryContentRole.FOLLOWING
+        is BiliPaiNavKey.UpowerRank,
+        BiliPaiNavKey.UpowerRank.Companion -> BiliPaiNavEntryContentRole.UPOWER_RANK
+        is BiliPaiNavKey.MemberGuard,
+        BiliPaiNavKey.MemberGuard.Companion -> BiliPaiNavEntryContentRole.MEMBER_GUARD
         BiliPaiNavKey.DownloadList -> BiliPaiNavEntryContentRole.DOWNLOAD_LIST
         is BiliPaiNavKey.OfflineVideoPlayer -> BiliPaiNavEntryContentRole.OFFLINE_VIDEO_PLAYER
         BiliPaiNavKey.LiveList -> BiliPaiNavEntryContentRole.LIVE_LIST
@@ -131,6 +139,8 @@ internal fun resolveBiliPaiNavEntryContentRole(key: BiliPaiNavKey): BiliPaiNavEn
         is BiliPaiNavKey.SeasonSeriesDetail -> BiliPaiNavEntryContentRole.SEASON_SERIES_DETAIL
         is BiliPaiNavKey.Bangumi -> BiliPaiNavEntryContentRole.BANGUMI
         is BiliPaiNavKey.BangumiPlayer -> BiliPaiNavEntryContentRole.BANGUMI_PLAYER
+        is BiliPaiNavKey.WeeklySeries -> BiliPaiNavEntryContentRole.WEEKLY_SERIES
+        is BiliPaiNavKey.BgmDetail -> BiliPaiNavEntryContentRole.BGM_DETAIL
         is BiliPaiNavKey.MusicDetail -> BiliPaiNavEntryContentRole.MUSIC_DETAIL
         is BiliPaiNavKey.NativeMusic -> BiliPaiNavEntryContentRole.NATIVE_MUSIC
         is BiliPaiNavKey.Space -> BiliPaiNavEntryContentRole.SPACE

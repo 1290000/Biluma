@@ -18,11 +18,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.android.purebilibili.core.ui.components.AppTabRowIndicatorPresentation
 import com.android.purebilibili.core.ui.components.AppSegmentOption
 import com.android.purebilibili.core.ui.components.AppSegmentedControlColors
 import com.android.purebilibili.core.ui.components.AppPrimaryScrollableTabRow
 import com.android.purebilibili.core.ui.components.AppPrimaryTabRow
-import com.android.purebilibili.core.ui.components.resolveAppSegmentedLabelFontSizeSp
+import com.android.purebilibili.core.ui.components.resolveAppSegmentedLabelFontSize
 import com.android.purebilibili.core.ui.components.resolveAppSegmentedSelectionIndex
 
 @Composable
@@ -37,9 +38,9 @@ internal fun <T> AppMaterial3SegmentedControl(
     val longestLabelLength = remember(options) {
         options.maxOfOrNull { it.label.length } ?: 0
     }
-    val labelFontSize = remember(options.size, longestLabelLength) {
-        resolveAppSegmentedLabelFontSizeSp(options.size, longestLabelLength).sp
-    }
+    val labelFontSize = resolveAppSegmentedLabelFontSize(
+        MaterialTheme.typography.labelLarge.fontSize, options.size, longestLabelLength
+    )
     SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
         options.forEachIndexed { index, option ->
             val selected = option.value == selectedValue
@@ -85,6 +86,7 @@ internal fun <T> AppMaterial3TabRow(
     minTabWidth: Dp,
     modifier: Modifier,
     allowLabelOverflow: Boolean = false,
+    indicatorPresentation: AppTabRowIndicatorPresentation = AppTabRowIndicatorPresentation.UNDERLINE,
     indicatorPositionProvider: (() -> Float)? = null,
     onSelectionChange: (T) -> Unit,
 ) {
@@ -92,8 +94,21 @@ internal fun <T> AppMaterial3TabRow(
     val longestLabelLength = remember(options) {
         options.maxOfOrNull { it.label.length } ?: 0
     }
-    val labelFontSize = remember(options.size, longestLabelLength) {
-        resolveAppSegmentedLabelFontSizeSp(options.size, longestLabelLength).sp
+    val labelFontSize = resolveAppSegmentedLabelFontSize(
+        MaterialTheme.typography.labelLarge.fontSize, options.size, longestLabelLength
+    )
+    if (indicatorPresentation == AppTabRowIndicatorPresentation.TONAL_PILL) {
+        AppTonalPillTabRow(
+            options = options,
+            selectedValue = selectedValue,
+            onSelectionChange = onSelectionChange,
+            modifier = modifier,
+            enabled = enabled,
+            scrollable = scrollable,
+            labelFontSize = labelFontSize,
+            indicatorPositionProvider = indicatorPositionProvider,
+        )
+        return
     }
     val tabs: @Composable () -> Unit = {
         options.forEach { option ->
@@ -101,10 +116,14 @@ internal fun <T> AppMaterial3TabRow(
             // Keep Tab's `text =` slot so TabRow can subtract HorizontalTextPadding
             // when sizing the underline. Overflow the 16.dp padding instead of
             // ellipsizing 直播间 / UP主 / 默认排序 when many tabs share one row.
+            // TabRow's default contentColor is primary for every tab; pin the M3
+            // standard so only the selected label carries the theme color.
             Tab(
                 selected = selected,
                 onClick = { onSelectionChange(option.value) },
                 enabled = enabled,
+                selectedContentColor = MaterialTheme.colorScheme.primary,
+                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 text = {
                     Text(
                         text = option.label,

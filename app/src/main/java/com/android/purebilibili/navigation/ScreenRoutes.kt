@@ -30,9 +30,14 @@ sealed class ScreenRoutes(val route: String) {
     object History : ScreenRoutes("history")
     object Favorite : ScreenRoutes("favorite")
     object LikedVideos : ScreenRoutes("liked_videos") {
-        fun createRoute(mid: Long = 0L, ownerName: String = ""): String {
+        fun createRoute(
+            mid: Long = 0L,
+            ownerName: String = "",
+            isCoinArchive: Boolean = false,
+        ): String {
             return if (mid > 0L) {
-                "liked_videos?mid=$mid&ownerName=${encodeUrlComponentCompat(ownerName)}"
+                val archiveType = if (isCoinArchive) "&type=coin" else ""
+                "liked_videos?mid=$mid&ownerName=${encodeUrlComponentCompat(ownerName)}$archiveType"
             } else {
                 "liked_videos"
             }
@@ -265,6 +270,16 @@ sealed class ScreenRoutes(val route: String) {
     }
     
     // [新增] Audio Player
+    object WeeklySeries : ScreenRoutes("weekly_series?number={number}") {
+        fun createRoute(number: Int? = null): String =
+            "weekly_series" + (number?.takeIf { it > 0 }?.let { "?number=$it" } ?: "")
+    }
+
+    object BgmDetail : ScreenRoutes("bgm_detail") {
+        fun createRoute(musicId: String, aid: Long = 0, cid: Long = 0, showVideos: Boolean = false): String =
+            "bgm_detail?musicId=${encodeUrlComponentCompat(musicId)}&aid=$aid&cid=$cid&showVideos=$showVideos"
+    }
+
     object MusicDetail : ScreenRoutes("music/{sid}") {
         fun createRoute(sid: Long): String {
             return "music/$sid"
@@ -277,4 +292,16 @@ sealed class ScreenRoutes(val route: String) {
             return "native_music?title=${encodeUrlComponentCompat(title)}&bvid=${encodeUrlComponentCompat(bvid)}&cid=$cid"
         }
     }
+    companion object {
+        fun createMusicRoute(musicId: String): String? {
+            val id = musicId.trim()
+            val auSid = id.removePrefix("au").removePrefix("AU").toLongOrNull()
+            return when {
+                auSid != null && auSid > 0 -> MusicDetail.createRoute(auSid)
+                Regex("MA[0-9A-Za-z]+", RegexOption.IGNORE_CASE).matches(id) -> BgmDetail.createRoute(id)
+                else -> null
+            }
+        }
+    }
+
 }

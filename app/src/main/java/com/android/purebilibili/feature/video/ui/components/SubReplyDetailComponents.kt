@@ -9,6 +9,9 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -20,6 +23,8 @@ import androidx.compose.material.icons.automirrored.outlined.Reply
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.foundation.background
@@ -40,6 +45,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -48,6 +54,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.appendInlineContent
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppSurface
+import com.android.purebilibili.core.ui.components.resolveUpNameColor
 import com.android.purebilibili.core.ui.components.AppIconButton
 import androidx.compose.material3.MaterialTheme
 import com.android.purebilibili.core.ui.components.AppText
@@ -87,6 +94,7 @@ import com.android.purebilibili.data.model.response.ReplyItem
 import com.android.purebilibili.data.repository.BlockedUpRelationSource
 import com.android.purebilibili.data.repository.BlockedUpRepository
 import com.android.purebilibili.feature.dynamic.components.ImagePreviewTextContent
+import com.android.purebilibili.feature.dynamic.components.ImagePreviewSourceAnchor
 import com.android.purebilibili.core.ui.animation.MaybeDissolvableVideoCard
 import com.android.purebilibili.core.ui.common.rememberClipboardCopyHandler
 import com.android.purebilibili.core.ui.rememberAppLikeFilledIcon
@@ -114,7 +122,14 @@ private val SUB_REPLY_DIRECTED_MESSAGE_PATTERN = Regex("""^\s*回复\s*@.+?[：:
 internal data class SubReplyDetailLayoutPolicy(
     val listBottomPaddingDp: Int,
     val footerTopPaddingDp: Int,
-    val overlayRootCommentEntry: Boolean
+    val overlayRootCommentEntry: Boolean,
+    val headerVerticalPaddingDp: Int,
+    val sectionVerticalPaddingDp: Int,
+    val sectionDividerThicknessDp: Int,
+    val commentVerticalPaddingDp: Int,
+    val avatarContentSpacingDp: Int,
+    val authorToContentSpacingDp: Int,
+    val contentToActionSpacingDp: Int,
 )
 
 /** Keeps the thread-detail avatar bound in sync with the main comment list. */
@@ -181,9 +196,16 @@ internal fun resolveSubReplyDetailLayoutPolicy(
     showRootCommentEntry: Boolean
 ): SubReplyDetailLayoutPolicy {
     return SubReplyDetailLayoutPolicy(
-        listBottomPaddingDp = 16,
+        listBottomPaddingDp = 8,
         footerTopPaddingDp = 0,
-        overlayRootCommentEntry = false
+        overlayRootCommentEntry = false,
+        headerVerticalPaddingDp = 0,
+        sectionVerticalPaddingDp = 0,
+        sectionDividerThicknessDp = 6,
+        commentVerticalPaddingDp = 10,
+        avatarContentSpacingDp = 8,
+        authorToContentSpacingDp = 8,
+        contentToActionSpacingDp = 8,
     )
 }
 
@@ -414,7 +436,7 @@ internal fun VideoInlineSubReplyDetailContent(
     onDismiss: () -> Unit,
     onRootCommentClick: () -> Unit,
     onTimestampClick: ((Long) -> Unit)?,
-    onImagePreview: ((List<String>, Int, Rect?, ImagePreviewTextContent?) -> Unit)?,
+    onImagePreview: ((List<String>, Int, ImagePreviewSourceAnchor?, ImagePreviewTextContent?) -> Unit)?,
     onReplyClick: (ReplyItem) -> Unit,
     onConversationClick: (ReplyItem) -> Unit,
     onConversationBack: () -> Unit,
@@ -494,7 +516,7 @@ internal fun SubReplyDetailContent(
     onTimestampClick: ((Long) -> Unit)? = null,
     upMid: Long = 0,
     showUpFlag: Boolean = false,
-    onImagePreview: ((List<String>, Int, Rect?, ImagePreviewTextContent?) -> Unit)? = null,
+    onImagePreview: ((List<String>, Int, ImagePreviewSourceAnchor?, ImagePreviewTextContent?) -> Unit)? = null,
     onReplyClick: ((ReplyItem) -> Unit)? = null,
     onConversationClick: ((ReplyItem) -> Unit)? = null,
     onConversationBack: (() -> Unit)? = null,
@@ -704,7 +726,12 @@ internal fun SubReplyDetailContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (applyStatusBarPadding) Modifier.statusBarsPadding() else Modifier)
-                .padding(start = 20.dp, end = 8.dp, top = 10.dp, bottom = 10.dp)
+                .padding(
+                    start = 16.dp,
+                    end = 8.dp,
+                    top = layoutPolicy.headerVerticalPaddingDp.dp,
+                    bottom = layoutPolicy.headerVerticalPaddingDp.dp
+                )
                 .then(headerDragModifier)
                 .testTag(SUB_REPLY_DETAIL_HEADER_TAG)
         ) {
@@ -747,6 +774,7 @@ internal fun SubReplyDetailContent(
                 ) {
                     Box(modifier = Modifier.testTag(SUB_REPLY_DETAIL_ROOT_TAG)) {
                         SubReplyDetailItem(
+                            layoutPolicy = layoutPolicy,
                             item = rootReply,
                             appearance = appearance,
                             isRootItem = true,
@@ -786,11 +814,14 @@ internal fun SubReplyDetailContent(
                     levelIndex = 1
                 ) {
                     Column {
-                        AppHorizontalDivider(thickness = 8.dp, color = appearance.sectionDividerColor)
+                        AppHorizontalDivider(
+                            thickness = layoutPolicy.sectionDividerThicknessDp.dp,
+                            color = appearance.sectionDividerColor
+                        )
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .padding(horizontal = 16.dp, vertical = layoutPolicy.sectionVerticalPaddingDp.dp)
                                 .testTag(SUB_REPLY_DETAIL_SECTION_TAG),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -821,6 +852,8 @@ internal fun SubReplyDetailContent(
                                                 conversationAnchor = null
                                             }
                                         }
+                                        .sizeIn(minHeight = 48.dp)
+                                        .wrapContentHeight()
                                         .padding(horizontal = 4.dp, vertical = 6.dp)
                                 )
                             } else {
@@ -866,6 +899,7 @@ internal fun SubReplyDetailContent(
                     modifier = Modifier.padding(bottom = 1.dp)
                 ) {
                     SubReplyDetailItem(
+                            layoutPolicy = layoutPolicy,
                             item = item,
                             appearance = appearance,
                             highlighted = item.rpid == highlightedTargetId,
@@ -964,6 +998,7 @@ internal fun SubReplyDetailContent(
 
 @Composable
 private fun SubReplyDetailItem(
+    layoutPolicy: SubReplyDetailLayoutPolicy,
     item: ReplyItem,
     appearance: SubReplyDetailAppearance,
     highlighted: Boolean = false,
@@ -972,7 +1007,7 @@ private fun SubReplyDetailItem(
     emoteMap: Map<String, String>,
     showUpFlag: Boolean,
     onTimestampClick: ((Long) -> Unit)?,
-    onImagePreview: ((List<String>, Int, Rect?, ImagePreviewTextContent?) -> Unit)?,
+    onImagePreview: ((List<String>, Int, ImagePreviewSourceAnchor?, ImagePreviewTextContent?) -> Unit)?,
     onReplyClick: () -> Unit,
     onDeleteClick: (() -> Unit)?,
     onCheckFraudClick: (() -> Unit)? = null,
@@ -1047,15 +1082,16 @@ private fun SubReplyDetailItem(
         }
     }
     val avatarSize = remember { resolveSubReplyDetailAvatarSizeDp().dp }
-    val nameColor = if (item.member.vip?.vipStatus == 1) {
-        appearance.accentColor
-    } else {
-        appearance.primaryTextColor
-    }
+    val nameColor = resolveUpNameColor(
+        vipStatus = item.member.vip?.vipStatus ?: 0,
+        vipType = item.member.vip?.vipType ?: 0,
+        onSurface = appearance.primaryTextColor,
+        secondary = MaterialTheme.colorScheme.secondary,
+    )
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val copyToClipboard = rememberClipboardCopyHandler()
-    val blockedUpRepository = remember(context) { BlockedUpRepository(context) }
+    val blockedUpRepository = remember { BlockedUpRepository.getInstance(context) }
     var showActionSheet by remember(item.rpid) { mutableStateOf(false) }
     var showFreeCopyDialog by remember(item.rpid) { mutableStateOf(false) }
     var showReportDialog by remember(item.rpid) { mutableStateOf(false) }
@@ -1069,6 +1105,15 @@ private fun SubReplyDetailItem(
     }
     val copyText = remember(item.content.message) { item.content.message.trim() }
     val replyMemberMid = remember(item.member.mid, item.mid) { resolveReplyMemberMid(item) }
+    // [新增] 点踩折叠：与主评论区一致，正文收起为一行，可展开；取消点踩自动恢复
+    var hatedBodyExpanded by remember(item.rpid, isHated) { mutableStateOf(false) }
+    val collapseHatedBody = isHated && !hatedBodyExpanded
+    var hatePromptHandled by remember(item.rpid) { mutableStateOf(false) }
+    var confirmBlockUser by remember(item.rpid) { mutableStateOf(false) }
+    val hateCollapseSpring: SpringSpec<androidx.compose.ui.unit.IntSize> = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
     fun launchSaveReplyCommentImage(reply: ReplyItem) {
         scope.launch {
             val success = saveReplyCommentImageToGallery(context, reply)
@@ -1134,7 +1179,7 @@ private fun SubReplyDetailItem(
             },
             onReply = onReplyClick,
             onBlockUser = {
-                blockReplyUser()
+                confirmBlockUser = true
             },
             onReport = { showReportDialog = true },
             onToggleTop = {},
@@ -1162,6 +1207,24 @@ private fun SubReplyDetailItem(
         }
     )
 
+    if (confirmBlockUser) {
+        com.android.purebilibili.core.ui.AppAlertDialog(
+            onDismissRequest = { confirmBlockUser = false },
+            title = { AppText("拉黑该用户？") },
+            text = { AppText("拉黑「${item.member.uname}」后将不再显示 TA 的评论和动态，可在设置中解除。") },
+            confirmButton = {
+                com.android.purebilibili.core.ui.AppDialogAction(onClick = {
+                    confirmBlockUser = false
+                    hatePromptHandled = true
+                    blockReplyUser()
+                }) { AppText("确认拉黑") }
+            },
+            dismissButton = {
+                com.android.purebilibili.core.ui.AppDialogAction(onClick = { confirmBlockUser = false }) { AppText("取消") }
+            },
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1173,8 +1236,12 @@ private fun SubReplyDetailItem(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 14.dp, bottom = 14.dp, start = 16.dp, end = 16.dp)
+                .padding(
+                    top = layoutPolicy.commentVerticalPaddingDp.dp,
+                    bottom = layoutPolicy.commentVerticalPaddingDp.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                )
         ) {
             ReplyMemberAvatar(
                 member = item.member,
@@ -1191,7 +1258,7 @@ private fun SubReplyDetailItem(
                 }
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(layoutPolicy.avatarContentSpacingDp.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -1256,7 +1323,47 @@ private fun SubReplyDetailItem(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(layoutPolicy.authorToContentSpacingDp.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(animationSpec = hateCollapseSpring)
+                ) {
+                    if (collapseHatedBody) {
+                        AppText(
+                            text = "已点踩的评论 · 点击展开",
+                            style = if (isRootItem) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                            color = appearance.secondaryTextColor,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { hatedBodyExpanded = true }
+                                .padding(vertical = 2.dp)
+                        )
+                        if (!hatePromptHandled) {
+                            Row(
+                                modifier = Modifier.padding(top = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                ReplyTextAction(
+                                    label = "屏蔽该用户",
+                                    appearance = appearance,
+                                    onClick = { confirmBlockUser = true },
+                                    icon = Icons.Outlined.Block
+                                )
+                                ReplyTextAction(
+                                    label = "举报",
+                                    appearance = appearance,
+                                    onClick = {
+                                        hatePromptHandled = true
+                                        showReportDialog = true
+                                    },
+                                    icon = Icons.Outlined.Flag
+                                )
+                            }
+                        }
+                    } else {
                 ReplyMessageText(
                     text = displayMessage,
                     fontSize = if (isRootItem) MaterialTheme.typography.bodyLarge.fontSize else MaterialTheme.typography.bodyMedium.fontSize,
@@ -1295,8 +1402,10 @@ private fun SubReplyDetailItem(
                         )
                     }
                 }
+                    }
+                }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(layoutPolicy.contentToActionSpacingDp.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1368,31 +1477,35 @@ private fun SubReplyDetailItem(
                     }
 
                     if (showConversationAction) {
-                        Spacer(modifier = Modifier.width(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         AppText(
                             text = "查看对话",
                             style = MaterialTheme.typography.labelMedium,
                             color = appearance.actionTint,
                             modifier = Modifier
+                                .sizeIn(minHeight = 32.dp)
                                 .testTag("$SUB_REPLY_DETAIL_CONVERSATION_TAG_PREFIX${item.rpid}")
                                 .clickable(enabled = onConversationClick != null) {
                                     onConversationClick?.invoke()
                                 }
+                                .wrapContentHeight()
                         )
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
                     if (onDeleteClick != null) {
-                        AppIconButton(onClick = onDeleteClick) {
-                            AppIcon(
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = "删除",
-                                tint = appearance.actionTint,
-                                modifier = Modifier.size(16.dp),
-                            )
+                        Box(modifier = Modifier.height(32.dp)) {
+                            AppIconButton(onClick = onDeleteClick) {
+                                AppIcon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = "删除",
+                                    tint = appearance.actionTint,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
 
                     val likeFilledIcon = rememberAppLikeFilledIcon()
@@ -1420,16 +1533,19 @@ private fun SubReplyDetailItem(
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
-                    AppIconButton(
-                        onClick = { onHateClick?.invoke() },
-                        enabled = onHateClick != null
-                    ) {
-                        AppIcon(
-                            imageVector = Icons.Filled.ThumbDown,
-                            contentDescription = if (isHated) "取消点踩" else "点踩评论",
-                            tint = if (isHated) MaterialTheme.colorScheme.error else appearance.actionTint,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    // Bound the visible container, not Compose's expanded touch target.
+                    Box(modifier = Modifier.height(32.dp)) {
+                        AppIconButton(
+                            onClick = { onHateClick?.invoke() },
+                            enabled = onHateClick != null
+                        ) {
+                            AppIcon(
+                                imageVector = Icons.Filled.ThumbDown,
+                                contentDescription = if (isHated) "取消点踩" else "点踩评论",
+                                tint = if (isHated) MaterialTheme.colorScheme.error else appearance.actionTint,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -1437,7 +1553,7 @@ private fun SubReplyDetailItem(
 
         if (showTrailingDivider) {
             AppHorizontalDivider(
-                modifier = Modifier.padding(start = 68.dp),
+                modifier = Modifier.padding(start = 16.dp + avatarSize + layoutPolicy.avatarContentSpacingDp.dp),
                 thickness = 0.5.dp,
                 color = appearance.dividerColor
             )
@@ -1533,7 +1649,7 @@ private fun SubReplyTextAction(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .sizeIn(minWidth = 48.dp, minHeight = 32.dp)
             .clickable(role = Role.Button, onClick = onClick)
     ) {
         AppIcon(

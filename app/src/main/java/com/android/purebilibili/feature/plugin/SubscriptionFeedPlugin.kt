@@ -24,7 +24,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.android.purebilibili.core.plugin.Plugin
+import com.android.purebilibili.core.plugin.feed.FeedConditionalStore
 import com.android.purebilibili.core.plugin.feed.SubscriptionFeedStore
+import com.android.purebilibili.core.plugin.feed.buildSubscriptionOpml
 import com.android.purebilibili.core.plugin.feed.resolveSubscriptionTitle
 import com.android.purebilibili.core.plugin.feed.resolveImportedSubscriptionTitles
 import com.android.purebilibili.core.ui.AppAlertDialog
@@ -32,6 +34,7 @@ import com.android.purebilibili.core.ui.AppDialogAction
 import com.android.purebilibili.core.ui.components.AppButton
 import com.android.purebilibili.core.ui.components.AppCheckbox
 import com.android.purebilibili.core.ui.components.AppOutlinedTextField
+import com.android.purebilibili.core.ui.components.AppSwitch
 import com.android.purebilibili.core.ui.components.AppText
 import com.android.purebilibili.core.ui.components.AppTextButton
 import com.android.purebilibili.plugin.sdk.PluginCapability
@@ -115,21 +118,46 @@ private fun SubscriptionFeedSettings(modifier: Modifier = Modifier) {
             }
         }
     }
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("text/xml"),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val opml = buildSubscriptionOpml(SubscriptionFeedStore.list(context))
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        output.write(opml.toByteArray(Charsets.UTF_8))
+                    } ?: error("无法写入所选位置")
+                }
+                error = null
+            } catch (failure: Exception) {
+                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                error = "导出失败，请重试"
+            }
+        }
+    }
     Column(
         modifier = modifier.padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        AppText(
+            text = "添加 RSS 或 Atom 地址，在首页集中阅读更新。可批量导入 OPML、地址列表或 RSS 表格。",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
         AppOutlinedTextField(
             value = url,
             onValueChange = { url = it },
-            label = { AppText("订阅地址") },
+            labelText = "订阅地址",
+            placeholderText = "https://example.com/feed.xml",
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
         AppOutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { AppText("名称（可选，留空自动获取）") },
+            labelText = "名称（可选，留空自动获取）",
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
@@ -164,7 +192,8 @@ private fun SubscriptionFeedSettings(modifier: Modifier = Modifier) {
         AppOutlinedTextField(
             value = importText,
             onValueChange = { importText = it },
-            label = { AppText("批量导入：OPML、地址列表或 RSS 表格") },
+            labelText = "批量导入",
+            placeholderText = "粘贴 OPML、地址列表或 RSS 表格，每行一个地址",
             modifier = Modifier.fillMaxWidth(),
             minLines = 4,
         )
@@ -172,6 +201,12 @@ private fun SubscriptionFeedSettings(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
         ) {
+            AppTextButton(
+                onClick = { exportLauncher.launch("bilipai-subscriptions.opml") },
+                enabled = feeds.isNotEmpty() && !importing,
+            ) {
+                AppText("导出 OPML")
+            }
             AppTextButton(
                 onClick = { importLauncher.launch(arrayOf("*/*")) },
                 enabled = !importing,
@@ -265,6 +300,11 @@ private fun SubscriptionFeedSettings(modifier: Modifier = Modifier) {
                         text = feed.title,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        color = if (feed.enabled) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                     AppText(
                         text = feed.url,
@@ -275,8 +315,23 @@ private fun SubscriptionFeedSettings(modifier: Modifier = Modifier) {
                     )
                 }
                 if (!selecting) {
+                    AppSwitch(
+                        checked = feed.enabled,
+                        onCheckedChange = { checked ->
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    SubscriptionFeedStore.setEnabled(context, feed.id, checked)
+                                }
+                            }
+                        },
+                    )
                     AppTextButton(onClick = {
-                        SubscriptionFeedStore.remove(context, feed.id)
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                runCatching { FeedConditionalStore.clear(context, setOf(feed.url)) }
+                                SubscriptionFeedStore.remove(context, feed.id)
+                            }
+                        }
                     }) {
                         AppText("删除")
                     }
@@ -291,7 +346,13 @@ private fun SubscriptionFeedSettings(modifier: Modifier = Modifier) {
             text = { AppText("将删除 ${selectedIds.size} 个订阅来源。") },
             confirmButton = {
                 AppDialogAction(onClick = {
-                    SubscriptionFeedStore.removeAll(context, selectedIds)
+                    val removedUrls = feeds.filter { it.id in selectedIds }.map { it.url }.toSet()
+                    scope.launch {
+                        withContext(Dispatchers.IO) {
+                            runCatching { FeedConditionalStore.clear(context, removedUrls) }
+                            SubscriptionFeedStore.removeAll(context, selectedIds)
+                        }
+                    }
                     selectedIds = emptySet()
                     selecting = false
                     confirmBatchDelete = false

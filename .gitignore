@@ -99,6 +99,7 @@ docs/*
 !docs/GOOGLE_CAST_PLUGIN.md
 !docs/DLNA_CAST_PLUGIN.md
 !docs/android17-verification.md
+!docs/telegram-thanos-port.md
 !docs/images/
 !docs/images/screenshot*.png
 !docs/wiki/
@@ -121,3 +122,4 @@ app/src/test/java/com/android/purebilibili/docs/UiDesignDocumentationStructureTe
 # Local Reasonix session settings and metadata
 .reasonix/
 reasonix.toml
+.zcodeignore

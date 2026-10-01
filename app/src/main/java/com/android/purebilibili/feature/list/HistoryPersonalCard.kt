@@ -1,6 +1,7 @@
 package com.android.purebilibili.feature.list
 
 import com.android.purebilibili.feature.personal.PersonalMediaCardFrame
+import com.android.purebilibili.feature.personal.rememberPersonalCardVideoTransition
 import coil3.request.crossfade
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -78,6 +79,7 @@ import com.android.purebilibili.data.model.response.HistoryItem
 import com.android.purebilibili.feature.home.components.cards.resolveVideoCardCoverOverlayTextShadow
 import com.android.purebilibili.feature.home.components.cards.HorizontalVideoCardFrame
 import com.android.purebilibili.feature.personal.PERSONAL_LIST_HORIZONTAL_COVER_ASPECT_RATIO
+import com.android.purebilibili.feature.personal.PersonalCardSelectMask
 
 internal fun resolveHistoryKindLabel(business: HistoryBusiness): String = when (business) {
     HistoryBusiness.ARCHIVE -> "视频"
@@ -109,8 +111,7 @@ internal fun HistoryPersonalCardSkeleton(
 
     HorizontalVideoCardFrame(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 5.dp),
+            .fillMaxWidth(),
         coverContent = {
             ContentSkeletonBlock(
                 color = color,
@@ -176,36 +177,12 @@ internal fun HistoryPersonalCard(
 ) {
     val video = item.videoItem
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val density = LocalDensity.current
-    val sourceRoute = LocalVideoCardSharedElementSourceRoute.current
-    val sharedTransitionScope = LocalSharedTransitionScope.current
-    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
-    val speedSettings = LocalVideoSharedTransitionSpeedSettings.current
-    val transitionAdaptiveInfo = com.android.purebilibili.core.ui.transition
-        .LocalVideoTransitionAdaptiveInfo.current
-    val sharedElementReady = transitionEnabled &&
-        video.bvid.isNotBlank() &&
-        sourceRoute != null &&
-        sharedTransitionScope != null &&
-        animatedVisibilityScope != null
-    val motionSpec = remember(sourceRoute, transitionEnabled, speedSettings, transitionAdaptiveInfo) {
-        resolveVideoCardSharedTransitionMotionSpec(
-            sourceRoute = sourceRoute,
-            transitionEnabled = transitionEnabled,
-            speedSettings = speedSettings,
-            adaptiveInfo = transitionAdaptiveInfo,
-        )
-    }
-    val useSharedBounds = shouldUseVideoCardShellSharedBounds(
-        sourceRoute = sourceRoute,
-        transitionEnabled = sharedElementReady,
+    val coverShape = AppShapes.mediaCover()
+    val transition = rememberPersonalCardVideoTransition(
+        bvid = video.bvid,
+        transitionEnabled = transitionEnabled,
+        clipShape = coverShape,
     )
-    val cardBounds = remember { object { var value: androidx.compose.ui.geometry.Rect? = null } }
-    val coverBounds = remember { object { var value: androidx.compose.ui.geometry.Rect? = null } }
-    val nativeCardSnapshot = rememberNativeVideoCardSnapshotController(video.bvid)
-    val screenWidthPx = configuration.screenWidthDp * density.density
-    val screenHeightPx = configuration.screenHeightDp * density.density
     val progressState = remember(item.progress, video.duration, video.view_at) {
         resolveVideoDisplayProgressState(
             serverProgressSec = item.progress,
@@ -224,44 +201,35 @@ internal fun HistoryPersonalCard(
     }
     val triggerClick = {
         if (!batchMode) {
-            cardBounds.value?.let { bounds ->
-                val sourceCoverBounds = coverBounds.value
-                CardPositionManager.recordVideoCardPosition(
-                    bvid = video.bvid,
-                    sourceRoute = sourceRoute,
-                    bounds = bounds,
-                    screenWidth = screenWidthPx,
-                    screenHeight = screenHeightPx,
-                    sourceCornerDp = 12,
-                    coverBounds = sourceCoverBounds,
-                    sourceLayout = if (stacked) VideoCardSourceLayout.STACKED else VideoCardSourceLayout.SIDE_BY_SIDE,
-                    sourceChromeSnapshot = VideoCardSourceChromeSnapshot(
-                        title = video.title,
-                        ownerName = video.owner.name.takeIf { it.isNotBlank() }
-                            ?: if (item.business == HistoryBusiness.PGC) "番剧" else "未知作者",
-                        ownerFaceUrl = video.owner.face,
-                        viewText = FormatUtils.formatStat(video.stat.view.toLong()),
-                        danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
-                        durationText = FormatUtils.formatDuration(video.duration),
-                        infoPresentation = com.android.purebilibili.core.ui.transition
-                            .resolveVideoCardSourceInfoPresentation(
-                                publishTimeText = FormatUtils.formatPublishTime(video.view_at),
-                                // History cards show owner + viewed time, not play/danmaku stats.
-                                showStatsInInfo = false,
-                                ownerBeforePublish = true,
-                                showOverflowMenu = !batchMode,
-                            ),
-                        coverPresentation = VideoCardSourceCoverPresentation(
-                            showDurationOnCover = true,
-                            showHistoryProgressBar = progressState.showProgressBar,
-                            historyProgressFraction = progressState.progressFraction,
+            transition.recordPosition(
+                bvid = video.bvid,
+                stacked = stacked,
+                sourceCornerDp = 12,
+                chrome = VideoCardSourceChromeSnapshot(
+                    title = video.title,
+                    ownerName = video.owner.name.takeIf { it.isNotBlank() }
+                        ?: if (item.business == HistoryBusiness.PGC) "番剧" else "未知作者",
+                    ownerFaceUrl = video.owner.face,
+                    viewText = FormatUtils.formatStat(video.stat.view.toLong()),
+                    danmakuText = FormatUtils.formatStat(video.stat.danmaku.toLong()),
+                    durationText = FormatUtils.formatDuration(video.duration),
+                    infoPresentation = com.android.purebilibili.core.ui.transition
+                        .resolveVideoCardSourceInfoPresentation(
+                            publishTimeText = FormatUtils.formatPublishTime(video.view_at),
+                            // History cards show owner + viewed time, not play/danmaku stats.
+                            showStatsInInfo = false,
+                            ownerBeforePublish = true,
+                            showOverflowMenu = !batchMode,
                         ),
-                        coverUrl = stationaryCoverUrl,
-                        coverCacheKey = stationaryCoverUrl,
-                    ).withMeasuredCoverDecodeSize(sourceCoverBounds),
-                )
-                nativeCardSnapshot.capture()
-            }
+                    coverPresentation = VideoCardSourceCoverPresentation(
+                        showDurationOnCover = true,
+                        showHistoryProgressBar = progressState.showProgressBar,
+                        historyProgressFraction = progressState.progressFraction,
+                    ),
+                    coverUrl = stationaryCoverUrl,
+                    coverCacheKey = stationaryCoverUrl,
+                ),
+            )
         }
         onClick()
     }
@@ -270,7 +238,6 @@ internal fun HistoryPersonalCard(
         TextStyle(shadow = resolveVideoCardCoverOverlayTextShadow())
     }
     val contentTypography = feedContentTypography(FeedTitleHierarchy.Standard)
-    val coverShape = AppShapes.mediaCover()
     val owner = video.owner.name.takeIf { it.isNotBlank() }
         ?: if (item.business == HistoryBusiness.PGC) "番剧" else "未知作者"
     val viewedAt = FormatUtils.formatPublishTime(video.view_at)
@@ -328,20 +295,13 @@ internal fun HistoryPersonalCard(
             stacked = true,
             selected = selected,
             modifier = modifier
-                .videoCardShellSharedBoundsOrEmpty(
-                    enabled = useSharedBounds,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    bvid = video.bvid,
-                    sourceRoute = sourceRoute,
-                    motionSpec = motionSpec,
-                    clipShape = coverShape,
-                    crossfadeSourceContent = true,
-                )
-                .onGloballyPositioned { cardBounds.value = it.boundsInRoot() },
-            nativeSnapshotModifier = nativeCardSnapshot.modifier,
-            coverOverlayModifier = nativeCardSnapshot.coverOverlayModifier,
-            coverModifier = Modifier.onGloballyPositioned { coverBounds.value = it.boundsInRoot() },
+                .then(transition.shellModifier)
+                .onGloballyPositioned { transition.bounds.cardBounds = it.boundsInRoot() },
+            nativeSnapshotModifier = transition.nativeCardSnapshot.modifier,
+            coverOverlayModifier = transition.nativeCardSnapshot.coverOverlayModifier,
+            coverModifier = Modifier.onGloballyPositioned {
+                transition.bounds.coverBounds = it.boundsInRoot()
+            },
             headlineContent = {
                 AppText(text = video.title, style = contentTypography.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
             },
@@ -364,6 +324,7 @@ internal fun HistoryPersonalCard(
                     AppLinearProgressIndicator(progress = { progressState.progressFraction },
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth())
                 }
+                PersonalCardSelectMask(selected = selected)
             },
             trailingContent = { actionContent() },
             onClick = triggerClick,
@@ -375,39 +336,20 @@ internal fun HistoryPersonalCard(
     HorizontalVideoCardFrame(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 5.dp)
-            .videoCardShellSharedBoundsOrEmpty(
-                enabled = useSharedBounds,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                bvid = video.bvid,
-                sourceRoute = sourceRoute,
-                motionSpec = motionSpec,
-                clipShape = coverShape,
-                crossfadeSourceContent = true,
-            )
+            .then(transition.shellModifier)
             .clip(coverShape)
-            .then(nativeCardSnapshot.modifier)
+            .then(transition.nativeCardSnapshot.modifier)
             .background(AppSurfaceTokens.cardContainer())
             .combinedClickable(
                 onClick = triggerClick,
                 onLongClick = onLongClick,
             )
-            .onGloballyPositioned { cardBounds.value = it.boundsInRoot() }
-            .then(
-                if (selected) {
-                    Modifier.background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                    )
-                } else {
-                    Modifier
-                }
-            ),
+            .onGloballyPositioned { transition.bounds.cardBounds = it.boundsInRoot() },
         coverAspectRatio = PERSONAL_LIST_HORIZONTAL_COVER_ASPECT_RATIO,
         coverModifier = Modifier.onGloballyPositioned {
-            coverBounds.value = it.boundsInRoot()
+            transition.bounds.coverBounds = it.boundsInRoot()
         },
-        coverOverlayModifier = nativeCardSnapshot.coverOverlayModifier,
+        coverOverlayModifier = transition.nativeCardSnapshot.coverOverlayModifier,
         coverContent = {
             AsyncImage(
                 model = stationaryCoverRequest,
@@ -437,6 +379,7 @@ internal fun HistoryPersonalCard(
                         .fillMaxWidth(),
                 )
             }
+            PersonalCardSelectMask(selected = selected)
         },
         infoContent = {
             AppText(

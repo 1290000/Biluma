@@ -5,11 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,7 +21,6 @@ import com.android.purebilibili.core.ui.components.AppText
 import com.android.purebilibili.core.ui.components.rememberAdaptivePreferenceIconContentColor
 import com.android.purebilibili.core.ui.components.rememberAdaptivePreferenceIconContainerColor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,9 +30,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.android.purebilibili.R
-import com.android.purebilibili.core.ui.AppSplitLayout
-import com.android.purebilibili.core.ui.AppSplitPane
-import com.android.purebilibili.core.ui.rememberAppSplitLayoutState
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.AppTopBar
@@ -53,6 +47,8 @@ import com.android.purebilibili.feature.home.components.BiliPaiImmersiveTopBar
 import com.android.purebilibili.feature.home.components.shouldUseBiliPaiProgressiveTopBlur
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import com.android.purebilibili.core.util.AppFoldPosture
+import com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo
 import com.android.purebilibili.core.util.LocalWindowSizeClass
 import com.android.purebilibili.feature.settings.SettingsHomeSearchEntry
 import com.android.purebilibili.feature.settings.SettingsRootCategory
@@ -63,7 +59,15 @@ import com.android.purebilibili.feature.settings.resolveSettingsSiblingIconTints
 import com.android.purebilibili.feature.settings.resolveSettingsTabletLayoutPolicy
 import com.android.purebilibili.feature.settings.resolveSettingsVisualSpec
 import com.android.purebilibili.feature.settings.shouldRenderSettingsTabletDetailPane
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
+import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
+import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldPaneScope
+import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldValue
+import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
 
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun SettingsTabletShell(
     selectedCategory: SettingsRootCategory?,
@@ -79,16 +83,10 @@ fun SettingsTabletShell(
         resolveSettingsTabletLayoutPolicy(widthDp = configuration.screenWidthDp)
     }
     val categories = remember { resolveSettingsRootCategoryOrder() }
-    val splitLayoutState = rememberAppSplitLayoutState()
     val isDetailActive = shouldRenderSettingsTabletDetailPane(
         selectedCategory = selectedCategory,
         isSearchActive = isSearchActive,
     )
-    LaunchedEffect(isDetailActive) {
-        if (isDetailActive) {
-            splitLayoutState.navigateTo(AppSplitPane.Secondary)
-        }
-    }
     val categoryIconTints = remember(categories.size) {
         resolveSettingsSiblingIconTints(categories.size)
     }
@@ -119,7 +117,7 @@ fun SettingsTabletShell(
             }
         }
     }
-    val detailPane: @Composable () -> Unit = {
+    val detailPane: @Composable ThreePaneScaffoldPaneScope.() -> Unit = {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -129,15 +127,19 @@ fun SettingsTabletShell(
             rightPane()
         }
     }
-    AppSplitLayout(
-        modifier = modifier.fillMaxSize(),
-        primaryRatio = layoutPolicy.primaryRatio,
-        primaryContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .background(AppSurfaceTokens.groupedListContainer()),
-            ) {
+    val windowAdaptiveInfo = currentWindowAdaptiveInfoV2()
+    val directive = calculatePaneScaffoldDirective(windowAdaptiveInfo)
+    // 铰链/窄窗口导致只能单分区时退化为按导航态单栏切换；正常平板态永远双栏可见。
+    // Tabletop 姿态下官方 directive 不会减少水平分区，需按旧策略显式退回单栏避免跨铰链布局。
+    val singlePaneOnly = directive.maxHorizontalPartitions <= 1 ||
+        LocalAppWindowAdaptiveInfo.current.posture == AppFoldPosture.Tabletop
+    val listPaneContent: @Composable ThreePaneScaffoldPaneScope.() -> Unit = {
+        Column(
+            modifier = Modifier
+                .preferredWidth(layoutPolicy.primaryRatio)
+                .fillMaxHeight()
+                .background(AppSurfaceTokens.groupedListContainer()),
+        ) {
                 val config = LocalAppThemeConfig.current
                 val progressive = shouldUseBiliPaiProgressiveTopBlur(
                     enabled = config.progressiveTopBlurEnabled && !config.headerBlurEnabled,
@@ -199,16 +201,11 @@ fun SettingsTabletShell(
                             }
                         )
                         .then(if (tabletHazeReady) Modifier.hazeSourceCompat(requireNotNull(tabletHazeState)) else Modifier)
-                        .padding(
-                            horizontal = layoutPolicy.masterPanePaddingDp.dp,
-                            vertical = 8.dp,
-                        ),
+                        .padding(horizontal = layoutPolicy.masterPanePaddingDp.dp),
                 ) {
                     SettingsHomeSearchEntry(onClick = onSearchOpen)
-                    Spacer(modifier = Modifier.height(8.dp))
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxSize().padding(top = 8.dp),
                     ) {
                         itemsIndexed(categories) { index, category ->
                             val visual = rememberSettingsEntryVisual(category.searchTarget)
@@ -232,7 +229,6 @@ fun SettingsTabletShell(
                                 selected = selected,
                                 onClick = {
                                     if (!selected) {
-                                        splitLayoutState.navigateTo(AppSplitPane.Secondary)
                                         onCategoryClick(category)
                                     }
                                 },
@@ -260,32 +256,61 @@ fun SettingsTabletShell(
                     }
                 }
             }
-        },
-        secondaryContent = {
-            if (useThreePaneLayout && !isSearchActive) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(AppSurfaceTokens.groupedListContainer())
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    AppText(
-                        text = selectedCategory?.title ?: stringResource(R.string.settings_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    AppText(
-                        text = selectedCategory?.subtitle ?: "选择左侧分类以查看设置",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                if (!isDetailActive) emptyDetailPane() else detailPane()
-            }
-        },
-        tertiaryContent = if (useThreePaneLayout && !isSearchActive) detailPane else null,
-        state = splitLayoutState,
+        }
+    val infoPaneContent: @Composable ThreePaneScaffoldPaneScope.() -> Unit = {
+        Column(
+            modifier = Modifier
+                .preferredWidth(0.35f)
+                .fillMaxSize()
+                .background(AppSurfaceTokens.groupedListContainer())
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AppText(
+                text = selectedCategory?.title ?: stringResource(R.string.settings_title),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            AppText(
+                text = selectedCategory?.subtitle ?: "选择左侧分类以查看设置",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    val detailSlotContent: @Composable ThreePaneScaffoldPaneScope.() -> Unit = {
+        if (!isDetailActive) emptyDetailPane() else detailPane()
+    }
+    // 官方脚手架的槽位映射：list=listPane，detail=primary 槽，extra=tertiary 槽。
+    // 三栏（超宽 + 已选分类）时 detail 槽放分类信息列，extra 槽放设置正文。
+    val scaffoldValue = when {
+        singlePaneOnly && isDetailActive -> ThreePaneScaffoldValue(
+            primary = PaneAdaptedValue.Expanded,
+            secondary = PaneAdaptedValue.Hidden,
+            tertiary = PaneAdaptedValue.Hidden,
+        )
+        singlePaneOnly -> ThreePaneScaffoldValue(
+            primary = PaneAdaptedValue.Hidden,
+            secondary = PaneAdaptedValue.Expanded,
+            tertiary = PaneAdaptedValue.Hidden,
+        )
+        useThreePaneLayout && !isSearchActive -> ThreePaneScaffoldValue(
+            primary = PaneAdaptedValue.Expanded,
+            secondary = PaneAdaptedValue.Expanded,
+            tertiary = PaneAdaptedValue.Expanded,
+        )
+        else -> ThreePaneScaffoldValue(
+            primary = PaneAdaptedValue.Expanded,
+            secondary = PaneAdaptedValue.Expanded,
+            tertiary = PaneAdaptedValue.Hidden,
+        )
+    }
+    ListDetailPaneScaffold(
+        modifier = modifier.fillMaxSize(),
+        directive = directive,
+        value = scaffoldValue,
+        listPane = listPaneContent,
+        detailPane = if (useThreePaneLayout && !isSearchActive) infoPaneContent else detailSlotContent,
+        extraPane = if (useThreePaneLayout && !isSearchActive) detailPane else null,
     )
 }

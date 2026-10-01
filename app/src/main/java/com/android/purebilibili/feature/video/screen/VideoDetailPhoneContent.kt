@@ -23,6 +23,7 @@ import com.android.purebilibili.core.ui.components.AppIcon
 import androidx.compose.material3.MaterialTheme
 import com.android.purebilibili.core.ui.components.AppText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -248,6 +249,7 @@ internal fun VideoDetailPhoneSuccessContentLayer(
                                     isFollowing = engagementState.isFollowing,
                                     isFavorited = engagementState.isFavorited,
                                     isLiked = engagementState.isLiked,
+                                    isDisliked = engagementState.isDisliked,
                                     coinCount = engagementState.coinCount,
                                     currentPageIndex = currentPageIndex,
                                     downloadProgress = downloadProgress,
@@ -256,6 +258,7 @@ internal fun VideoDetailPhoneSuccessContentLayer(
                                 commentState = VideoContentCommentState(
                                     isRepliesLoading = commentState.isRepliesLoading,
                                     isRepliesEnd = commentState.isRepliesEnd,
+                                    voteCard = commentState.voteCard,
                                     sortMode = commentState.sortMode,
                                     currentMid = commentState.currentMid,
                                     showUpFlag = commentState.showUpFlag,
@@ -270,6 +273,7 @@ internal fun VideoDetailPhoneSuccessContentLayer(
                                     videoNoteState = success.videoNoteState,
                                 ),
                                 presentationState = VideoContentPresentationState(
+                                    sponsorVideoLabel = success.sponsorVideoLabel,
                                     danmakuEnabled = danmakuEnabledForDetail,
                                     transitionEnabled = transitionEnabled,
                                     isQuickReturnLimitedForSharedElements = isQuickReturnLimitedForSharedElements,
@@ -290,6 +294,7 @@ internal fun VideoDetailPhoneSuccessContentLayer(
                                         openFavoriteFolders(VideoFavoriteEntryPoint.DetailActionRow, false)
                                     },
                                     onLikeClick = engagementActions.toggleLike,
+                                    onDislikeClick = engagementActions.toggleDislike,
                                     onCoinClick = engagementActions.openCoinDialog,
                                     onTripleClick = engagementActions.doTripleAction,
                                     onPageSelect = playbackActions.switchPage,
@@ -355,12 +360,15 @@ internal fun VideoDetailPhoneSuccessContentLayer(
                                     onOpenVideoNoteEditor = playbackActions.openVideoNoteEditor,
                                     onCloseVideoNoteEditor = playbackActions.closeVideoNoteEditor,
                                     onVideoNoteDocumentChange = playbackActions.updateVideoNoteEditorDocument,
-                                    onInsertVideoNoteTimestamp = playbackActions.insertCurrentPlaybackTimestampIntoNote,
+                                    onInsertVideoNoteTimestamp = playbackActions.currentVideoNoteTimestamp,
                                     onVideoNoteTimestampClick = playbackActions.seekTo,
                                     onSaveVideoNote = playbackActions.saveVideoNote,
                                     onDeleteVideoNote = playbackActions.deleteVideoNote,
                                     onRetryVideoNote = playbackActions.retryVideoNote,
-                                    onPublicVideoNoteClick = { _, url -> if (url.isNotBlank()) onOpenBilibiliLink?.invoke(url) },
+                                    onLoadMorePublicVideoNotes = playbackActions.loadMorePublicVideoNotes,
+                                    onPublicVideoNoteClick = { cvid, _ ->
+                                        onOpenBilibiliLink?.invoke("https://www.bilibili.com/read/cv$cvid")
+                                    },
                                 ),
                                 uiActions = VideoContentUiActions(
                                     onSelectedTabChange = onSelectedTabChange,
@@ -370,9 +378,24 @@ internal fun VideoDetailPhoneSuccessContentLayer(
                             )
                         }
 
-                        if (showFrozenCommentBar) {
+                        // 底栏可见度跟随翻页进度:滑动过程中连续淡入淡出,而不是过半时瞬间弹出。
+                        val commentBarProgress by remember {
+                            derivedStateOf {
+                                resolveVideoDetailCommentBarProgress(
+                                    pagerPosition = videoContentPagerState.currentPage +
+                                        videoContentPagerState.currentPageOffsetFraction,
+                                    commentTabIndex = VIDEO_CONTENT_COMMENT_TAB_INDEX,
+                                )
+                            }
+                        }
+                        if (showFrozenCommentBar || commentBarProgress > 0f) {
                             BottomInputBar(
-                                modifier = Modifier.align(Alignment.BottomCenter),
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .graphicsLayer {
+                                        alpha = commentBarProgress
+                                        translationY = (1f - commentBarProgress) * 32f
+                                    },
                                 isLiked = engagementState.isLiked,
                                 isFavorited = engagementState.isFavorited,
                                 isCoined = engagementState.coinCount > 0,

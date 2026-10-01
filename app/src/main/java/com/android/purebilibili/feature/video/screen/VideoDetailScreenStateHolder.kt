@@ -32,6 +32,7 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.Animatable
@@ -617,6 +618,7 @@ internal fun VideoDetailScreenStateHolder(
             dismissSponsorSkipButton = viewModel::dismissSponsorSkipButton,
             voteSponsorSegment = viewModel::voteCurrentSponsorSegment,
             markSponsorContributionBoundary = viewModel::markSponsorContributionBoundary,
+            markWholeVideoAsSponsor = viewModel::markWholeVideoAsSponsor,
             setSponsorContributionCategory = viewModel::setSponsorContributionCategory,
             setSponsorContributionActionType = viewModel::setSponsorContributionActionType,
             submitSponsorContribution = viewModel::submitSponsorContribution,
@@ -640,11 +642,12 @@ internal fun VideoDetailScreenStateHolder(
             openVideoNoteEditor = viewModel::openVideoNoteEditor,
             closeVideoNoteEditor = viewModel::closeVideoNoteEditor,
             updateVideoNoteEditorDocument = viewModel::updateVideoNoteEditorDocument,
-            insertCurrentPlaybackTimestampIntoNote = viewModel::insertCurrentPlaybackTimestampIntoNote,
+            currentVideoNoteTimestamp = viewModel::currentVideoNoteTimestamp,
             seekTo = viewModel::seekTo,
             saveVideoNote = viewModel::saveVideoNote,
             deleteVideoNote = viewModel::deleteVideoNote,
             retryVideoNote = viewModel::retryVideoNote,
+            loadMorePublicVideoNotes = viewModel::loadMorePublicVideoNotes,
             openRootCommentComposer = viewModel::openRootCommentComposer,
             replyTo = {
                 viewModel.setReplyingTo(it)
@@ -652,6 +655,9 @@ internal fun VideoDetailScreenStateHolder(
             },
             markVideoNotInterested = viewModel::markVideoNotInterested,
             likeDanmaku = { viewModel.likeDanmaku(it) },
+            likeDanmakuToggle = { dmid, like -> viewModel.likeDanmaku(dmid, like) },
+            likedDanmakuIds = viewModel.likedDanmakuIds,
+            reportDanmaku = { dmid, reason -> viewModel.reportDanmaku(dmid, reason) },
             recallDanmaku = { viewModel.recallDanmaku(it) }
         )
     }
@@ -672,6 +678,7 @@ internal fun VideoDetailScreenStateHolder(
                 }
             },
             toggleLike = engagementViewModel::toggleLike,
+            toggleDislike = engagementViewModel::toggleDislike,
             openCoinDialog = engagementViewModel::openCoinDialog,
             doTripleAction = engagementViewModel::doTripleAction,
             toggleWatchLater = engagementViewModel::toggleWatchLater
@@ -1252,23 +1259,33 @@ internal fun VideoDetailScreenStateHolder(
             )
         )
 
-    // 🔧 [修复] 追踪用户是否主动请求全屏（点击全屏按钮）
-    // 使用 rememberSaveable 确保状态在横竖屏切换时保持
-    var userRequestedFullscreen by rememberSaveable { mutableStateOf(false) }
-    var manualPortraitHoldActive by rememberSaveable { mutableStateOf(false) }
-    var preserveCurrentFrameOnFullscreenChange by remember { mutableStateOf(false) }
-    var pendingFullscreenPositionRestoreMs by remember { mutableLongStateOf(-1L) }
     val activity = remember { context.findActivity() }
-    val playerWindowOrientationPolicy = remember(displayContext) {
-        com.android.purebilibili.core.util.resolvePlayerWindowOrientationPolicy(displayContext)
-    }
-    val usesInWindowFullscreen = playerWindowOrientationPolicy.usesInWindowFullscreen
     val isActivityInMultiWindowMode = activity?.let {
-        displayContext.isInMultiWindowMode || isActivityInMultiWindowOrFloatingMode(
+        isActivityInMultiWindowOrFloatingMode(
             activity = it,
             displayContext = displayContext,
         )
     } ?: displayContext.isInMultiWindowMode
+
+    // 🔧 [修复] 追踪用户是否主动请求全屏（点击全屏按钮）
+    // 使用 rememberSaveable 确保状态在横竖屏切换时保持
+    // 分屏 / 系统小窗下打开视频即进入全屏（横屏形态），无需手动点全屏
+    // A landscape request can temporarily change freeform bounds enough that the OS
+    // stops reporting multi-window. Do not key this intent to that changing signal:
+    // resetting it lets the sensor immediately request portrait and starts an orientation loop.
+    var userRequestedFullscreen by rememberSaveable(currentBvid) {
+        mutableStateOf(isActivityInMultiWindowMode)
+    }
+    var hasHandledStartFullscreenRequest by rememberSaveable(currentBvid, startInFullscreen) {
+        mutableStateOf(false)
+    }
+    var manualPortraitHoldActive by rememberSaveable { mutableStateOf(false) }
+    var preserveCurrentFrameOnFullscreenChange by remember { mutableStateOf(false) }
+    var pendingFullscreenPositionRestoreMs by remember { mutableLongStateOf(-1L) }
+    val playerWindowOrientationPolicy = remember(displayContext) {
+        com.android.purebilibili.core.util.resolvePlayerWindowOrientationPolicy(displayContext)
+    }
+    val usesInWindowFullscreen = playerWindowOrientationPolicy.usesInWindowFullscreen
 
     // 📐 全屏模式逻辑：
     // - 紧凑窗口：横放时自动进入全屏
@@ -1300,7 +1317,13 @@ internal fun VideoDetailScreenStateHolder(
     }
     val orientationPolicyDevice = playerPresentation.isOrientationDriven
     val isOrientationDrivenFullscreen = playerPresentation.isOrientationDriven
-    val isFullscreenMode = playerPresentation.isFullscreen
+    val isFullscreenMode = resolveVideoDetailFullscreenMode(
+        isOrientationDrivenFullscreen = isOrientationDrivenFullscreen,
+        isLandscape = isLandscape,
+        userRequestedFullscreen = userRequestedFullscreen,
+        isInMultiWindowMode = isActivityInMultiWindowMode,
+        manualPortraitHoldActive = manualPortraitHoldActive,
+    )
     var previousDisplayRole by remember {
         mutableStateOf(displayContext.foldableDisplayRole)
     }
@@ -1319,17 +1342,19 @@ internal fun VideoDetailScreenStateHolder(
         }
         previousDisplayRole = displayContext.foldableDisplayRole
     }
-    LaunchedEffect(appWindowAdaptiveInfo, playerPresentation) {
+    LaunchedEffect(appWindowAdaptiveInfo, playerPresentation, isFullscreenMode) {
         com.android.purebilibili.core.util.Logger.d(
             "VideoDetailScreen",
             com.android.purebilibili.core.util.formatAppAdaptiveStrategySnapshot(
                 appWindowAdaptiveInfo.toAdaptiveStrategySnapshot(
                     playerPresentation = if (playerPresentation.usesInWindowFullscreen) {
                         "in-window(user=${playerPresentation.userFullscreenIntent}," +
-                            "fullscreen=${playerPresentation.isFullscreen})"
-                    } else if (playerPresentation.orientationGeneratedFullscreen) {
+                            "fullscreen=$isFullscreenMode)"
+                    } else if (
+                        isFullscreenMode && playerPresentation.orientationGeneratedFullscreen
+                    ) {
                         "orientation-generated"
-                    } else if (playerPresentation.isFullscreen) {
+                    } else if (isFullscreenMode) {
                         "user-fullscreen"
                     } else {
                         "inline"
@@ -1451,39 +1476,39 @@ internal fun VideoDetailScreenStateHolder(
         }
     }
 
-    //  从小窗展开时自动进入全屏
+    //  路由请求只负责本次视频入口的初始方向。横屏切回竖屏后不能再次把它当成
+    //  新请求，否则 startInFullscreen 会和用户的退出操作互相触发方向切换。
     LaunchedEffect(
         startInFullscreen,
-        isOrientationDrivenFullscreen,
-        isLandscape,
-        displayContext,
+        currentBvid,
     ) {
-        if (startInFullscreen) {
-            if (!isOrientationDrivenFullscreen) {
-                userRequestedFullscreen = true
-            } else {
-                context.findActivity()?.let { activity ->
-                    val isInMultiWindowMode = isActivityInMultiWindowOrFloatingMode(
-                        activity = activity,
-                        displayContext = displayContext,
+        if (!startInFullscreen || hasHandledStartFullscreenRequest) return@LaunchedEffect
+        if (!isOrientationDrivenFullscreen) {
+            userRequestedFullscreen = true
+            hasHandledStartFullscreenRequest = true
+        } else {
+            context.findActivity()?.let { activity ->
+                val isInMultiWindowMode = isActivityInMultiWindowOrFloatingMode(
+                    activity = activity,
+                    displayContext = displayContext,
+                )
+                if (!shouldApplyStartFullscreenOrientationRequest(
+                        startInFullscreen = startInFullscreen,
+                        isOrientationDrivenFullscreen = isOrientationDrivenFullscreen,
+                        isLandscape = isLandscape
                     )
-                    if (!shouldApplyStartFullscreenOrientationRequest(
-                            startInFullscreen = startInFullscreen,
-                            isOrientationDrivenFullscreen = isOrientationDrivenFullscreen,
-                            isLandscape = isLandscape,
-                            isInMultiWindowMode = isInMultiWindowMode
-                        )
-                    ) {
-                        if (isInMultiWindowMode) {
-                            userRequestedFullscreen = true
-                        }
-                        return@let
+                ) {
+                    if (isInMultiWindowMode) {
+                        userRequestedFullscreen = true
                     }
-                    activity.applyPlayerRequestedOrientation(
-                        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,
-                        displayContext = displayContext,
-                    )
+                    hasHandledStartFullscreenRequest = true
+                    return@let
                 }
+                activity.applyPlayerRequestedOrientation(
+                    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,
+                    displayContext = displayContext,
+                )
+                hasHandledStartFullscreenRequest = true
             }
         }
     }
@@ -1805,6 +1830,27 @@ internal fun VideoDetailScreenStateHolder(
             initialValue = false,
             lifecycle = lifecycleOwner.lifecycle
         )
+    val rotationResolver = context.applicationContext.contentResolver
+    var systemAutoRotateEnabled by remember(rotationResolver) {
+        mutableStateOf(
+            Settings.System.getInt(rotationResolver, Settings.System.ACCELEROMETER_ROTATION, 0) != 0
+        )
+    }
+    DisposableEffect(rotationResolver) {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                systemAutoRotateEnabled = Settings.System.getInt(
+                    rotationResolver, Settings.System.ACCELEROMETER_ROTATION, 0
+                ) != 0
+            }
+        }
+        rotationResolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION), false, observer
+        )
+        observer.onChange(false)
+        onDispose { rotationResolver.unregisterContentObserver(observer) }
+    }
+    val sensorAutoRotateEnabled = autoRotateEnabled && systemAutoRotateEnabled
     val cardAnimationEnabled by com.android.purebilibili.core.store.SettingsManager
         .getCardAnimationEnabled(context).collectAsStateWithLifecycle(
             initialValue = true,
@@ -2498,6 +2544,7 @@ internal fun VideoDetailScreenStateHolder(
 
     LaunchedEffect(
         autoRotateEnabled,
+        systemAutoRotateEnabled,
         fullscreenMode,
         useTabletLayout,
         isOrientationDrivenFullscreen,
@@ -2516,7 +2563,8 @@ internal fun VideoDetailScreenStateHolder(
         if (isFullscreenPlayerLocked) return@LaunchedEffect
         if (usesInWindowFullscreen) return@LaunchedEffect
         val requestedOrientation = resolvePhoneVideoRequestedOrientation(
-            autoRotateEnabled = autoRotateEnabled,
+            autoRotateEnabled = sensorAutoRotateEnabled,
+            systemAutoRotateEnabled = systemAutoRotateEnabled,
             fullscreenMode = fullscreenMode,
             isCompactDevice = orientationPolicyDevice,
             isOrientationDrivenFullscreen = isOrientationDrivenFullscreen,
@@ -2561,6 +2609,7 @@ internal fun VideoDetailScreenStateHolder(
 
     LaunchedEffect(
         autoRotateEnabled,
+        systemAutoRotateEnabled,
         isFullscreenMode,
         orientationPolicyDevice,
         isOrientationDrivenFullscreen,
@@ -2571,6 +2620,7 @@ internal fun VideoDetailScreenStateHolder(
         isPortraitFullscreen,
         displayContext,
         isFullscreenPlayerLocked,
+        userRequestedFullscreen,
     ) {
         if (isFullscreenPlayerLocked) {
             lastPhoneAutoRotateLandscapeAppliedAtMs = null
@@ -2578,7 +2628,7 @@ internal fun VideoDetailScreenStateHolder(
             return@LaunchedEffect
         }
         if (!shouldObservePhoneAutoRotate(
-                autoRotateEnabled = autoRotateEnabled,
+                autoRotateEnabled = sensorAutoRotateEnabled,
                 isCompactDevice = orientationPolicyDevice,
                 isOrientationDrivenFullscreen = isOrientationDrivenFullscreen,
                 fullscreenMode = fullscreenMode,
@@ -2588,6 +2638,8 @@ internal fun VideoDetailScreenStateHolder(
                 isPortraitFullscreen = isPortraitFullscreen,
                 observeWhenAutoRotateDisabled = displayContext.isFoldableCoverWindow,
                 isFullscreenMode = isFullscreenMode,
+                manualFullscreenRequested = userRequestedFullscreen,
+                systemAutoRotateEnabled = systemAutoRotateEnabled,
             )
         ) {
             lastPhoneAutoRotateLandscapeAppliedAtMs = null
@@ -2598,6 +2650,7 @@ internal fun VideoDetailScreenStateHolder(
     DisposableEffect(
         activity,
         autoRotateEnabled,
+        systemAutoRotateEnabled,
         isFullscreenMode,
         fullscreenMode,
         useTabletLayout,
@@ -2616,7 +2669,7 @@ internal fun VideoDetailScreenStateHolder(
             hostActivity == null ||
             isFullscreenPlayerLocked ||
             !shouldObservePhoneAutoRotate(
-                autoRotateEnabled = autoRotateEnabled,
+                autoRotateEnabled = sensorAutoRotateEnabled,
                 isCompactDevice = orientationPolicyDevice,
                 isOrientationDrivenFullscreen = isOrientationDrivenFullscreen,
                 fullscreenMode = fullscreenMode,
@@ -2626,6 +2679,8 @@ internal fun VideoDetailScreenStateHolder(
                 isPortraitFullscreen = isPortraitFullscreen,
                 observeWhenAutoRotateDisabled = displayContext.isFoldableCoverWindow,
                 isFullscreenMode = isFullscreenMode,
+                manualFullscreenRequested = userRequestedFullscreen,
+                systemAutoRotateEnabled = systemAutoRotateEnabled,
             ) ||
             !isOrientationDrivenFullscreen
         ) {
@@ -2640,7 +2695,7 @@ internal fun VideoDetailScreenStateHolder(
                     }
                     return
                 }
-                if (!autoRotateEnabled && !isFullscreenMode) return
+                if (!sensorAutoRotateEnabled && !isFullscreenMode && !userRequestedFullscreen) return
                 val isCurrentlyLandscape =
                     hostActivity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
                 val targetOrientation = resolvePhoneAutoRotateRequestedOrientation(
@@ -2651,7 +2706,7 @@ internal fun VideoDetailScreenStateHolder(
                     // Wait for one physical landscape observation before allowing the sensor
                     // to treat portrait as an explicit rotate-back gesture.
                     allowPortraitTransitions = shouldAllowPhoneSensorPortraitTransition(
-                        autoRotateEnabled = autoRotateEnabled,
+                        autoRotateEnabled = sensorAutoRotateEnabled,
                         manualFullscreenRequested = userRequestedFullscreen,
                     ),
                 )
@@ -2674,6 +2729,7 @@ internal fun VideoDetailScreenStateHolder(
                     if (shouldReleaseManualFullscreenRequestAfterSensorTarget(
                             manualFullscreenRequested = userRequestedFullscreen,
                             sensorTargetOrientation = targetToApply,
+                            autoRotateEnabled = sensorAutoRotateEnabled,
                         )
                     ) {
                         userRequestedFullscreen = false
@@ -3431,6 +3487,7 @@ internal fun VideoDetailScreenStateHolder(
                             replies = commentState.replies, replyCount = commentState.replyCount,
                             emoteMap = success.emoteMap, isRepliesLoading = commentState.isRepliesLoading,
                             isRepliesEnd = commentState.isRepliesEnd, videoTags = success.videoTags,
+                            voteCard = commentState.voteCard,
                             sortMode = commentState.sortMode,
                             currentMid = commentState.currentMid, showUpFlag = commentState.showUpFlag,
                             showIdentityDecorations = commentMemberDecorationsEnabled,
@@ -3589,6 +3646,7 @@ internal fun VideoDetailScreenStateHolder(
                         onSponsorDismiss = { viewModel.dismissSponsorSkipButton() },
                         onSponsorVote = viewModel::voteCurrentSponsorSegment,
                         onSponsorContributionMarkBoundary = viewModel::markSponsorContributionBoundary,
+                        onSponsorContributionMarkWholeVideo = viewModel::markWholeVideoAsSponsor,
                         onSponsorContributionCategoryChange = viewModel::setSponsorContributionCategory,
                         onSponsorContributionActionTypeChange = viewModel::setSponsorContributionActionType,
                         onSponsorContributionSubmit = viewModel::submitSponsorContribution,
@@ -3655,6 +3713,7 @@ internal fun VideoDetailScreenStateHolder(
                             emoteMap = success.emoteMap,
                             isRepliesLoading = commentState.isRepliesLoading,
                             isRepliesEnd = commentState.isRepliesEnd,
+                            voteCard = commentState.voteCard,
                             videoTags = success.videoTags,
                             sortMode = commentState.sortMode,
                             currentMid = commentState.currentMid,
@@ -3972,7 +4031,9 @@ internal fun VideoDetailScreenStateHolder(
                                 isCommentThreadVisible = subReplyState.visible,
                                 collapseMode = portraitPlayerCollapseMode,
                                 isVerticalVideo = isVerticalVideo,
-                                isPlaybackPaused = isPlaybackPaused
+                                isPlaybackPaused = isPlaybackPaused,
+                                isCompactFoldableCoverWindow = displayContext.isFoldableCoverWindow &&
+                                    configuration.screenHeightDp < FOLDABLE_COVER_COMPACT_HEIGHT_MAX_DP,
                             )
                         val compactInlinePlayerForIntroScroll =
                             shouldUseCompactInlinePortraitPlayerForIntroScroll(
@@ -5390,6 +5451,9 @@ internal fun VideoDetailScreenStateHolder(
         )
     }
 
+    // 分屏 / 系统自由小窗的边界由 Android 窗口管理器控制。仅旋转 Compose
+    // 根图层不会把任务窗口变成横向矩形，并会让播放器 Surface 与 UI 变换不一致，
+    // 导致视频被拉伸；因此窗口内全屏仍使用正常布局，由播放器按视频比例适配窗口。
     VideoDetailScreenContent(
         transitionState = transitionState,
         routeSheetMotion = routeSheetMotion,

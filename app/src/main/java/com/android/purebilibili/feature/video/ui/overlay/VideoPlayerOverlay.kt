@@ -6,6 +6,7 @@ import com.android.purebilibili.core.ui.components.AppHorizontalDivider
 import com.android.purebilibili.core.ui.components.AppDropdownMenu
 import com.android.purebilibili.core.ui.components.AppDropdownMenuItem
 import com.android.purebilibili.core.ui.isMiuixNonGlassEnabled
+import com.android.purebilibili.core.ui.performance.rememberPanelFrameRateLabel
 
 import android.content.ClipData
 import android.content.Context
@@ -42,6 +43,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
+import com.android.purebilibili.core.ui.motion.AppMotionEasing
 import androidx.media3.common.Player
 import com.android.purebilibili.core.store.DanmakuSettingsScope
 import com.android.purebilibili.core.store.DanmakuPanelWidthMode
@@ -91,6 +94,7 @@ import com.android.purebilibili.core.ui.components.AppIconButton
 import com.android.purebilibili.core.ui.components.AppSegmentOption
 import com.android.purebilibili.core.ui.components.AppSurface
 import com.android.purebilibili.core.ui.components.AppThemeAdaptiveTabRow
+import com.android.purebilibili.core.ui.components.AppTabRowIndicatorPresentation
 import com.android.purebilibili.core.ui.components.AppTextButton
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -117,10 +121,12 @@ import com.android.purebilibili.feature.anime4k.Anime4KBypassReason
 import com.android.purebilibili.feature.anime4k.Anime4KPreset
 import com.android.purebilibili.feature.anime4k.DEFAULT_FSR_SHARPNESS
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -143,7 +149,6 @@ import com.android.purebilibili.core.plugin.CastPluginRoute
 import com.android.purebilibili.core.plugin.CastPluginPlaybackState
 import com.android.purebilibili.feature.cast.LocalProxyServer
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -464,254 +469,246 @@ private fun SkinAwareLoadingIndicator(color: Color) {
 
 private const val CENTER_PLAY_BUTTON_SEEK_TRANSITION_GRACE_MS = 350L
 
+// 播放器 overlay 色层动效 token：遮罩/控制栏/锁屏按钮/加载指示共用同一节奏与曲线。
+// 曲线取全局 alpha 主曲线 Continuity（AppMotionTokens 体系），时长保持既有节奏。
+private const val OVERLAY_CHROME_FADE_DURATION_MILLIS = 300
+private const val OVERLAY_CONTROL_FADE_DURATION_MILLIS = 200
+private const val OVERLAY_CENTER_PLAY_SCALE_DURATION_MILLIS = 250
+private val OverlayChromeFadeSpec =
+    tween<Float>(OVERLAY_CHROME_FADE_DURATION_MILLIS, easing = AppMotionEasing.Continuity)
+private val OverlayControlFadeSpec =
+    tween<Float>(OVERLAY_CONTROL_FADE_DURATION_MILLIS, easing = AppMotionEasing.Continuity)
+private val OverlayCenterPlayScaleSpec =
+    tween<Float>(OVERLAY_CENTER_PLAY_SCALE_DURATION_MILLIS, easing = AppMotionEasing.Continuity)
+private val OverlayControlSlideSpec =
+    tween<IntOffset>(OVERLAY_CONTROL_FADE_DURATION_MILLIS, easing = AppMotionEasing.Continuity)
+
 @Composable
 fun VideoPlayerOverlay(
-    player: Player,
-    title: String,
-    isVisible: Boolean,
-    onToggleVisible: () -> Unit,
-    isFullscreen: Boolean,
-    currentQualityLabel: String,
-    qualityLabels: List<String>,
-    qualityIds: List<Int> = emptyList(),
-    switchableQualityIds: List<Int> = emptyList(),
-    isLoggedIn: Boolean = false,
-    onQualitySelected: (Int) -> Unit,
-
-    onBack: () -> Unit,
-    onLandscapeCommentClick: () -> Unit = {},
-    landscapeCommentPanelVisible: Boolean = false,
-    landscapeCommentPanelOnLeft: Boolean = true,
-    onHomeClick: () -> Unit = onBack,
-    onToggleFullscreen: () -> Unit,
-    // [New] Player Data for Download
-    bvid: String = "",
-    cid: Long = 0L,
-    videoOwnerName: String = "",
-    videoOwnerFace: String = "",
-    videoDuration: Long = 0L,
-    videoTitle: String = "",
-    currentAid: Long = 0L,
-    currentQuality: Int = 80,
-    currentVideoUrl: String = "",
-    currentAudioUrl: String = "", 
-    // 🔒 [新增] 屏幕锁定
-    isScreenLocked: Boolean = false,
-    onLockToggle: () -> Unit = {},
-    insightMode: PlayerSettingsStore.PlayerInsightMode = PlayerSettingsStore.PlayerInsightMode.OFF,
-    debugInfo: PlaybackDebugInfo = PlaybackDebugInfo(),
-    playerViewportSize: IntSize = IntSize.Zero,
-    viewportWidthDpOverride: Int? = null,
-    diagnosticEvents: List<String> = emptyList(),
-    pendingUserAction: PendingPlaybackUserAction? = null,
-    hasPendingSeekResume: Boolean = false,
-    playerDiagnosticLoggingEnabled: Boolean = true,
-    realResolution: String = "",
-    isQualitySwitching: Boolean = false,
-    isBuffering: Boolean = false,  // 缓冲状态
-    onBottomControlsSizeChanged: (Int) -> Unit = {},
-    isVip: Boolean = false,
-    //  [新增] 弹幕开关和设置
-    danmakuEnabled: Boolean = true,
-    onDanmakuToggle: () -> Unit = {},
-    onDanmakuInputClick: () -> Unit = {},
-    danmakuComposerVisible: Boolean = false,
-    onDismissDanmakuComposer: () -> Unit = {},
-    onSendDanmakuComposer: (
-        message: String,
-        color: Int,
-        mode: Int,
-        fontSize: Int,
-        attentionCommand: Boolean
-    ) -> Unit = { _, _, _, _, _ -> },
-    isSendingDanmakuComposer: Boolean = false,
-    danmakuComposerInitialText: String = "",
-    danmakuComposerInitialAttentionCommand: Boolean = false,
-    danmakuComposerInitialColor: Int = 16777215,
-    danmakuComposerInitialMode: Int = 1,
-    danmakuComposerInitialFontSize: Int = 25,
-    onDanmakuComposerDraftChange: (String, Boolean) -> Unit = { _, _ -> },
-    onDanmakuComposerSelectionChange: (Int, Int, Int) -> Unit = { _, _, _ -> },
-    danmakuOpacity: Float = 0.85f,
-    danmakuFontScale: Float = 1.0f,
-    danmakuFontWeight: Int = 5,
-    danmakuSpeed: Float = 1.0f,
-    danmakuDisplayArea: Float = 0.5f,
-    danmakuStrokeWidth: Float = 1.5f,
-    danmakuLineHeight: Float = 1.6f,
-    danmakuScrollDurationSeconds: Float = 7.0f,
-    danmakuStaticDurationSeconds: Float = 4.0f,
-    danmakuScrollFixedVelocity: Boolean = false,
-    danmakuStaticToScroll: Boolean = false,
-    danmakuMassiveMode: Boolean = false,
-    danmakuMergeDuplicates: Boolean = true,
-    danmakuDuplicateMergeWindowMs: Int = 500,
-    danmakuDuplicateMergeCountThreshold: Int = 2,
-    danmakuAllowScroll: Boolean = true,
-    danmakuAllowTop: Boolean = true,
-    danmakuAllowBottom: Boolean = true,
-    danmakuAllowColorful: Boolean = true,
-    danmakuAllowSpecial: Boolean = true,
-    danmakuHideInteractiveCommands: Boolean = false,
-    danmakuBlockRulesRaw: String = "",
-    danmakuSmartOcclusion: Boolean = true,
-    danmakuFullscreenPanelWidthMode: DanmakuPanelWidthMode = DanmakuPanelWidthMode.THIRD,
-    portraitDanmakuDisplayAreaMode: PortraitDanmakuDisplayAreaMode =
-        PortraitDanmakuDisplayAreaMode.VIDEO_VIEWPORT,
-    danmakuSettingsScope: DanmakuSettingsScope = DanmakuSettingsScope.PORTRAIT,
-    showDanmakuSyncSection: Boolean = false,
-    danmakuCloudSyncEnabled: Boolean = true,
-    danmakuSyncUiState: DanmakuCloudSyncUiState = DanmakuCloudSyncUiState(),
-    onDanmakuOpacityChange: (Float) -> Unit = {},
-    onDanmakuFontScaleChange: (Float) -> Unit = {},
-    onDanmakuFontWeightChange: (Int) -> Unit = {},
-    onDanmakuSpeedChange: (Float) -> Unit = {},
-    onDanmakuDisplayAreaChange: (Float) -> Unit = {},
-    onDanmakuStrokeWidthChange: (Float) -> Unit = {},
-    onDanmakuLineHeightChange: (Float) -> Unit = {},
-    onDanmakuScrollDurationSecondsChange: (Float) -> Unit = {},
-    onDanmakuStaticDurationSecondsChange: (Float) -> Unit = {},
-    onDanmakuScrollFixedVelocityChange: (Boolean) -> Unit = {},
-    onDanmakuStaticToScrollChange: (Boolean) -> Unit = {},
-    onDanmakuMassiveModeChange: (Boolean) -> Unit = {},
-    onDanmakuMergeDuplicatesChange: (Boolean) -> Unit = {},
-    onDanmakuDuplicateMergeWindowMsChange: (Int) -> Unit = {},
-    onDanmakuDuplicateMergeCountThresholdChange: (Int) -> Unit = {},
-    onDanmakuAllowScrollChange: (Boolean) -> Unit = {},
-    onDanmakuAllowTopChange: (Boolean) -> Unit = {},
-    onDanmakuAllowBottomChange: (Boolean) -> Unit = {},
-    onDanmakuAllowColorfulChange: (Boolean) -> Unit = {},
-    onDanmakuAllowSpecialChange: (Boolean) -> Unit = {},
-    onDanmakuHideInteractiveCommandsChange: (Boolean) -> Unit = {},
-    onDanmakuBlockRulesRawChange: (String) -> Unit = {},
-    onDanmakuSmartOcclusionChange: (Boolean) -> Unit = {},
-    onDanmakuFullscreenPanelWidthModeChange: (DanmakuPanelWidthMode) -> Unit = {},
-    onPortraitDanmakuDisplayAreaModeChange: (PortraitDanmakuDisplayAreaMode) -> Unit = {},
-    onDanmakuCloudSyncEnabledChange: (Boolean) -> Unit = {},
-    onDanmakuSyncNowClick: () -> Unit = {},
-    subtitleControlState: SubtitleControlUiState = SubtitleControlUiState(),
-    subtitleControlCallbacks: SubtitleControlCallbacks = SubtitleControlCallbacks(),
-    //  [实验性功能] 双击点赞
-    doubleTapLikeEnabled: Boolean = true,
-    onDoubleTapLike: () -> Unit = {},
-    //  视频比例调节
-    currentAspectRatio: VideoAspectRatio = VideoAspectRatio.FIT,
-    onAspectRatioChange: (VideoAspectRatio) -> Unit = {},
-    // 🔗 [新增] 分享功能 (Moved bvid to top)
-    onShare: (() -> Unit)? = null,
-    showDislikeAction: Boolean = true,
-    // [New] Cover URL for Download
-    coverUrl: String = "",
-    videoSharePlayCountText: String = "",
-    //  [新增] 视频设置面板回调
-    onReloadVideo: () -> Unit = {},
-    sleepTimerMinutes: Int? = null,
-    onSleepTimerChange: (Int?) -> Unit = {},
-    isFlippedHorizontal: Boolean = false,
-    isFlippedVertical: Boolean = false,
-    onFlipHorizontal: () -> Unit = {},
-    onFlipVertical: () -> Unit = {},
-    isAudioOnly: Boolean = false,
-    onAudioOnlyToggle: () -> Unit = {},
-    //  [新增] 画质列表和回调
-    onQualityChange: (Int) -> Unit = {},
-    //  [新增] CDN 线路切换
-    currentCdnIndex: Int = 0,
-    cdnCount: Int = 1,
-    cdnLineDiagnostics: List<CdnLineDiagnostic> = emptyList(),
-    isCdnProbing: Boolean = false,
-    onSwitchCdn: () -> Unit = {},
-    onSwitchCdnTo: (Int) -> Unit = {},
-    onProbeCdnCandidates: () -> Unit = {},
-    // 🖼️ [新增] 视频预览图数据
-    videoshotData: com.android.purebilibili.data.model.response.VideoshotData? = null,
-    // 📖 [新增] 视频章节数据
-    viewPoints: List<ViewPoint> = emptyList(),
-    sponsorMarkers: List<SponsorProgressMarker> = emptyList(),
-    pbpRidgeSamples: List<PbpRidgeSample> = emptyList(),
-    // 📱 [新增] 竖屏全屏模式
-    isVerticalVideo: Boolean = false,
-    onPortraitFullscreen: () -> Unit = {},
-    // 📲 [新增] 小窗模式
-    onPipClick: () -> Unit = {},
-    //  [新增] 拖动进度条开始回调（用于清除弹幕）
-    onSeekStart: () -> Unit = {},
-    onSeekDragStart: (Long) -> Unit = {},
-    onSeekDragUpdate: (Long) -> Unit = {},
-    onSeekDragCancel: () -> Unit = {},
-    isSeekScrubbing: Boolean = false,
-    //  [新增] 外部可接管 seek 行为（用于同步弹幕等）
-    onSeekTo: ((Long) -> Unit)? = null,
-    progressDisplayOverridePositionMs: Long? = null,
-    isPlaybackTransitionPending: Boolean = false,
-    highFrequencyProgressActive: Boolean = false,
-    // [New] Codec & Audio Params
-    currentCodec: String = "hev1",
-    onCodecChange: (String) -> Unit = {},
-    currentSecondCodec: String = "avc1",
-    onSecondCodecChange: (String) -> Unit = {},
-    currentAudioQuality: Int = -1,
-    selectedAudioQuality: Int = -1,
-    availableAudioQualities: List<AudioQualityOption> = emptyList(),
-    onAudioQualityChange: (Int) -> Unit = {},
-    anime4kEnabled: Boolean = false,
-    anime4kAvailable: Boolean = false,
-    anime4kBypassReason: Anime4KBypassReason = Anime4KBypassReason.DISABLED,
-    videoEnhancementAlgorithm: VideoEnhancementAlgorithm = VideoEnhancementAlgorithm.ANIME4K,
-    anime4kPreset: Anime4KPreset = Anime4KPreset.FAST,
-    fsrSharpness: Float = DEFAULT_FSR_SHARPNESS,
-    onAnime4kToggle: (Boolean) -> Unit = {},
-    onVideoEnhancementAlgorithmChange: (VideoEnhancementAlgorithm) -> Unit = {},
-    onAnime4kPresetChange: (Anime4KPreset) -> Unit = {},
-    onFsrSharpnessChange: (Float) -> Unit = {},
-    // [New] AI Audio Translation
-    aiAudioInfo: com.android.purebilibili.data.model.response.AiAudioInfo? = null,
-    currentAudioLang: String? = null,
-    onAudioLangChange: (String) -> Unit = {},
-    // 👀 [新增] 在线观看人数
-    onlineCount: String = "",
-    // [New Actions]
-    onSaveCover: () -> Unit = {},
-    onCaptureScreenshot: () -> Unit = {},
-    onDownloadAudio: () -> Unit = {},
-    // 🔁 [新增] 播放模式
-    currentPlayMode: com.android.purebilibili.feature.video.player.PlayMode = com.android.purebilibili.feature.video.player.PlayMode.SEQUENTIAL,
-    onPlayModeClick: () -> Unit = {},
-    onPlaybackSpeedChange: (Float) -> Unit = { speed -> player.setPlaybackSpeed(speed) },
-    endDrawerVisible: Boolean = false,
-    endDrawerInitialTab: Int = 0,
-    endDrawerReservedWidth: androidx.compose.ui.unit.Dp = 0.dp,
-    onShowEndDrawer: (Int) -> Unit = {},
-    onDismissEndDrawer: () -> Unit = {},
-    
-    // [新增] 侧边栏抽屉数据与交互
-    relatedVideos: List<com.android.purebilibili.data.model.response.RelatedVideo> = emptyList(),
-    ugcSeason: com.android.purebilibili.data.model.response.UgcSeason? = null,
-    isFollowed: Boolean = false,
-    isLiked: Boolean = false,
-    isCoined: Boolean = false,
-    isFavorited: Boolean = false,
-    likeCount: Long = 0L,
-    favoriteCount: Long = 0L,
-    coinCount: Int = 0,
-    onToggleFollow: () -> Unit = {},
-    onToggleLike: () -> Unit = {},
-    onDislike: () -> Unit = {},
-    onCoin: () -> Unit = {},
-    onToggleFavorite: () -> Unit = {},
-    // 复用 onRelatedVideoClick 或 onVideoClick
-    onDrawerVideoClick: (String, android.os.Bundle?) -> Unit = { _, _ -> },
-    // 分P
-    pages: List<com.android.purebilibili.data.model.response.Page> = emptyList(),
-    currentPageIndex: Int = 0,
-    onPageSelect: (Int) -> Unit = {},
-    hasFavoritePlaylist: Boolean = false,
-    onFavoritePlaylistClick: () -> Unit = {},
-    drawerHazeState: HazeState? = null,
-    statusBarAmbientFrame: State<ImageBitmap?>? = null,
-    statusBarBackdropHeight: androidx.compose.ui.unit.Dp = 0.dp,
-    onShowDanmakuPool: (() -> Unit)? = null,
+    state: VideoPlayerOverlayState,
+    actions: VideoPlayerOverlayActions,
 ) {
+    val player = state.player
+    val title = state.title
+    val isVisible = state.isVisible
+    val onToggleVisible = actions.onToggleVisible
+    val isFullscreen = state.isFullscreen
+    val currentQualityLabel = state.currentQualityLabel
+    val qualityLabels = state.qualityLabels
+    val qualityIds = state.qualityIds
+    val switchableQualityIds = state.switchableQualityIds
+    val isLoggedIn = state.isLoggedIn
+    val onQualitySelected = actions.onQualitySelected
+    val onBack = actions.onBack
+    val onLandscapeCommentClick = actions.onLandscapeCommentClick
+    val landscapeCommentPanelVisible = state.landscapeCommentPanelVisible
+    val landscapeCommentPanelOnLeft = state.landscapeCommentPanelOnLeft
+    val onHomeClick = actions.onHomeClick
+    val onToggleFullscreen = actions.onToggleFullscreen
+    val bvid = state.bvid
+    val cid = state.cid
+    val videoOwnerName = state.videoOwnerName
+    val videoOwnerFace = state.videoOwnerFace
+    val videoDuration = state.videoDuration
+    val videoTitle = state.videoTitle
+    val currentAid = state.currentAid
+    val currentQuality = state.currentQuality
+    val currentVideoUrl = state.currentVideoUrl
+    val currentAudioUrl = state.currentAudioUrl
+    val isScreenLocked = state.isScreenLocked
+    val onLockToggle = actions.onLockToggle
+    val insightMode = state.insightMode
+    val debugInfo = state.debugInfo
+    val playerViewportSize = state.playerViewportSize
+    val viewportWidthDpOverride = state.viewportWidthDpOverride
+    val diagnosticEvents = state.diagnosticEvents
+    val pendingUserAction = state.pendingUserAction
+    val hasPendingSeekResume = state.hasPendingSeekResume
+    val playerDiagnosticLoggingEnabled = state.playerDiagnosticLoggingEnabled
+    val realResolution = state.realResolution
+    val isQualitySwitching = state.isQualitySwitching
+    val isBuffering = state.isBuffering
+    val onBottomControlsSizeChanged = actions.onBottomControlsSizeChanged
+    val isVip = state.isVip
+    val sponsorContributionAvailable = state.sponsorContributionAvailable
+    val sponsorContributionMarking = state.sponsorContributionMarking
+    val onSponsorContributionMarkBoundary = actions.onSponsorContributionMarkBoundary
+    val onSponsorContributionMarkWholeVideo = actions.onSponsorContributionMarkWholeVideo
+    val onSponsorContributionCancel = actions.onSponsorContributionCancel
+    val danmakuEnabled = state.danmakuEnabled
+    val onDanmakuToggle = actions.onDanmakuToggle
+    val onDanmakuInputClick = actions.onDanmakuInputClick
+    val danmakuComposerVisible = state.danmakuComposerVisible
+    val onDismissDanmakuComposer = actions.onDismissDanmakuComposer
+    val onSendDanmakuComposer = actions.onSendDanmakuComposer
+    val isSendingDanmakuComposer = state.isSendingDanmakuComposer
+    val danmakuComposerInitialText = state.danmakuComposerInitialText
+    val danmakuComposerInitialAttentionCommand = state.danmakuComposerInitialAttentionCommand
+    val danmakuComposerInitialColor = state.danmakuComposerInitialColor
+    val danmakuComposerInitialMode = state.danmakuComposerInitialMode
+    val danmakuComposerInitialFontSize = state.danmakuComposerInitialFontSize
+    val onDanmakuComposerDraftChange = actions.onDanmakuComposerDraftChange
+    val onDanmakuComposerSelectionChange = actions.onDanmakuComposerSelectionChange
+    val danmakuOpacity = state.danmakuOpacity
+    val danmakuFontScale = state.danmakuFontScale
+    val danmakuFontWeight = state.danmakuFontWeight
+    val danmakuSpeed = state.danmakuSpeed
+    val danmakuDisplayArea = state.danmakuDisplayArea
+    val danmakuStrokeWidth = state.danmakuStrokeWidth
+    val danmakuLineHeight = state.danmakuLineHeight
+    val danmakuScrollDurationSeconds = state.danmakuScrollDurationSeconds
+    val danmakuStaticDurationSeconds = state.danmakuStaticDurationSeconds
+    val danmakuScrollFixedVelocity = state.danmakuScrollFixedVelocity
+    val danmakuStaticToScroll = state.danmakuStaticToScroll
+    val danmakuMassiveMode = state.danmakuMassiveMode
+    val danmakuMergeDuplicates = state.danmakuMergeDuplicates
+    val danmakuDuplicateMergeWindowMs = state.danmakuDuplicateMergeWindowMs
+    val danmakuDuplicateMergeCountThreshold = state.danmakuDuplicateMergeCountThreshold
+    val danmakuAllowScroll = state.danmakuAllowScroll
+    val danmakuAllowTop = state.danmakuAllowTop
+    val danmakuAllowBottom = state.danmakuAllowBottom
+    val danmakuAllowColorful = state.danmakuAllowColorful
+    val danmakuAllowSpecial = state.danmakuAllowSpecial
+    val danmakuWeightFilterLevel = state.danmakuWeightFilterLevel
+    val danmakuHideInteractiveCommands = state.danmakuHideInteractiveCommands
+    val danmakuBlockRulesRaw = state.danmakuBlockRulesRaw
+    val danmakuSmartOcclusion = state.danmakuSmartOcclusion
+    val danmakuFullscreenPanelWidthMode = state.danmakuFullscreenPanelWidthMode
+    val portraitDanmakuDisplayAreaMode = state.portraitDanmakuDisplayAreaMode
+    val danmakuSettingsScope = state.danmakuSettingsScope
+    val showDanmakuSyncSection = state.showDanmakuSyncSection
+    val danmakuCloudSyncEnabled = state.danmakuCloudSyncEnabled
+    val danmakuSyncUiState = state.danmakuSyncUiState
+    val onDanmakuOpacityChange = actions.onDanmakuOpacityChange
+    val onDanmakuFontScaleChange = actions.onDanmakuFontScaleChange
+    val onDanmakuFontWeightChange = actions.onDanmakuFontWeightChange
+    val onDanmakuSpeedChange = actions.onDanmakuSpeedChange
+    val onDanmakuDisplayAreaChange = actions.onDanmakuDisplayAreaChange
+    val onDanmakuStrokeWidthChange = actions.onDanmakuStrokeWidthChange
+    val onDanmakuLineHeightChange = actions.onDanmakuLineHeightChange
+    val onDanmakuScrollDurationSecondsChange = actions.onDanmakuScrollDurationSecondsChange
+    val onDanmakuStaticDurationSecondsChange = actions.onDanmakuStaticDurationSecondsChange
+    val onDanmakuScrollFixedVelocityChange = actions.onDanmakuScrollFixedVelocityChange
+    val onDanmakuStaticToScrollChange = actions.onDanmakuStaticToScrollChange
+    val onDanmakuMassiveModeChange = actions.onDanmakuMassiveModeChange
+    val onDanmakuMergeDuplicatesChange = actions.onDanmakuMergeDuplicatesChange
+    val onDanmakuDuplicateMergeWindowMsChange = actions.onDanmakuDuplicateMergeWindowMsChange
+    val onDanmakuDuplicateMergeCountThresholdChange = actions.onDanmakuDuplicateMergeCountThresholdChange
+    val onDanmakuAllowScrollChange = actions.onDanmakuAllowScrollChange
+    val onDanmakuAllowTopChange = actions.onDanmakuAllowTopChange
+    val onDanmakuAllowBottomChange = actions.onDanmakuAllowBottomChange
+    val onDanmakuAllowColorfulChange = actions.onDanmakuAllowColorfulChange
+    val onDanmakuAllowSpecialChange = actions.onDanmakuAllowSpecialChange
+    val onDanmakuWeightFilterLevelChange = actions.onDanmakuWeightFilterLevelChange
+    val onDanmakuHideInteractiveCommandsChange = actions.onDanmakuHideInteractiveCommandsChange
+    val onDanmakuBlockRulesRawChange = actions.onDanmakuBlockRulesRawChange
+    val onDanmakuSmartOcclusionChange = actions.onDanmakuSmartOcclusionChange
+    val onDanmakuFullscreenPanelWidthModeChange = actions.onDanmakuFullscreenPanelWidthModeChange
+    val onPortraitDanmakuDisplayAreaModeChange = actions.onPortraitDanmakuDisplayAreaModeChange
+    val onDanmakuCloudSyncEnabledChange = actions.onDanmakuCloudSyncEnabledChange
+    val onDanmakuSyncNowClick = actions.onDanmakuSyncNowClick
+    val subtitleControlState = state.subtitleControlState
+    val subtitleControlCallbacks = actions.subtitleControlCallbacks
+    val doubleTapLikeEnabled = state.doubleTapLikeEnabled
+    val onDoubleTapLike = actions.onDoubleTapLike
+    val currentAspectRatio = state.currentAspectRatio
+    val onAspectRatioChange = actions.onAspectRatioChange
+    val onShare = actions.onShare
+    val showDislikeAction = state.showDislikeAction
+    val coverUrl = state.coverUrl
+    val videoSharePlayCountText = state.videoSharePlayCountText
+    val onReloadVideo = actions.onReloadVideo
+    val sleepTimerMinutes = state.sleepTimerMinutes
+    val onSleepTimerChange = actions.onSleepTimerChange
+    val isFlippedHorizontal = state.isFlippedHorizontal
+    val isFlippedVertical = state.isFlippedVertical
+    val onFlipHorizontal = actions.onFlipHorizontal
+    val onFlipVertical = actions.onFlipVertical
+    val isAudioOnly = state.isAudioOnly
+    val onAudioOnlyToggle = actions.onAudioOnlyToggle
+    val onQualityChange = actions.onQualityChange
+    val currentCdnIndex = state.currentCdnIndex
+    val cdnCount = state.cdnCount
+    val cdnLineDiagnostics = state.cdnLineDiagnostics
+    val isCdnProbing = state.isCdnProbing
+    val onSwitchCdn = actions.onSwitchCdn
+    val onSwitchCdnTo = actions.onSwitchCdnTo
+    val onProbeCdnCandidates = actions.onProbeCdnCandidates
+    val videoshotData = state.videoshotData
+    val viewPoints = state.viewPoints
+    val sponsorMarkers = state.sponsorMarkers
+    val pbpRidgeSamples = state.pbpRidgeSamples
+    val isVerticalVideo = state.isVerticalVideo
+    val onPortraitFullscreen = actions.onPortraitFullscreen
+    val onPipClick = actions.onPipClick
+    val onSeekStart = actions.onSeekStart
+    val onSeekDragStart = actions.onSeekDragStart
+    val onSeekDragUpdate = actions.onSeekDragUpdate
+    val onSeekDragCancel = actions.onSeekDragCancel
+    val isSeekScrubbing = state.isSeekScrubbing
+    val onSeekTo = actions.onSeekTo
+    val progressDisplayOverridePositionMs = state.progressDisplayOverridePositionMs
+    val progressDisplayOverridePositionProvider = actions.progressDisplayOverridePositionProvider
+    val isPlaybackTransitionPending = state.isPlaybackTransitionPending
+    val highFrequencyProgressActive = state.highFrequencyProgressActive
+    val currentCodec = state.currentCodec
+    val onCodecChange = actions.onCodecChange
+    val currentSecondCodec = state.currentSecondCodec
+    val onSecondCodecChange = actions.onSecondCodecChange
+    val currentAudioQuality = state.currentAudioQuality
+    val selectedAudioQuality = state.selectedAudioQuality
+    val availableAudioQualities = state.availableAudioQualities
+    val onAudioQualityChange = actions.onAudioQualityChange
+    val anime4kEnabled = state.anime4kEnabled
+    val anime4kAvailable = state.anime4kAvailable
+    val anime4kBypassReason = state.anime4kBypassReason
+    val videoEnhancementAlgorithm = state.videoEnhancementAlgorithm
+    val anime4kPreset = state.anime4kPreset
+    val fsrSharpness = state.fsrSharpness
+    val onAnime4kToggle = actions.onAnime4kToggle
+    val onVideoEnhancementAlgorithmChange = actions.onVideoEnhancementAlgorithmChange
+    val onAnime4kPresetChange = actions.onAnime4kPresetChange
+    val onFsrSharpnessChange = actions.onFsrSharpnessChange
+    val aiAudioInfo = state.aiAudioInfo
+    val currentAudioLang = state.currentAudioLang
+    val onAudioLangChange = actions.onAudioLangChange
+    val onlineCount = state.onlineCount
+    val onSaveCover = actions.onSaveCover
+    val onCaptureScreenshot = actions.onCaptureScreenshot
+    val onDownloadAudio = actions.onDownloadAudio
+    val currentPlayMode = state.currentPlayMode
+    val onPlayModeClick = actions.onPlayModeClick
+    val onPlaybackSpeedChange = actions.onPlaybackSpeedChange ?: { speed: Float -> state.player.setPlaybackSpeed(speed) }
+    val endDrawerVisible = state.endDrawerVisible
+    val endDrawerInitialTab = state.endDrawerInitialTab
+    val endDrawerReservedWidth = state.endDrawerReservedWidth
+    val onShowEndDrawer = actions.onShowEndDrawer
+    val onDismissEndDrawer = actions.onDismissEndDrawer
+    val relatedVideos = state.relatedVideos
+    val ugcSeason = state.ugcSeason
+    val isFollowed = state.isFollowed
+    val isLiked = state.isLiked
+    val isCoined = state.isCoined
+    val isFavorited = state.isFavorited
+    val likeCount = state.likeCount
+    val favoriteCount = state.favoriteCount
+    val coinCount = state.coinCount
+    val onToggleFollow = actions.onToggleFollow
+    val onToggleLike = actions.onToggleLike
+    val onDislike = actions.onDislike
+    val onCoin = actions.onCoin
+    val onToggleFavorite = actions.onToggleFavorite
+    val onDrawerVideoClick = actions.onDrawerVideoClick
+    val pages = state.pages
+    val currentPageIndex = state.currentPageIndex
+    val onPageSelect = actions.onPageSelect
+    val hasFavoritePlaylist = state.hasFavoritePlaylist
+    val onFavoritePlaylistClick = actions.onFavoritePlaylistClick
+    val drawerHazeState = state.drawerHazeState
+    val statusBarAmbientFrame = state.statusBarAmbientFrame
+    val statusBarBackdropHeight = state.statusBarBackdropHeight
+    val onShowDanmakuPool = actions.onShowDanmakuPool
+
     var showQualityMenu by remember { mutableStateOf(false) }
     var showAudioQualityMenu by remember { mutableStateOf(false) }
     var showSpeedMenu by remember { mutableStateOf(false) }
@@ -821,8 +818,11 @@ fun VideoPlayerOverlay(
             } ?: debugInfo.lastLoadError
         )
     }
-    val debugRows = remember(effectiveDebugInfo) {
+    val panelFrameRateLabel = rememberPanelFrameRateLabel()
+    val debugRows = remember(effectiveDebugInfo, panelFrameRateLabel) {
         resolvePlaybackDebugRows(effectiveDebugInfo)
+            .plus(DebugStatRow("Panel rate", panelFrameRateLabel))
+            .filter { it.value.isNotBlank() }
     }
     val insightPresentation = remember(effectiveDebugInfo) {
         resolvePlaybackInsightPresentation(effectiveDebugInfo)
@@ -1086,9 +1086,13 @@ fun VideoPlayerOverlay(
     //  双击检测状态
     var lastTapTime by remember { mutableLongStateOf(0L) }
     var showLikeAnimation by remember { mutableStateOf(false) }
-    val overlayVisualPolicy = remember(configuration.screenWidthDp) {
+    val overlayVisualPolicy = remember(
+        configuration.screenWidthDp,
+        playerControlVisibility.compactPlayerChrome
+    ) {
         resolveVideoPlayerOverlayVisualPolicy(
-            widthDp = configuration.screenWidthDp
+            widthDp = configuration.screenWidthDp,
+            compact = playerControlVisibility.compactPlayerChrome
         )
     }
     val landscapeCommentReservedWidth = if (landscapeCommentPanelVisible) {
@@ -1169,14 +1173,15 @@ fun VideoPlayerOverlay(
     val effectiveProgressState = remember(progressState, pluginPlaybackState) {
         resolveEffectivePlayerProgress(progressState, pluginPlaybackState)
     }
-    val displayedProgressState = remember(
-        effectiveProgressState,
-        progressDisplayOverridePositionMs
-    ) {
-        resolveDisplayedPlayerProgressWithOverride(
-            progress = effectiveProgressState,
-            overridePositionMs = progressDisplayOverridePositionMs
-        )
+    val latestProgressOverrideProvider = rememberUpdatedState(progressDisplayOverridePositionProvider)
+    val displayedProgressState = remember(effectiveProgressState, progressDisplayOverridePositionMs) {
+        derivedStateOf {
+            resolveDisplayedPlayerProgressWithOverride(
+                progress = effectiveProgressState,
+                overridePositionMs = latestProgressOverrideProvider.value?.invoke()
+                    ?: progressDisplayOverridePositionMs
+            )
+        }
     }
     val effectiveIsPlaying = remember(isPlaying, pluginPlaybackState) {
         resolveEffectivePlayingState(isPlaying, pluginPlaybackState)
@@ -1344,8 +1349,8 @@ fun VideoPlayerOverlay(
         // --- 1. 顶部渐变遮罩 ---
         AnimatedVisibility(
             visible = isVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(OverlayChromeFadeSpec),
+            exit = fadeOut(OverlayChromeFadeSpec),
             //  [修复] align 必须在 AnimatedVisibility 的 modifier 上，而不是内部 Box 上
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -1380,8 +1385,8 @@ fun VideoPlayerOverlay(
         // --- 2. 底部渐变遮罩 ---
         AnimatedVisibility(
             visible = isVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(OverlayChromeFadeSpec),
+            exit = fadeOut(OverlayChromeFadeSpec),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(end = endDrawerReservedWidth)
@@ -1411,8 +1416,8 @@ fun VideoPlayerOverlay(
             )
         ) {
             PersistentBottomProgressBar(
-                current = displayedProgressState.current,
-                duration = displayedProgressState.duration,
+                current = displayedProgressState.value.current,
+                duration = displayedProgressState.value.duration,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(end = endDrawerReservedWidth)
@@ -1423,8 +1428,8 @@ fun VideoPlayerOverlay(
         val showPlayerChrome = (isVisible && !isScreenLocked) || danmakuComposerVisible
         AnimatedVisibility(
             visible = showPlayerChrome,
-            enter = fadeIn(tween(300)),
-            exit = fadeOut(tween(300)),
+            enter = fadeIn(OverlayChromeFadeSpec),
+            exit = fadeOut(OverlayChromeFadeSpec),
             //  [修复] 确保 AnimatedVisibility 填充整个父容器
             modifier = overlayContentModifier
         ) {
@@ -1477,9 +1482,13 @@ fun VideoPlayerOverlay(
                         },
                         onAudioMode = onAudioOnlyToggle,
                         isAudioOnly = isAudioOnly,
+                        onNotInterested = onDislike,
+                        sleepTimerMinutes = sleepTimerMinutes,
+                        onSleepTimerChange = onSleepTimerChange,
                         //  [新增] 投屏按钮
                         onCastClick = onCastClickAction,
                         showCastButton = playerControlVisibility.showCastButton,
+                        compactPlayerChrome = playerControlVisibility.compactPlayerChrome,
                         statusBarVisible = playerChromeStatusBarVisible,
                         modifier = Modifier.align(Alignment.TopStart)
                     )
@@ -1506,11 +1515,13 @@ fun VideoPlayerOverlay(
                         )
                     }
 
+                    key(player, bvid, cid) {
                     BottomControlBar(
                     viewportWidthDpOverride = viewportWidthDpOverride,
                     isPlaying = effectiveIsPlaying,
-                    progress = displayedProgressState,
+                    progress = effectiveProgressState,
                     isFullscreen = isFullscreen,
+                    compactPlayerChrome = playerControlVisibility.compactPlayerChrome,
                     currentSpeed = currentSpeed,
                     currentRatio = currentAspectRatio,
                     onPlayPauseClick = {
@@ -1521,7 +1532,7 @@ fun VideoPlayerOverlay(
                     onSeekDragStart = onSeekDragStart,
                     onSeekDragUpdate = onSeekDragUpdate,
                     onSeekDragCancel = onSeekDragCancel,
-                    seekPositionMs = displayedProgressState.current,
+                    seekPositionProvider = { displayedProgressState.value.current },
                     isSeekScrubbing = isSeekScrubbing,
                     onSpeedClick = { showSpeedMenu = true },
                     onRatioClick = { showRatioMenu = true },
@@ -1548,6 +1559,11 @@ fun VideoPlayerOverlay(
                     hasEpisodeEntry = hasEpisodeEntry,
                     onToggleFullscreen = onToggleFullscreen,
                     //  [新增] 竖屏模式弹幕和清晰度控制
+                    sponsorContributionAvailable = sponsorContributionAvailable,
+                    sponsorContributionMarking = sponsorContributionMarking,
+                    onSponsorContributionMarkBoundary = onSponsorContributionMarkBoundary,
+                    onSponsorContributionMarkWholeVideo = onSponsorContributionMarkWholeVideo,
+                    onSponsorContributionCancel = onSponsorContributionCancel,
                     danmakuEnabled = danmakuEnabled,
                     onDanmakuToggle = onDanmakuToggle,
                     onDanmakuSettingsClick = { showDanmakuSettings = true },
@@ -1596,6 +1612,7 @@ fun VideoPlayerOverlay(
                     },
                     progressPlacement = effectiveProgressPlacement
                 )
+                    }
                 }
             }
         }
@@ -1604,11 +1621,11 @@ fun VideoPlayerOverlay(
         if (isFullscreen && showFullscreenLockButton) {
             AnimatedVisibility(
                 visible = isVisible,  // 锁定后按控制栏状态自动隐藏
-                enter = fadeIn(tween(200)),
-                exit = fadeOut(tween(200)),
+                enter = fadeIn(OverlayControlFadeSpec),
+                exit = fadeOut(OverlayControlFadeSpec),
                 modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = overlayVisualPolicy.lockButtonEndPaddingDp.dp)
+                    .align(Alignment.CenterEnd)
+                    .padding(end = overlayVisualPolicy.lockButtonEndPaddingDp.dp)
             ) {
                 AppSurface(
                     onClick = onLockToggle,
@@ -1638,11 +1655,11 @@ fun VideoPlayerOverlay(
         if (isFullscreen && showFullscreenScreenshotButton) {
             AnimatedVisibility(
                 visible = isVisible && !isScreenLocked,
-                enter = fadeIn(tween(200)),
-                exit = fadeOut(tween(200)),
+                enter = fadeIn(OverlayControlFadeSpec),
+                exit = fadeOut(OverlayControlFadeSpec),
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = overlayVisualPolicy.lockButtonEndPaddingDp.dp)
+                    .align(Alignment.CenterStart)
+                    .padding(start = overlayVisualPolicy.lockButtonEndPaddingDp.dp)
             ) {
                 AppSurface(
                     onClick = onCaptureScreenshot,
@@ -1765,8 +1782,8 @@ fun VideoPlayerOverlay(
         if (playerDiagnosticLoggingEnabled) playbackIssueSignal?.let { signal ->
             AnimatedVisibility(
                 visible = true,
-                enter = fadeIn() + slideInVertically { -it / 2 },
-                exit = fadeOut() + slideOutVertically { -it / 2 },
+                enter = fadeIn(OverlayControlFadeSpec) + slideInVertically(OverlayControlSlideSpec) { -it / 2 },
+                exit = fadeOut(OverlayControlFadeSpec) + slideOutVertically(OverlayControlSlideSpec) { -it / 2 },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -1847,8 +1864,8 @@ fun VideoPlayerOverlay(
                     hasPendingSeekResume
             ),
             modifier = Modifier.align(Alignment.Center),
-            enter = scaleIn(tween(250)) + fadeIn(tween(200)),
-            exit = scaleOut(tween(200)) + fadeOut(tween(200))
+            enter = scaleIn(OverlayCenterPlayScaleSpec) + fadeIn(OverlayControlFadeSpec),
+            exit = scaleOut(OverlayCenterPlayScaleSpec) + fadeOut(OverlayControlFadeSpec)
         ) {
             val resumeFromCenterButton = {
                 playPlayerFromUserAction(player)
@@ -1872,8 +1889,8 @@ fun VideoPlayerOverlay(
                 playWhenReady = player.playWhenReady
             ) && centerLoadingUiState == null,
             modifier = Modifier.align(Alignment.Center),
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(200))
+            enter = fadeIn(OverlayControlFadeSpec),
+            exit = fadeOut(OverlayControlFadeSpec)
         ) {
             SkinAwareLoadingIndicator(color = centerLoadingVisualState.indicatorColor)
         }
@@ -1881,8 +1898,8 @@ fun VideoPlayerOverlay(
         AnimatedVisibility(
             visible = centerLoadingUiState != null,
             modifier = Modifier.align(Alignment.Center),
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(200))
+            enter = fadeIn(OverlayControlFadeSpec),
+            exit = fadeOut(OverlayControlFadeSpec)
         ) {
             val loadingState = centerLoadingUiState ?: return@AnimatedVisibility
             AppSurface(
@@ -1922,8 +1939,8 @@ fun VideoPlayerOverlay(
         AnimatedVisibility(
             visible = isQualitySwitching && centerLoadingUiState == null,
             modifier = Modifier.align(Alignment.Center),
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(200))
+            enter = fadeIn(OverlayControlFadeSpec),
+            exit = fadeOut(OverlayControlFadeSpec)
         ) {
             AppSurface(
                 color = Color.Black.copy(alpha = 0.7f),
@@ -2056,6 +2073,7 @@ fun VideoPlayerOverlay(
                 allowBottom = danmakuAllowBottom,
                 allowColorful = danmakuAllowColorful,
                 allowSpecial = danmakuAllowSpecial,
+                weightFilterLevel = danmakuWeightFilterLevel,
                 hideInteractiveCommands = danmakuHideInteractiveCommands,
                 showBlockRuleEditor = true,
                 showSmartOcclusionSection = true,
@@ -2086,6 +2104,7 @@ fun VideoPlayerOverlay(
                 onAllowBottomChange = onDanmakuAllowBottomChange,
                 onAllowColorfulChange = onDanmakuAllowColorfulChange,
                 onAllowSpecialChange = onDanmakuAllowSpecialChange,
+                onWeightFilterLevelChange = onDanmakuWeightFilterLevelChange,
                 onHideInteractiveCommandsChange = onDanmakuHideInteractiveCommandsChange,
                 onBlockRulesRawChange = onDanmakuBlockRulesRawChange,
                 onSmartOcclusionChange = onDanmakuSmartOcclusionChange,
@@ -2224,7 +2243,7 @@ fun VideoPlayerOverlay(
         if (showChapterList && viewPoints.isNotEmpty()) {
             ChapterListPanel(
                 viewPoints = viewPoints,
-                currentPositionMs = displayedProgressState.current,
+                currentPositionMs = displayedProgressState.value.current,
                 onSeek = commitSeek,
                 onDismiss = { showChapterList = false }
             )
@@ -2429,7 +2448,7 @@ fun VideoPlayerOverlay(
 /**
  *  竖屏模式顶部控制栏
  * 
- * 包含返回首页按钮、设置按钮和分享按钮
+ * 包含返回首页按钮、听视频/投屏与更多菜单；经典布局另有分享按钮
  */
 @Composable
 private fun PortraitTopBar(
@@ -2440,10 +2459,15 @@ private fun PortraitTopBar(
     onShare: () -> Unit,
     onAudioMode: () -> Unit,
     isAudioOnly: Boolean,
+    onNotInterested: () -> Unit = {},
+    sleepTimerMinutes: Int? = null,
+    onSleepTimerChange: (Int?) -> Unit = {},
     viewportWidthDpOverride: Int? = null,
     // 📺 [新增] 投屏
     onCastClick: () -> Unit = {},
     showCastButton: Boolean = true,
+    /** 紧凑布局隐藏顶栏分享，并收紧按钮间距。 */
+    compactPlayerChrome: Boolean = false,
     /** 系统状态栏可见时为顶栏加 statusBarsPadding，避免与系统图标重叠。 */
     statusBarVisible: Boolean = true,
     modifier: Modifier = Modifier
@@ -2456,9 +2480,10 @@ private fun PortraitTopBar(
     }
     val moreIcon = rememberAppMoreIcon()
     val shareIcon = rememberAppShareIcon()
-    val layoutPolicy = remember(uiLayoutWidthDp) {
+    val layoutPolicy = remember(uiLayoutWidthDp, compactPlayerChrome) {
         resolvePortraitTopBarLayoutPolicy(
-            widthDp = uiLayoutWidthDp
+            widthDp = uiLayoutWidthDp,
+            compact = compactPlayerChrome
         )
     }
 
@@ -2579,45 +2604,65 @@ private fun PortraitTopBar(
                         onClick = { showMoreMenu = false; onSettings() },
                     )
                     AppDropdownMenuItem(
-                        text = { AppText(if (isAudioOnly) "退出听视频" else "听视频") },
-                        onClick = { showMoreMenu = false; onAudioMode() },
+                        text = { AppText(if (sleepTimerMinutes == null) "定时关闭" else "取消定时关闭（${sleepTimerMinutes}分钟）") },
+                        onClick = {
+                            showMoreMenu = false
+                            onSleepTimerChange(if (sleepTimerMinutes == null) 30 else null)
+                        },
                     )
                     AppDropdownMenuItem(
-                        text = { AppText("分享") },
-                        onClick = { showMoreMenu = false; onShare() },
+                        text = { AppText("不感兴趣") },
+                        onClick = { showMoreMenu = false; onNotInterested() },
                     )
+                    if (compactPlayerChrome) {
+                        AppDropdownMenuItem(
+                            text = { AppText("分享") },
+                            onClick = { showMoreMenu = false; onShare() },
+                        )
+                    }
                 }
             } else {
-                DropdownMenu(
+                AppDropdownMenu(
                     expanded = showMoreMenu,
                     onDismissRequest = { showMoreMenu = false }
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("播放设置") },
+                    AppDropdownMenuItem(
+                        text = { AppText("播放设置") },
                         onClick = { showMoreMenu = false; onSettings() }
                     )
-                    DropdownMenuItem(
-                        text = { Text(if (isAudioOnly) "退出听视频" else "听视频") },
-                        onClick = { showMoreMenu = false; onAudioMode() }
+                    AppDropdownMenuItem(
+                        text = { AppText(if (sleepTimerMinutes == null) "定时关闭" else "取消定时关闭（${sleepTimerMinutes}分钟）") },
+                        onClick = {
+                            showMoreMenu = false
+                            onSleepTimerChange(if (sleepTimerMinutes == null) 30 else null)
+                        }
                     )
-                    DropdownMenuItem(
-                        text = { Text("分享") },
-                        onClick = { showMoreMenu = false; onShare() }
+                    AppDropdownMenuItem(
+                        text = { AppText("不感兴趣") },
+                        onClick = { showMoreMenu = false; onNotInterested() }
                     )
+                    if (compactPlayerChrome) {
+                        AppDropdownMenuItem(
+                            text = { AppText("分享") },
+                            onClick = { showMoreMenu = false; onShare() }
+                        )
+                    }
                 }
             }
-            
-            // 分享按钮 - 无背景
-            AppIconButton(
-                onClick = onShare,
-                modifier = Modifier.size(layoutPolicy.buttonSizeDp.dp)
-            ) {
-                AppIcon(
-                    imageVector = shareIcon,
-                    contentDescription = "分享",
-                    tint = Color.White,
-                    modifier = Modifier.size(layoutPolicy.iconSizeDp.dp)
-                )
+
+            if (!compactPlayerChrome) {
+                // 分享按钮 - 无背景
+                AppIconButton(
+                    onClick = onShare,
+                    modifier = Modifier.size(layoutPolicy.buttonSizeDp.dp)
+                ) {
+                    AppIcon(
+                        imageVector = shareIcon,
+                        contentDescription = "分享",
+                        tint = Color.White,
+                        modifier = Modifier.size(layoutPolicy.iconSizeDp.dp)
+                    )
+                }
             }
         }
     }
@@ -2814,8 +2859,8 @@ fun LandscapeEndDrawer(
     var requestDrawerDismiss by remember { mutableStateOf<(() -> Unit)?>(null) }
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = fadeIn(OverlayControlFadeSpec),
+        exit = fadeOut(OverlayControlFadeSpec),
         modifier = modifier
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -2931,6 +2976,7 @@ fun LandscapeEndDrawer(
                     
                     if (hasSeason) {
                         AppThemeAdaptiveTabRow(
+indicatorPresentation = AppTabRowIndicatorPresentation.TONAL_PILL,
                             options = listOf(
                                 AppSegmentOption(0, "推荐视频"),
                                 AppSegmentOption(1, "合集列表"),
@@ -2956,8 +3002,12 @@ fun LandscapeEndDrawer(
                     // 3. 列表内容
                     Box(modifier = Modifier.weight(1f)) {
                         if (selectedTab == 0) {
-                            // 推荐视频列表
+                            // 推荐视频列表（滚动位置跨抽屉开关保留）
+                            val relatedListState = rememberSaveable(
+                                saver = LazyListState.Saver
+                            ) { LazyListState() }
                             LazyColumn(
+                                state = relatedListState,
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(layoutPolicy.listContentPaddingDp.dp),
                                 verticalArrangement = Arrangement.spacedBy(layoutPolicy.listItemSpacingDp.dp)
@@ -3108,7 +3158,7 @@ private fun TripleLikeInteractionButton(
         animationSpec = if (isLongPressing) {
             androidx.compose.animation.core.tween(durationMillis = progressDuration, easing = LinearEasing)
         } else {
-            androidx.compose.animation.core.tween(durationMillis = 200, easing = FastOutSlowInEasing)
+            androidx.compose.animation.core.tween(durationMillis = 200, easing = AppMotionEasing.Continuity)
         },
         label = "tripleLikeProgress",
         finishedListener = { progress ->

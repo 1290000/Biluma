@@ -14,8 +14,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable // [New]
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -39,7 +37,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import com.android.purebilibili.R
 import com.android.purebilibili.core.ui.blur.rememberRecoverableHazeState
 import com.android.purebilibili.core.util.CacheClearTarget
@@ -158,10 +155,12 @@ fun SettingsScreen(
         .collectAsStateWithLifecycle(initialValue = com.android.purebilibili.core.store.DEFAULT_HOME_REFRESH_COUNT)
     val dynamicVisibleTabIds by SettingsManager.getDynamicTabVisibleTabs(context)
         .collectAsStateWithLifecycle(initialValue = defaultDynamicTabVisibleIds)
+    val dynamicTabOrder by SettingsManager.getDynamicTabOrder(context)
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val dynamicImagePreviewTextVisible by SettingsManager.getDynamicImagePreviewTextVisible(context)
         .collectAsStateWithLifecycle(initialValue = true)
     val dynamicDetailImageLayout by SettingsManager.getDynamicDetailImageLayout(context)
-        .collectAsStateWithLifecycle(initialValue = SettingsManager.DynamicDetailImageLayout.EXPANDED)
+        .collectAsStateWithLifecycle(initialValue = SettingsManager.peekDynamicDetailImageLayout(context))
     val dynamicAllTabHorizontalUserListVisible by SettingsManager
         .getDynamicAllTabHorizontalUserListVisible(context)
         .collectAsStateWithLifecycle(initialValue = false)
@@ -191,6 +190,7 @@ fun SettingsScreen(
     }
     var versionClickCount by remember { mutableIntStateOf(0) }
     var showEasterEggDialog by remember { mutableStateOf(false) }
+    var showLogExportDialog by remember { mutableStateOf(false) }
     var showPathDialog by remember { mutableStateOf(false) }
     var showImageSavePathDialog by remember { mutableStateOf(false) }
     // [新增] 打赏对话框
@@ -200,7 +200,6 @@ fun SettingsScreen(
     var updateStatusText by remember { mutableStateOf("点击检查") }
     var updateCheckResult by remember { mutableStateOf<AppUpdateCheckResult?>(null) }
     var changelogCheckResult by remember { mutableStateOf<AppUpdateCheckResult?>(null) }
-    var updateDownloadState by remember { mutableStateOf(AppUpdateDownloadState()) }
     val currentReleaseEvidence = state.currentReleaseEvidence
     val installedApkSha256 = state.installedApkSha256
     
@@ -380,7 +379,7 @@ fun SettingsScreen(
         }
     }
     
-    val onExportLogsAction: () -> Unit = { LogCollector.exportAndShare(context) }
+    val onExportLogsAction: () -> Unit = { showLogExportDialog = true }
     val onTelegramClick: () -> Unit = { uriHandler.openUri(OFFICIAL_TELEGRAM_CHANNEL_URL) }
     val onTelegramGroupClick: () -> Unit = { uriHandler.openUri(OFFICIAL_TELEGRAM_GROUP_URL) }
     val onTwitterClick: () -> Unit = { uriHandler.openUri("https://x.com/YangY_0x00") }
@@ -416,7 +415,7 @@ fun SettingsScreen(
     ) {
         isCheckingUpdate = true
         if (!silent) {
-            updateStatusText = "检查中..."
+            updateStatusText = "检查中…"
         }
         val result = AppUpdateChecker.check(
             currentVersion = com.android.purebilibili.BuildConfig.VERSION_NAME,
@@ -513,6 +512,42 @@ fun SettingsScreen(
     }
 
     // Dialogs
+    if (showLogExportDialog) {
+        val rawTraceAvailable = LogCollector.hasRawCrashTrace(context)
+        com.android.purebilibili.core.ui.AppAlertDialog(
+            onDismissRequest = { showLogExportDialog = false },
+            title = { AppText("导出诊断日志") },
+            text = {
+                Column {
+                    AppText(
+                        "普通导出包含脱敏的崩溃摘要、系统退出记录和运行日志，以及已有的性能诊断附件。"
+                    )
+                    if (rawTraceAvailable) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        AppText("原始系统回溯可能包含设备路径等敏感信息。")
+                        com.android.purebilibili.core.ui.AppDialogAction(onClick = {
+                            showLogExportDialog = false
+                            LogCollector.exportAndShare(context, includeRawCrashTrace = true)
+                        }) { AppText("导出并附原始回溯") }
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        AppText("当前没有可单独分享的原始系统回溯。")
+                    }
+                }
+            },
+            confirmButton = {
+                com.android.purebilibili.core.ui.AppDialogAction(onClick = {
+                    showLogExportDialog = false
+                    LogCollector.exportAndShare(context)
+                }) { AppText("普通导出") }
+            },
+            dismissButton = {
+                com.android.purebilibili.core.ui.AppDialogAction(
+                    onClick = { showLogExportDialog = false }
+                ) { AppText("取消") }
+            },
+        )
+    }
     if (showCacheDialog) {
         CacheClearConfirmDialog(
             breakdown = state.cacheBreakdown,
@@ -580,8 +615,8 @@ fun SettingsScreen(
                         SettingsManager.setDownloadExportTreeUri(context, null)
                     }
                     showPathDialog = false
-                    Toast.makeText(context, "已恢复仅应用内存储", Toast.LENGTH_SHORT).show()
-                }) { AppText("仅使用默认") }
+                    Toast.makeText(context, "已恢复默认下载位置", Toast.LENGTH_SHORT).show()
+                }) { AppText("恢复默认") }
             }
         )
     }
@@ -633,7 +668,7 @@ fun SettingsScreen(
     if (showEasterEggDialog) {
         com.android.purebilibili.core.ui.AppAlertDialog(
             onDismissRequest = { showEasterEggDialog = false; versionClickCount = 0 },
-            title = { AppText(" 你发现了彩蛋！", fontWeight = FontWeight.Bold) },
+            title = { AppText("你发现了彩蛋！", fontWeight = FontWeight.Bold) },
             text = { AppText("感谢你使用 BiliPai！这是一个用爱发电的开源项目。") },
             confirmButton = { com.android.purebilibili.core.ui.AppDialogAction(onClick = { showEasterEggDialog = false; versionClickCount = 0 }) { AppText("我知道了！") } }
         )
@@ -658,273 +693,12 @@ fun SettingsScreen(
         )
     }
 
-    if (false) {
-    updateCheckResult?.let { info ->
-        val resolvedReleaseNotes = remember(info.releaseNotes) {
-            resolveUpdateReleaseNotesText(info.releaseNotes)
-        }
-        val preferredAsset = remember(info.assets) {
-            selectPreferredAppUpdateAsset(info.assets)
-        }
-        val releaseCommit = remember(info.buildMetadata?.gitCommitSha) {
-            resolveBuildSourceValue(info.buildMetadata?.gitCommitSha, fallback = "未知")
-        }
-        val releaseWorkflowSubtitle = remember(info.buildMetadata?.workflowRunId, info.buildMetadata?.releaseTag) {
-            resolveBuildSourceSubtitle(
-                workflowRunId = info.buildMetadata?.workflowRunId,
-                releaseTag = info.buildMetadata?.releaseTag
-            )
-        }
-        val releaseVerificationEvidence = remember(info.verificationMetadata?.attestationUrl) {
-            if (info.verificationMetadata?.attestationUrl?.isNotBlank() == true) {
-                "GitHub Attestation"
-            } else {
-                "未提供"
-            }
-        }
-        val isDialogDarkTheme = AppSurfaceTokens.cardContainer().luminance() < 0.5f
-        val dialogTextColors = remember(isDialogDarkTheme) {
-            resolveAppUpdateDialogTextColors(
-                isDarkTheme = isDialogDarkTheme
-            )
-        }
-        val releaseNotesScrollState = rememberScrollState()
-        com.android.purebilibili.core.ui.AppAlertDialog(
-            onDismissRequest = { updateCheckResult = null },
-            title = {
-                AppText(
-                    text = "发现新版本 v${info.latestVersion}",
-                    color = dialogTextColors.titleColor
-                )
-            },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    AppText(
-                        text = "当前版本 v${info.currentVersion}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    preferredAsset?.let { asset ->
-                        Spacer(modifier = Modifier.height(6.dp))
-                        AppText(
-                            text = "安装包：${asset.name}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = dialogTextColors.currentVersionColor
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    AppText(
-                        text = "Release 锁定：${if (info.releaseIsImmutable) "Immutable" else "可变"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    AppText(
-                        text = "源码提交：$releaseCommit",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    AppText(
-                        text = "构建来源：$releaseWorkflowSubtitle",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    AppText(
-                        text = "Provenance：$releaseVerificationEvidence",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    if (updateDownloadState.status != AppUpdateDownloadStatus.IDLE) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        AppText(
-                            text = when (updateDownloadState.status) {
-                                AppUpdateDownloadStatus.QUEUED -> "等待网络后开始下载"
-                                AppUpdateDownloadStatus.DOWNLOADING -> "下载中 ${(updateDownloadState.progress * 100).toInt()}%"
-                                AppUpdateDownloadStatus.COMPLETED -> "下载完成，正在准备安装"
-                                AppUpdateDownloadStatus.FAILED -> updateDownloadState.errorMessage ?: "下载失败"
-                                AppUpdateDownloadStatus.IDLE -> ""
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = dialogTextColors.currentVersionColor
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    AppText(
-                        text = resolvedReleaseNotes,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = dialogTextColors.releaseNotesColor,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 280.dp)
-                            .verticalScroll(releaseNotesScrollState)
-                    )
-                }
-            },
-            confirmButton = {
-                com.android.purebilibili.core.ui.AppDialogAction(onClick = {
-                    val downloadedFile = updateDownloadState.filePath
-                        ?.takeIf { updateDownloadState.status == AppUpdateDownloadStatus.COMPLETED }
-                        ?.let { path -> java.io.File(path) }
-                        ?.takeIf { it.exists() }
-
-                    if (downloadedFile != null) {
-                        installDownloadedAppUpdate(context, downloadedFile)
-                        return@AppDialogAction
-                    }
-
-                    val asset = preferredAsset
-                    if (asset == null) {
-                        updateCheckResult = null
-                        uriHandler.openUri(info.releaseUrl)
-                        return@AppDialogAction
-                    }
-
-                    if (updateDownloadState.status == AppUpdateDownloadStatus.DOWNLOADING) {
-                        return@AppDialogAction
-                    }
-
-                    scope.launch {
-                        downloadAppUpdateApk(
-                            context = context,
-                            asset = asset,
-                            onStateChange = { state -> updateDownloadState = state }
-                        ).onSuccess { file ->
-                            updateDownloadState = completeAppUpdateDownload(
-                                current = updateDownloadState,
-                                filePath = file.absolutePath
-                            )
-                            val installAction = installDownloadedAppUpdate(context, file)
-                            if (installAction == AppUpdateInstallAction.OPEN_UNKNOWN_SOURCES_SETTINGS) {
-                                Toast.makeText(context, "请先允许安装未知来源应用", Toast.LENGTH_SHORT).show()
-                            }
-                        }.onFailure { error ->
-                            updateDownloadState = failAppUpdateDownload(
-                                current = updateDownloadState,
-                                errorMessage = error.message ?: "更新下载失败"
-                            )
-                            Toast.makeText(context, error.message ?: "更新下载失败", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }) {
-                    AppText(
-                        when {
-                            preferredAsset == null -> "前往下载"
-                            updateDownloadState.status == AppUpdateDownloadStatus.DOWNLOADING ->
-                                "下载中 ${(updateDownloadState.progress * 100).toInt()}%"
-                            updateDownloadState.status == AppUpdateDownloadStatus.COMPLETED -> "安装更新"
-                            else -> "立即更新"
-                        }
-                    )
-                }
-            },
-            dismissButton = {
-                com.android.purebilibili.core.ui.AppDialogAction(onClick = {
-                    updateCheckResult = null
-                    updateDownloadState = AppUpdateDownloadState()
-                }) { AppText("稍后") }
-            }
-        )
-    }
-
-    }
-
     changelogCheckResult?.let { info ->
         AppUpdateDialogHost(
             update = info,
             showReleaseNotesOnly = true,
             onDismissRequest = { changelogCheckResult = null },
         )
-    }
-
-    if (false) {
-    changelogCheckResult?.let { info ->
-        val resolvedReleaseNotes = remember(info.releaseNotes) {
-            resolveUpdateReleaseNotesText(info.releaseNotes)
-        }
-        val releaseCommit = remember(info.buildMetadata?.gitCommitSha) {
-            resolveBuildSourceValue(info.buildMetadata?.gitCommitSha, fallback = "未知")
-        }
-        val releaseWorkflowSubtitle = remember(info.buildMetadata?.workflowRunId, info.buildMetadata?.releaseTag) {
-            resolveBuildSourceSubtitle(
-                workflowRunId = info.buildMetadata?.workflowRunId,
-                releaseTag = info.buildMetadata?.releaseTag
-            )
-        }
-        val releaseVerificationEvidence = remember(info.verificationMetadata?.attestationUrl) {
-            if (info.verificationMetadata?.attestationUrl?.isNotBlank() == true) {
-                "GitHub Attestation"
-            } else {
-                "未提供"
-            }
-        }
-        val isDialogDarkTheme = AppSurfaceTokens.cardContainer().luminance() < 0.5f
-        val dialogTextColors = remember(isDialogDarkTheme) {
-            resolveAppUpdateDialogTextColors(
-                isDarkTheme = isDialogDarkTheme
-            )
-        }
-        val releaseNotesScrollState = rememberScrollState()
-        com.android.purebilibili.core.ui.AppAlertDialog(
-            onDismissRequest = { changelogCheckResult = null },
-            title = {
-                AppText(
-                    text = "更新日志 v${info.latestVersion}",
-                    color = dialogTextColors.titleColor
-                )
-            },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    AppText(
-                        text = "当前版本 v${info.currentVersion}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    AppText(
-                        text = "Release 锁定：${if (info.releaseIsImmutable) "Immutable" else "可变"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    AppText(
-                        text = "源码提交：$releaseCommit",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    AppText(
-                        text = "构建来源：$releaseWorkflowSubtitle",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    AppText(
-                        text = "Provenance：$releaseVerificationEvidence",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = dialogTextColors.currentVersionColor
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    AppText(
-                        text = resolvedReleaseNotes,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = dialogTextColors.releaseNotesColor,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 280.dp)
-                            .verticalScroll(releaseNotesScrollState)
-                    )
-                }
-            },
-            confirmButton = {
-                com.android.purebilibili.core.ui.AppDialogAction(onClick = {
-                    changelogCheckResult = null
-                    uriHandler.openUri(info.releaseUrl)
-                }) { AppText("查看发布页") }
-            },
-            dismissButton = {
-                com.android.purebilibili.core.ui.AppDialogAction(onClick = {
-                    changelogCheckResult = null
-                }) { AppText("关闭") }
-            }
-        )
-    }
-
     }
 
     val onOpenLinksAction: () -> Unit = {
@@ -1090,7 +864,7 @@ fun SettingsScreen(
                             SettingsManager.setFeedApiType(context, type)
                             android.widget.Toast.makeText(
                                 context,
-                                "已切换为${type.label}，下拉刷新生效",
+                                "已切换为${type.label}，下拉刷新后生效",
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -1138,6 +912,12 @@ fun SettingsScreen(
                                 context,
                                 resolveDynamicVisibleTabIdsAfterToggle(dynamicVisibleTabIds, tabId)
                             )
+                        }
+                    },
+                    dynamicTabOrder = dynamicTabOrder,
+                    onDynamicTabOrderChange = { order ->
+                        scope.launch {
+                            SettingsManager.setDynamicTabOrder(context, order)
                         }
                     },
                     homeRefreshCount = homeRefreshCount,
@@ -1271,6 +1051,8 @@ private fun MobileSettingsNavLayout(
     onDynamicFeedLayoutModeChange: (com.android.purebilibili.core.store.SettingsManager.DynamicFeedLayoutMode) -> Unit,
     dynamicVisibleTabIds: Set<String>,
     onDynamicTabVisibilityChange: (String) -> Unit,
+    dynamicTabOrder: List<String>,
+    onDynamicTabOrderChange: (List<String>) -> Unit,
     homeRefreshCount: Int,
     onHomeRefreshCountChange: (Int) -> Unit,
 ) {
@@ -1339,6 +1121,7 @@ private fun MobileSettingsNavLayout(
         onDynamicTopBarCollapseOnScrollChange = onDynamicTopBarCollapseOnScrollChange,
         onDynamicFeedLayoutModeChange = onDynamicFeedLayoutModeChange,
         onDynamicTabVisibilityChange = onDynamicTabVisibilityChange,
+        onDynamicTabOrderChange = onDynamicTabOrderChange,
         onHomeRefreshCountChange = onHomeRefreshCountChange,
     )
     val rootCategoryState = SettingsRootCategoryState(
@@ -1379,6 +1162,7 @@ private fun MobileSettingsNavLayout(
         dynamicTopBarCollapseOnScroll = dynamicTopBarCollapseOnScroll,
         dynamicFeedLayoutMode = dynamicFeedLayoutMode,
         dynamicVisibleTabIds = dynamicVisibleTabIds,
+        dynamicTabOrder = dynamicTabOrder,
         homeRefreshCount = homeRefreshCount,
     )
 
@@ -1395,17 +1179,14 @@ private fun MobileSettingsNavLayout(
                             onDonateClick = onDonateClick,
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
             is SettingsNavDestination.Category -> {
-                Box(modifier = Modifier.padding(top = 12.dp)) {
-                    SettingsRootCategoryContent(
-                        category = destination.category,
-                        actions = rootCategoryActions,
-                        state = rootCategoryState,
-                    )
-                }
+                SettingsRootCategoryContent(
+                    category = destination.category,
+                    actions = rootCategoryActions,
+                    state = rootCategoryState,
+                )
             }
             SettingsNavDestination.Search -> Unit
         }

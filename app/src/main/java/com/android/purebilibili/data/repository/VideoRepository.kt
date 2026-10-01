@@ -151,6 +151,7 @@ data class CreatorCardStats(
     val followerCount: Int,
     val videoCount: Int,
     val vipStatus: Int = 0,
+    val vipType: Int = 0,
     val officialType: Int = -1,
     val pendantImage: String = "",
 )
@@ -252,6 +253,8 @@ object VideoRepository {
     }
     
     private suspend fun ensureBuvid3FromSpi() {
+        // 会话备份为异步恢复，先等它完成再判断 buvid 是否缺失，避免启动窗口内多打一次 SPI。
+        TokenManager.awaitRestore()
         if (buvidInitialized) return
         try {
             com.android.purebilibili.core.util.Logger.d("VideoRepo", " Fetching buvid3 from SPI API...")
@@ -807,6 +810,8 @@ object VideoRepository {
     private suspend fun fetchMergedMobileFeed(idx: Int): Result<List<VideoItem>> {
         try {
             // app 取流依赖 buvid 会话, 缺失时先通过 SPI 获取
+            // 先等会话备份异步恢复完成，避免启动窗口内误判 buvid 缺失而多打一次 SPI。
+            TokenManager.awaitRestore()
             if (TokenManager.buvid3Cache.isNullOrEmpty()) {
                 ensureBuvid3FromSpi()
             }
@@ -929,6 +934,37 @@ object VideoRepository {
             throw e
         } catch (e: Exception) {
             e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getWeeklyPeriods(): Result<List<PopularSeriesPeriod>> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.getWeeklySeriesList()
+            if (response.code != 0) {
+                Result.failure(Exception(response.message.ifBlank { "每周必看期数加载失败(${response.code})" }))
+            } else {
+                Result.success(response.data?.list.orEmpty().filter { it.number > 0 }
+                    .distinctBy { it.number }.sortedByDescending { it.number })
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getWeeklyPeriod(number: Int): Result<PopularSeriesOneData> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.getWeeklySeriesVideos(number)
+            if (response.code != 0 || response.data == null) {
+                Result.failure(Exception(response.message.ifBlank { "第${number}期加载失败(${response.code})" }))
+            } else {
+                Result.success(response.data)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }
@@ -1146,6 +1182,7 @@ object VideoRepository {
                     followerCount = data.follower.coerceAtLeast(0),
                     videoCount = data.archive_count.coerceAtLeast(0),
                     vipStatus = data.card?.vip?.status ?: 0,
+                    vipType = data.card?.vip?.type ?: 0,
                     officialType = data.card?.Official?.type ?: -1,
                     pendantImage = data.card?.pendant?.image.orEmpty(),
                 )
@@ -2344,6 +2381,7 @@ object VideoRepository {
             -62002 -> "视频已设为私密"
             -62004 -> "视频正在审核中"
             -62012 -> "视频已下架"
+            87008 -> "当前视频可能是专属视频，可能需包月充电观看"
             -400 -> "请求参数错误"
             -101 -> "未登录，请先登录"
             -352 -> "请求频率过高，请稍后再试"

@@ -199,6 +199,7 @@ internal sealed interface BiliPaiNavKey : NavKey {
     data class LikedVideos(
         val mid: Long = 0L,
         val ownerName: String = "",
+        val isCoinArchive: Boolean = false,
     ) : BiliPaiNavKey {
         override val routeBase: String = "liked_videos"
 
@@ -227,6 +228,30 @@ internal sealed interface BiliPaiNavKey : NavKey {
         val mid: Long
     ) : BiliPaiNavKey {
         override val routeBase: String = "following"
+    }
+
+    @Serializable
+    data class UpowerRank(
+        val mid: Long,
+        val name: String = "",
+        val count: Long = 0L,
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "upower_rank"
+        companion object : BiliPaiNavKey {
+            override val routeBase: String = "upower_rank"
+        }
+    }
+
+    @Serializable
+    data class MemberGuard(
+        val mid: Long,
+        val name: String = "",
+        val count: Long = 0L,
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "member_guard"
+        companion object : BiliPaiNavKey {
+            override val routeBase: String = "member_guard"
+        }
     }
 
     @Serializable
@@ -361,6 +386,21 @@ internal sealed interface BiliPaiNavKey : NavKey {
         val preferredAid: Long = 0L
     ) : BiliPaiNavKey {
         override val routeBase: String = "bangumi/play"
+    }
+
+    @Serializable
+    data class WeeklySeries(val number: Int? = null) : BiliPaiNavKey {
+        override val routeBase: String = "weekly_series"
+    }
+
+    @Serializable
+    data class BgmDetail(
+        val musicId: String,
+        val aid: Long = 0,
+        val cid: Long = 0,
+        val showVideos: Boolean = false,
+    ) : BiliPaiNavKey {
+        override val routeBase: String = "bgm_detail"
     }
 
     @Serializable

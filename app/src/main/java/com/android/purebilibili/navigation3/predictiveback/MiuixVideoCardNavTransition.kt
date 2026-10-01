@@ -27,6 +27,7 @@ import com.android.purebilibili.core.ui.transition.resolveVideoHeroMotionSpec
 import com.android.purebilibili.core.ui.transition.resolveVideoHeroLandingScale
 import top.yukonga.miuix.kmp.nav.transition.NavMotion
 import top.yukonga.miuix.kmp.nav.transition.NavRole
+import top.yukonga.miuix.kmp.nav.transition.NavSettle
 import top.yukonga.miuix.kmp.nav.transition.NavSettleSpec
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeEdge
 import top.yukonga.miuix.kmp.nav.transition.NavTransition
@@ -229,6 +230,44 @@ internal fun resolveMiuixVideoCardGestureVisualOrigin(
 internal fun resolveMiuixVideoCardDepthProgress(relativeDepth: Float): Float =
     topProgress(relativeDepth)
 
+/**
+ * Manual predictive-back drag may land the card fully. Reserving a visible portion
+ * for the committed settle made full-finger landing impossible and replayed a second
+ * flight after release; with cap 1f a full drag leaves the commit tween nothing to
+ * animate (remaining = 0), while partial releases still settle smoothly.
+ */
+internal const val MIUIX_VIDEO_CARD_GESTURE_MAX_RETURN = 1f
+
+internal fun resolveMiuixVideoCardSeekReturn(
+    startReturn: Float,
+    gestureProgress: Float,
+): Float = (startReturn + gestureProgress.coerceIn(0f, 1f) * MIUIX_VIDEO_CARD_GESTURE_MAX_RETURN)
+    // An interrupted push can already be nearer the card than the preview limit. Never
+    // jump it back toward fullscreen merely to manufacture more return distance.
+    .coerceIn(0f, maxOf(startReturn, MIUIX_VIDEO_CARD_GESTURE_MAX_RETURN).coerceIn(0f, 1f))
+
+internal fun resolveMiuixVideoCardSettleReturn(
+    rawReturn: Float,
+    releaseRawReturn: Float,
+    releaseVisualReturn: Float,
+    committing: Boolean,
+): Float {
+    val raw = rawReturn.coerceIn(0f, 1f)
+    val releaseRaw = releaseRawReturn.coerceIn(0f, 1f)
+    val releaseVisual = releaseVisualReturn.coerceIn(0f, 1f)
+    return if (committing) {
+        val remaining = 1f - releaseRaw
+        if (remaining <= 0f) 1f else {
+            releaseVisual + (1f - releaseVisual) *
+                ((raw - releaseRaw) / remaining).coerceIn(0f, 1f)
+        }
+    } else {
+        if (releaseRaw <= 0f) 0f else {
+            releaseVisual * (raw / releaseRaw).coerceIn(0f, 1f)
+        }
+    }
+}
+
 internal fun resolveMiuixVideoCardOuterScale(sourceScale: Float, depth: Float, landingScale: Float): Float {
     val source = sourceScale.coerceIn(0.05f, 1f)
     return source + (1f - source) * depth.coerceIn(0f, 1f) - source * (1f - landingScale)
@@ -381,13 +420,85 @@ internal fun resolveMiuixVideoCardContentCompensation(
 /** Deferred bridge to the top video entry's live Miuix driver. */
 internal class MiuixVideoCardTransitionProgress {
     private var topScope: NavTransitionScope? by mutableStateOf(null)
+    private var gestureStartReturn: Float? = null
+    private var lastSeekRawReturn = 0f
+    private var lastSeekVisualReturn = 0f
+    private var activeSettle: NavSettle? = null
+    private var settleRawReturn = 0f
+    private var settleVisualReturn = 0f
+
+    private fun isCoveredOrRevealedParent(scope: NavTransitionScope): Boolean =
+        scope.relativeDepth >= 0f && scope.role != NavRole.Outgoing
+
+    /** One mapping for the flying shell, its contents, and the retained source page. */
+    fun visualDepth(scope: NavTransitionScope): Float {
+        // Gesture/settle belongs to the whole NavDisplay, including covered entries. Returning
+        // from BGM (or another child) reveals this video at positive depth; it does not close
+        // the video into its original feed card. Keep it fullscreen through the landing frame.
+        if (isCoveredOrRevealedParent(scope)) {
+            gestureStartReturn = null
+            activeSettle = null
+            return 1f
+        }
+        val rawDepth = resolveMiuixVideoCardDepthProgress(scope.relativeDepth)
+        val rawReturn = 1f - rawDepth
+        val settle = scope.settle
+        val gesture = scope.gesture
+        if (settle == null && activeSettle != null && scope.role != NavRole.Outgoing) {
+            activeSettle = null
+            gestureStartReturn = null
+        }
+        val visualReturn = when {
+            gesture != null && settle == null && scope.role != NavRole.Outgoing -> {
+                val start = gestureStartReturn ?: (rawReturn - gesture.progress).also {
+                    gestureStartReturn = it
+                }
+                resolveMiuixVideoCardSeekReturn(start, gesture.progress).also {
+                    lastSeekRawReturn = rawReturn
+                    lastSeekVisualReturn = it
+                }
+            }
+            gesture != null && settle != null &&
+                (settle.phase == NavSettlePhase.Commit || settle.phase == NavSettlePhase.Cancel) -> {
+                if (activeSettle !== settle) {
+                    activeSettle = settle
+                    settleRawReturn = if (gestureStartReturn != null) lastSeekRawReturn else rawReturn
+                    settleVisualReturn = if (gestureStartReturn != null) lastSeekVisualReturn else {
+                        resolveMiuixVideoCardSeekReturn(
+                            rawReturn - gesture.progress,
+                            gesture.progress,
+                        )
+                    }
+                }
+                resolveMiuixVideoCardSettleReturn(
+                    rawReturn = rawReturn,
+                    releaseRawReturn = settleRawReturn,
+                    releaseVisualReturn = settleVisualReturn,
+                    committing = settle.phase == NavSettlePhase.Commit,
+                )
+            }
+            else -> rawReturn.also {
+                if (gesture == null) {
+                    gestureStartReturn = null
+                    activeSettle = null
+                }
+            }
+        }
+        return (1f - visualReturn).coerceIn(0f, 1f)
+    }
 
     fun bind(scope: NavTransitionScope) {
         when (scope.role) {
             NavRole.Incoming,
             NavRole.Outgoing,
             -> topScope = scope
-            NavRole.Top -> if (topScope == null || topScope?.role == NavRole.Covered) {
+            // At rest, pop supplies a new scope whose isRemoving flag is true while depth
+            // is still zero. Keeping the old Top scope would classify the subsequent negative
+            // depth as Incoming for the whole return. Do retain a moving scope when the lower
+            // page becomes Top at landing, until its outgoing driver has reported Idle.
+            NavRole.Top -> if (topScope == null ||
+                topScope?.role == NavRole.Top || topScope?.role == NavRole.Covered
+            ) {
                 topScope = scope
             }
             NavRole.Covered -> Unit
@@ -404,25 +515,26 @@ internal class MiuixVideoCardTransitionProgress {
 
     fun clear() {
         topScope = null
+        gestureStartReturn = null
+        activeSettle = null
     }
 
     fun depthOr(fallback: Float): Float = topScope
-        ?.let { resolveMiuixVideoCardDepthProgress(it.relativeDepth) }
+        ?.let(::visualDepth)
         ?: fallback.coerceIn(0f, 1f)
 
     // Miuix retains gesture metadata while settling. It is NOT still direct manipulation.
     fun isGestureInProgress(): Boolean = topScope?.let {
-        it.gesture != null && it.settle == null
+        !isCoveredOrRevealedParent(it) && it.gesture != null && it.settle == null
     } == true
 
-    fun depthOrNull(): Float? = topScope?.let {
-        resolveMiuixVideoCardDepthProgress(it.relativeDepth)
-    }
+    fun depthOrNull(): Float? = topScope?.let(::visualDepth)
 
     fun releaseVelocity(): Float = topScope?.settle?.releaseVelocity ?: 0f
 
     fun settleStateOrNull(): VideoCardTransitionSettleState? = topScope?.let { scope ->
         when {
+            isCoveredOrRevealedParent(scope) -> VideoCardTransitionSettleState.Held
             scope.settle?.phase == NavSettlePhase.Cancel -> VideoCardTransitionSettleState.CancelRestore
             isGestureInProgress() -> VideoCardTransitionSettleState.InteractiveSeek
             scope.role == NavRole.Outgoing && scope.relativeDepth <= -1f -> VideoCardTransitionSettleState.Idle
@@ -456,8 +568,8 @@ internal class MiuixVideoCardTransitionProgress {
      * 供预测返回背景模糊（predictiveBackBackgroundEffect）随手势与落地动画平滑消退，避免松手瞬间断档闪烁。
      */
     fun gestureBackProgress(): Float? = topScope?.let { scope ->
-        if (scope.gesture != null || scope.settle != null) {
-            val morph = resolveMiuixVideoCardDepthProgress(scope.relativeDepth)
+        if (!isCoveredOrRevealedParent(scope) && (scope.gesture != null || scope.settle != null)) {
+            val morph = visualDepth(scope)
             (1f - morph).coerceIn(0f, 1f)
         } else {
             null
@@ -466,11 +578,11 @@ internal class MiuixVideoCardTransitionProgress {
 }
 
 internal fun resolveVideoHeroNavMotion(spec: VideoHeroMotionSpec, returning: Boolean): NavMotion = NavMotion(
-    // Unlike Tween, Spring consumes the existing driver's release velocity and partial position.
-    // No generic fallback spring is now needed for interrupted programmatic transitions.
-    commit = NavSettleSpec.Spring(
-        dampingRatio = VideoHeroMotionTokens.SPRING_DAMPING,
-        stiffness = spec.commitStiffness,
+    // A gesture can stop at raw depth 0.999. Give the reserved final card flight its own
+    // duration even when the navigation driver's remaining distance is below spring tolerance.
+    commit = NavSettleSpec.Tween(
+        durationMillis = spec.returnDurationMillis,
+        easing = spec.returnSpatialSpec,
     ),
     cancel = NavSettleSpec.Spring(
         dampingRatio = VideoHeroMotionTokens.SPRING_DAMPING,
@@ -533,7 +645,7 @@ internal fun miuixVideoCardNavTransition(
                     if (depth <= 0f) {
                         val width = scope.layoutSize.width.toFloat().coerceAtLeast(1f)
                         val height = scope.layoutSize.height.toFloat().coerceAtLeast(1f)
-                        val morph = resolveMiuixVideoCardDepthProgress(depth)
+                        val morph = progress.visualDepth(scope)
                         val transform = if (gesture != null) {
                             resolveMiuixVideoCardGestureTransform(
                                 morphProgress = morph,
@@ -578,7 +690,7 @@ internal fun miuixVideoCardNavTransition(
                     val height = scope.layoutSize.height.toFloat().coerceAtLeast(1f)
                     val depth = scope.relativeDepth
                     if (depth <= 0f) {
-                        val morph = resolveMiuixVideoCardDepthProgress(depth)
+                        val morph = progress.visualDepth(scope)
                         val sourceScaleX = (bounds.width / width).coerceIn(0.05f, 1f)
                         val sourceScaleY = (bounds.height / height).coerceIn(0.05f, 1f)
                         val landingScale = resolveVideoHeroLandingScale(
@@ -638,7 +750,7 @@ internal fun miuixVideoCardNavTransition(
                     if (depth <= 0f) {
                         val width = scope.layoutSize.width.toFloat().coerceAtLeast(1f)
                         val height = scope.layoutSize.height.toFloat().coerceAtLeast(1f)
-                        val morph = resolveMiuixVideoCardDepthProgress(depth)
+                        val morph = progress.visualDepth(scope)
                         val landingScale = resolveVideoHeroLandingScale(
                             depth = morph,
                             autoReturning = !heroMotionSpec.reducedMotion &&

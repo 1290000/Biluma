@@ -18,7 +18,6 @@ class BottomControlBarLayoutPolicyTest {
         assertEquals(13, policy.actionTextFontSp)
         assertEquals(4, policy.danmakuSettingEndPaddingDp)
         assertEquals(12, policy.horizontalPaddingDp)
-        assertEquals(8, policy.afterTimeSpacingDp)
         assertEquals(8, policy.danmakuSwitchToInputSpacingDp)
         assertEquals(10, policy.afterInputSpacingDp)
         assertEquals(8, policy.rightActionSpacingDp)
@@ -26,6 +25,26 @@ class BottomControlBarLayoutPolicyTest {
         assertEquals(6, policy.danmakuSwitchVerticalPaddingDp)
         assertEquals(5, policy.actionChipHorizontalPaddingDp)
         assertEquals(4, policy.actionChipVerticalPaddingDp)
+    }
+
+    @Test
+    fun timeLabelSpacingKeepsVisibleGapsNearFontSizeAcrossWidthBuckets() {
+        listOf(393, 599, 600, 839, 840, 1599, 1600).forEach { widthDp ->
+            val policy = resolveBottomControlBarLayoutPolicy(widthDp)
+            val playGlyphInsetDp = (48 - policy.playIconSizeDp) / 2
+            val danmakuGlyphInsetDp = (48 - policy.danmakuIconSizeDp) / 2
+
+            assertEquals(
+                policy.timeFontSp,
+                policy.afterPlaySpacingDp + playGlyphInsetDp,
+                "play-to-time visual gap at ${widthDp}dp",
+            )
+            assertEquals(
+                policy.timeFontSp,
+                policy.afterTimeSpacingDp + danmakuGlyphInsetDp,
+                "time-to-danmaku visual gap at ${widthDp}dp",
+            )
+        }
     }
 
     @Test
@@ -39,7 +58,6 @@ class BottomControlBarLayoutPolicyTest {
         assertEquals(13, policy.timeFontSp)
         assertEquals(14, policy.actionTextFontSp)
         assertEquals(4, policy.danmakuSettingEndPaddingDp)
-        assertEquals(14, policy.afterTimeSpacingDp)
         assertEquals(10, policy.danmakuSwitchToInputSpacingDp)
         assertEquals(12, policy.afterInputSpacingDp)
         assertEquals(14, policy.rightActionSpacingDp)
