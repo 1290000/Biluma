@@ -1222,6 +1222,11 @@ interface BilibiliApi {
     suspend fun getEmotes(
         @QueryMap params: Map<String, String>
     ): com.android.purebilibili.data.model.response.EmoteResponse
+
+    @GET("x/emote/package")
+    suspend fun getEmotePackageDetails(
+        @QueryMap params: Map<String, String>
+    ): com.android.purebilibili.data.model.response.EmoteResponse
     
     // [新增] 点赞评论
     @retrofit2.http.FormUrlEncoded

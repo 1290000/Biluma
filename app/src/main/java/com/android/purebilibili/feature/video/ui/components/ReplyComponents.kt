@@ -117,7 +117,7 @@ import kotlinx.coroutines.launch
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.ContainerLevel
 
-private val EMOTE_TOKEN_PATTERN = """\[(.*?)\]""".toRegex()
+internal val EMOTE_TOKEN_PATTERN = """\[(.*?)\]""".toRegex()
 private const val COMMENT_INLINE_UP_BADGE_ID = "comment_inline_up_badge"
 private const val COMMENT_INLINE_VERIFY_PERSONAL_BADGE_ID = "comment_inline_verify_personal_badge"
 private const val COMMENT_INLINE_VERIFY_ORGANIZATION_BADGE_ID = "comment_inline_verify_organization_badge"
