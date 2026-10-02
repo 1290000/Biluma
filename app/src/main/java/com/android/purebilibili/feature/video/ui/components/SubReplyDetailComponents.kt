@@ -1420,7 +1420,6 @@ private fun SubReplyDetailItem(
                                         isLiked = isLiked,
                                         onLikeClick = onLikeClick,
                                         onReplyClick = onReplyClick,
-                                        detailedTimeEnabled = detailedCommentTimeEnabled
                                     )
                                 )
                             },

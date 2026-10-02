@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -549,6 +550,7 @@ internal enum class ReplyActionSheetAction {
     FREE_COPY,
     COPY_USERNAME,
     QUERY_AUTHOR_HISTORY,
+    TIME_STYLE,
     SAVE,
     SHARE,
     REPLY,
@@ -575,6 +577,7 @@ internal fun buildReplyActionSheetActions(
             add(ReplyActionSheetAction.COPY_USERNAME)
         }
         if (canQueryAuthorHistory) add(ReplyActionSheetAction.QUERY_AUTHOR_HISTORY)
+        add(ReplyActionSheetAction.TIME_STYLE)
         add(ReplyActionSheetAction.SAVE)
         if (canShare) {
             add(ReplyActionSheetAction.SHARE)
@@ -607,6 +610,7 @@ private fun resolveReplyActionSheetLabel(
         ReplyActionSheetAction.FREE_COPY -> "自由复制"
         ReplyActionSheetAction.COPY_USERNAME -> "复制用户名"
         ReplyActionSheetAction.QUERY_AUTHOR_HISTORY -> "查询作者历史"
+        ReplyActionSheetAction.TIME_STYLE -> "评论时间样式"
         ReplyActionSheetAction.SAVE -> "保存评论"
         ReplyActionSheetAction.SHARE -> "分享评论"
         ReplyActionSheetAction.REPLY -> "回复"
@@ -2805,6 +2809,13 @@ internal fun ReplyActionSheet(
 ) {
     val queryAicu = com.android.purebilibili.feature.aicu.LocalAicuNavigation.current
     val canQueryAuthorHistory = queryAicu != null && queryAuthorUid > 0
+    val sheetContext = LocalContext.current
+    val sheetScope = rememberCoroutineScope()
+    //  [评论时间样式] 长按菜单直达开关：相对时间（默认，PiliPlus 规则）⇄ 绝对时间
+    //  （yyyy-MM-dd HH:mm:ss）。设置项全局持久化，评论区经 CompositionLocal 即时刷新。
+    val detailedTimeEnabled by SettingsManager
+        .getDetailedCommentTimeEnabled(sheetContext)
+        .collectAsStateWithLifecycle(initialValue = false)
     val actions = remember(
         canQueryAuthorHistory,
         canDelete,
@@ -2835,7 +2846,12 @@ internal fun ReplyActionSheet(
         ) {
             actions.forEach { action ->
                 ReplyActionSheetItem(
-                    label = resolveReplyActionSheetLabel(action, topActionLabel),
+                    label = if (action == ReplyActionSheetAction.TIME_STYLE) {
+                        if (detailedTimeEnabled) "评论时间样式：绝对（yyyy-MM-dd HH:mm:ss）"
+                        else "评论时间样式：相对"
+                    } else {
+                        resolveReplyActionSheetLabel(action, topActionLabel)
+                    },
                     isDestructive = isReplyActionDestructive(action),
                     onClick = {
                         when (action) {
@@ -2843,6 +2859,15 @@ internal fun ReplyActionSheet(
                             ReplyActionSheetAction.FREE_COPY -> onFreeCopy()
                             ReplyActionSheetAction.COPY_USERNAME -> onCopyUsername()
                             ReplyActionSheetAction.QUERY_AUTHOR_HISTORY -> queryAicu?.invoke(queryAuthorUid)
+                            ReplyActionSheetAction.TIME_STYLE -> sheetScope.launch {
+                                val next = !detailedTimeEnabled
+                                SettingsManager.setDetailedCommentTimeEnabled(sheetContext, next)
+                                Toast.makeText(
+                                    sheetContext,
+                                    if (next) "评论时间已切换为绝对时间" else "评论时间已切换为相对时间",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                             ReplyActionSheetAction.SAVE -> onSave()
                             ReplyActionSheetAction.SHARE -> onShare()
                             ReplyActionSheetAction.REPLY -> onReply()

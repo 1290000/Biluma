@@ -1384,8 +1384,7 @@ private fun CommentItem(
                             index,
                             rect,
                             resolveReplyPreviewTextContent(
-                                item = reply,
-                                detailedTimeEnabled = detailedCommentTimeEnabled
+                                item = reply
                             )
                         )
                     }
@@ -1497,8 +1496,7 @@ private fun CommentItem(
                                                 index,
                                                 rect,
                                                 resolveReplyPreviewTextContent(
-                                                    item = subReply,
-                                                    detailedTimeEnabled = detailedCommentTimeEnabled
+                                                    item = subReply
                                                 )
                                             )
                                         }
