@@ -55,7 +55,6 @@ private const val HERO_IMMERSIVE_AUTO_ADVANCE_MS = 7_000L
  * 数据与点击契约复用既有 hero 管线（selectHomeHeroCarouselItems 去重/门控/回调）。
  * [horizontalEscapeDp] 为网格 contentPadding 的水平值，用于越界绘制实现真全幅。
  */
-@Composable
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun HomeHeroCarouselImmersive(
