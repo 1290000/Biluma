@@ -51,16 +51,21 @@ class InputOverlayLayoutPolicyTest {
         )
 
         // 全屏的两条渲染路径（连续过渡 movable 内容与 VideoPlayerSection）都要在
-        // 半开姿态下收进铰链安全区，不能只覆盖非全屏分支。
-        // shouldAvoidHinge 共 3 处：全屏两条路径各 1 处 + 非全屏平板分支 1 处。
+        // 物理遮挡铰链下收进安全区；软折痕不避让（否则半开下半屏留黑）。
+        // MainContent 内 shouldAvoidHinge 仅剩非全屏平板分支 1 处；
+        // 全屏两条路径共用 fullscreenOccludingHingePresent（isOccluding 判定）。
         assertEquals(
-            3,
+            1,
             mainContent.split("appWindowAdaptiveInfo.shouldAvoidHinge").size - 1
         )
         assertEquals(
             2,
             mainContent.split("AppHingePaneLayout(").size - 1,
             "全屏分支的两条播放器路径都应接入 AppHingePaneLayout"
+        )
+        assertTrue(
+            mainContent.contains("fullscreenOccludingHingePresent"),
+            "全屏分支应按物理遮挡铰链而非 shouldAvoidHinge 分 pane"
         )
     }
 
@@ -84,19 +89,38 @@ class InputOverlayLayoutPolicyTest {
     }
 
     @Test
-    fun offlineAndPluginPlayers_keepMediaInsideFirstSafePaneUnderHalfOpenPosture() {
+    fun offlineAndPluginPlayers_keepMediaInsideFirstSafePaneUnderOccludingHingeOnly() {
+        // 无二级内容的播放器只在物理遮挡铰链下分 pane；软折痕跨整窗避免半开下半屏留黑。
+        // 去除空白后匹配，兼容单行与换行链式两种源码写法。
         listOf(
-            "feature/download/OfflineVideoPlayerScreen.kt" to "AppHingePaneLayout(",
-            "feature/plugin/js/ExternalMediaPlayerScreen.kt" to "AppHingePaneLayout(",
-        ).forEach { (path, marker) ->
+            "feature/download/OfflineVideoPlayerScreen.kt",
+            "feature/plugin/js/ExternalMediaPlayerScreen.kt",
+        ).forEach { path ->
             val source = listOf(
                 File("app/src/main/java/com/android/purebilibili/$path"),
                 File("src/main/java/com/android/purebilibili/$path")
             ).first { it.exists() }.readText()
+            val compact = source.replace(Regex("\\s+"), "")
             assertTrue(
-                source.contains("shouldAvoidHinge") && source.contains(marker),
-                "$path 未在半开姿态接入安全 pane 布局"
+                compact.contains("layoutHinges().any{it.isOccluding}") &&
+                    compact.contains("AppHingePaneLayout("),
+                "$path 未按物理遮挡铰链接入安全 pane 布局"
             )
         }
+    }
+
+    @Test
+    fun bangumiFullscreen_doesNotSplitPanesOnSoftFold() {
+        val source = listOf(
+            File("app/src/main/java/com/android/purebilibili/feature/bangumi/BangumiPlayerScreen.kt"),
+            File("src/main/java/com/android/purebilibili/feature/bangumi/BangumiPlayerScreen.kt")
+        ).first { it.exists() }.readText()
+        val compact = source.replace(Regex("\\s+"), "")
+
+        assertTrue(
+            compact.contains("bangumiSplitPanes") &&
+                compact.contains("layoutHinges().any{it.isOccluding}"),
+            "番剧全屏应按物理遮挡铰链而非 shouldAvoidHinge 分 pane"
+        )
     }
 }

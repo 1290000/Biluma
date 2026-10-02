@@ -49,6 +49,7 @@ import com.android.purebilibili.core.plugin.js.BiliPaiJsRuntime
 import com.android.purebilibili.core.plugin.js.ExternalMediaLaunchStore
 import com.android.purebilibili.core.ui.rememberAppBackIcon
 import com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo
+import com.android.purebilibili.core.util.layoutHinges
 import com.android.purebilibili.danmaku.engine.DanmakuItem
 import com.android.purebilibili.danmaku.engine.DanmakuRenderView
 import com.android.purebilibili.danmaku.engine.DanmakuWindow
@@ -265,7 +266,8 @@ fun ExternalMediaPlayerScreen(
             }
         }
         }
-        if (appWindowAdaptiveInfo.shouldAvoidHinge) {
+        // 无二级内容的播放器仅避让物理遮挡铰链；软折痕跨整窗，避免半开下半屏留黑。
+        if (appWindowAdaptiveInfo.foldingFeature.layoutHinges().any { it.isOccluding }) {
             com.android.purebilibili.core.ui.adaptive.AppHingePaneLayout(
                 modifier = Modifier.fillMaxSize(),
                 primaryContent = externalMediaSurface,

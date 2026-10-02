@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo
 import com.android.purebilibili.core.util.applyPlayerRequestedOrientation
+import com.android.purebilibili.core.util.layoutHinges
 import android.content.res.Configuration
 import android.media.AudioManager
 import android.net.Uri
@@ -1108,7 +1109,11 @@ fun OfflineVideoPlayerScreen(
         }
     }
     }
-    if (appWindowAdaptiveInfo.shouldAvoidHinge) {
+    // 无二级内容的播放器仅避让物理遮挡铰链；软折痕跨整窗，避免半开下半屏留黑。
+    val offlineOccludingHingePresent = appWindowAdaptiveInfo.foldingFeature
+        .layoutHinges()
+        .any { it.isOccluding }
+    if (offlineOccludingHingePresent) {
         com.android.purebilibili.core.ui.adaptive.AppHingePaneLayout(
             modifier = Modifier.fillMaxSize().background(Color.Black),
             primaryContent = offlinePlayerSurface,

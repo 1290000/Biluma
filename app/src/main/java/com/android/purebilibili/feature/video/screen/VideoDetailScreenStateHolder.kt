@@ -252,6 +252,7 @@ import com.android.purebilibili.core.util.CardPositionManager
 import com.android.purebilibili.core.ui.transition.VideoCardSourceLayout
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.applyPlayerRequestedOrientation
+import com.android.purebilibili.core.util.layoutHinges
 import com.android.purebilibili.core.util.resolvePlayerWindowOrientationPolicy
 
 import coil3.compose.AsyncImage
@@ -3493,14 +3494,18 @@ internal fun VideoDetailScreenStateHolder(
     @Composable
     fun BoxScope.VideoDetailRouteSheetMainContent() {
             // 📐 [平板适配] 全屏模式过渡动画（只有手机横屏才进入全屏）
+        // 全屏没有二级内容：仅物理遮挡铰链才把媒体钳进首个安全 pane；
+        // 软折痕（FOLD）允许跨整窗，否则半开姿态下下半屏整块留黑。
+        val fullscreenOccludingHingePresent = isFullscreenMode &&
+            appWindowAdaptiveInfo.foldingFeature.layoutHinges().any { it.isOccluding }
         if (isFullscreenMode) {
                 val useInlineDanmakuComposer =
                     com.android.purebilibili.feature.video.ui.components.shouldUseInlineDanmakuComposer(
                         isFullscreenMode = isFullscreenMode
                     )
                 if (continuousFullscreenTransitionEnabled) {
-                    // 全屏＋半开姿态：媒体与播放控件收进首个安全区，不跨物理铰链（对齐番剧/直播策略）。
-                    if (appWindowAdaptiveInfo.shouldAvoidHinge) {
+                    // 全屏＋物理遮挡铰链：媒体收进首个安全区，不跨缝；软折痕跨整窗。
+                    if (fullscreenOccludingHingePresent) {
                         com.android.purebilibili.core.ui.adaptive.AppHingePaneLayout(
                             modifier = Modifier.fillMaxSize().background(Color.Black),
                             primaryContent = {
@@ -3757,8 +3762,8 @@ internal fun VideoDetailScreenStateHolder(
                     ),
                     )
                     }
-                    // 全屏＋半开姿态：媒体与播放控件收进首个安全区，不跨物理铰链（对齐番剧/直播策略）。
-                    if (appWindowAdaptiveInfo.shouldAvoidHinge) {
+                    // 全屏＋物理遮挡铰链：媒体收进首个安全区，不跨缝；软折痕跨整窗。
+                    if (fullscreenOccludingHingePresent) {
                         com.android.purebilibili.core.ui.adaptive.AppHingePaneLayout(
                             modifier = Modifier.fillMaxSize().background(Color.Black),
                             primaryContent = fullscreenPlayerSection,

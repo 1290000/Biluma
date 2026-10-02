@@ -11,6 +11,7 @@ import android.annotation.SuppressLint
 import com.android.purebilibili.core.player.HiResCompatibleRenderersFactory
 import com.android.purebilibili.core.util.LocalWindowSizeClass
 import com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo
+import com.android.purebilibili.core.util.layoutHinges
 import com.android.purebilibili.core.util.applyPlayerRequestedOrientation
 import com.android.purebilibili.core.util.formatAppAdaptiveStrategySnapshot
 import com.android.purebilibili.core.util.resolvePlayerPresentationPolicy
@@ -984,7 +985,11 @@ fun BangumiPlayerScreen(
             }
         }
 
-        if (appWindowAdaptiveInfo.shouldAvoidHinge) {
+        // 非全屏有简介等二级内容，半开时分 pane；全屏没有二级内容，仅物理遮挡铰链才分 pane，
+        // 软折痕跨整窗避免下半屏留黑。
+        val bangumiSplitPanes = appWindowAdaptiveInfo.shouldAvoidHinge &&
+            (!isFullscreen || appWindowAdaptiveInfo.foldingFeature.layoutHinges().any { it.isOccluding })
+        if (bangumiSplitPanes) {
             com.android.purebilibili.core.ui.adaptive.AppHingePaneLayout(
                 modifier = Modifier.fillMaxSize(),
                 primaryContent = {
