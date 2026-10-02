@@ -65,7 +65,6 @@ import coil3.transform.Transformation
 import coil3.imageLoader
 //  已改用 MaterialTheme.colorScheme.primary
 import com.android.purebilibili.core.store.SettingsManager
-import com.android.purebilibili.core.ui.LocalDetailedCommentTimeEnabled
 import com.android.purebilibili.core.theme.calculateContrastRatio
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.core.util.Logger
@@ -1164,8 +1163,7 @@ internal fun resolveReplyPreviewTextContent(
     item: ReplyItem,
     isLiked: Boolean = item.action == 1,
     onLikeClick: (() -> Unit)? = null,
-    onReplyClick: (() -> Unit)? = null,
-    detailedTimeEnabled: Boolean = false
+    onReplyClick: (() -> Unit)? = null
 ): ImagePreviewTextContent {
     val originalSizeLabels = item.content.pictures.orEmpty().map { picture ->
         resolveCommentImageOriginalSizeLabel(picture.imgSize.takeIf { it > 0f })
@@ -1178,9 +1176,9 @@ internal fun resolveReplyPreviewTextContent(
             replyId = item.rpid,
             authorName = item.member.uname,
             avatarUrl = item.member.avatar,
-            timeText = FormatUtils.formatCommentTime(
+            timeText = FormatUtils.formatPrecisePublishTime(
                 timestampSeconds = item.ctime,
-                detailedTimeEnabled = detailedTimeEnabled
+                pattern = "yyyy-MM-dd HH:mm:ss"
             ),
             body = item.content.message,
             originalSizeLabels = originalSizeLabels,
@@ -1251,7 +1249,6 @@ fun ReplyItemView(
 ) {
     val appearance = rememberVideoCommentAppearance()
     val context = LocalContext.current
-    val detailedCommentTimeEnabled = LocalDetailedCommentTimeEnabled.current
     val scope = rememberCoroutineScope()
     val isUpComment = upMid > 0 && item.mid == upMid
     val showResolvedIdentityDecorations = shouldShowReplyIdentityDecorations(showIdentityDecorations)
@@ -1276,12 +1273,14 @@ fun ReplyItemView(
     val displayLocation = remember(location) {
         resolveReplyLocationText(location)
     }
-    val metadataText = remember(item.ctime, displayLocation, detailedCommentTimeEnabled) {
+    //  [PiliPlus 对齐] 一级评论固定显示绝对时间 yyyy-MM-dd HH:mm:ss，不随
+    //  详细时间开关变化；开关只作用于楼中楼/动态等相对时间表面。
+    val metadataText = remember(item.ctime, displayLocation) {
         buildString {
             append(
-                FormatUtils.formatCommentTime(
+                FormatUtils.formatPrecisePublishTime(
                     timestampSeconds = item.ctime,
-                    detailedTimeEnabled = detailedCommentTimeEnabled
+                    pattern = "yyyy-MM-dd HH:mm:ss"
                 )
             )
             if (!displayLocation.isNullOrEmpty()) {
@@ -1727,7 +1726,6 @@ fun ReplyItemView(
                                         isLiked = isLiked,
                                         onLikeClick = onLikeClick,
                                         onReplyClick = onReplyClick,
-                                        detailedTimeEnabled = detailedCommentTimeEnabled
                                     )
                                 )
                             }

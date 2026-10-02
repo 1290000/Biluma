@@ -12,13 +12,11 @@ import android.provider.MediaStore
 import com.android.purebilibili.feature.dynamic.components.resolveDefaultImageMediaStoreRelativePath
 import com.android.purebilibili.feature.dynamic.components.saveBitmapToCustomImageSaveDirectory
 import com.android.purebilibili.core.util.FormatUtils
-import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.data.model.response.ReplyItem
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -34,24 +32,15 @@ internal data class ReplyCommentImageSpec(
 
 internal fun buildReplyCommentImageSpec(
     item: ReplyItem,
-    generatedAtMillis: Long = System.currentTimeMillis(),
-    detailedTimeEnabled: Boolean = false
+    generatedAtMillis: Long = System.currentTimeMillis()
 ): ReplyCommentImageSpec {
     val url = resolveReplyCommentShareUrl(item)
     val likeText = item.like.takeIf { it > 0 }?.let { "${it}赞" }
     val metadata = listOfNotNull(
-        (
-            if (detailedTimeEnabled) {
-                FormatUtils.formatCommentTime(
-                    timestampSeconds = item.ctime,
-                    detailedTimeEnabled = true
-                )
-            } else {
-                FormatUtils.formatPrecisePublishTime(
-                    timestampSeconds = item.ctime,
-                    pattern = "yyyy-MM-dd HH:mm:ss"
-                )
-            }
+        //  [PiliPlus 对齐] 分享图 metadata 固定秒级绝对时间，不随详细时间开关变化。
+        FormatUtils.formatPrecisePublishTime(
+            timestampSeconds = item.ctime,
+            pattern = "yyyy-MM-dd HH:mm:ss"
         ).takeIf { it.isNotBlank() },
         likeText
     ).joinToString(" · ")
@@ -72,12 +61,8 @@ suspend fun saveReplyCommentImageToGallery(
     item: ReplyItem
 ): Boolean = withContext(Dispatchers.IO) {
     runCatching {
-        val detailedTimeEnabled = SettingsManager
-            .getDetailedCommentTimeEnabled(context)
-            .first()
         val spec = buildReplyCommentImageSpec(
-            item = item,
-            detailedTimeEnabled = detailedTimeEnabled
+            item = item
         )
         val bitmap = renderReplyCommentImage(spec)
         savePngBitmapToGallery(
