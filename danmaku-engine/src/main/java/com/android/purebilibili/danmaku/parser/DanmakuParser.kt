@@ -1,5 +1,5 @@
-// 文件路径: feature/video/danmaku/DanmakuParser.kt
-package com.android.purebilibili.feature.video.danmaku
+// 文件路径: danmaku-engine/.../danmaku/parser/DanmakuParser.kt(自 app 抽取,两端共用)
+package com.android.purebilibili.danmaku.parser
 
 import android.util.Log
 import android.util.Xml
@@ -448,4 +448,13 @@ object DanmakuParser {
         6 -> DANMAKU_LAYER_REVERSE
         else -> DANMAKU_LAYER_SCROLL
     }
+}
+
+/** B 站标准弹幕字号 (seg.so fontsize 字段的基准值)。 */
+const val BILIBILI_STANDARD_DANMAKU_FONT_SIZE = 25f
+
+/** Converts Bilibili's 18/25/36 size grades into a renderer-independent multiplier. */
+fun resolveBilibiliDanmakuFontScale(fontSize: Float): Float {
+    if (!fontSize.isFinite() || fontSize <= 0f) return 1f
+    return (fontSize / BILIBILI_STANDARD_DANMAKU_FONT_SIZE).coerceIn(0.48f, 2.56f)
 }

@@ -1,5 +1,5 @@
-// 文件路径: feature/video/danmaku/DanmakuProto.kt
-package com.android.purebilibili.feature.video.danmaku
+// 文件路径: danmaku-engine/.../danmaku/parser/DanmakuProto.kt(自 app 抽取,两端共用)
+package com.android.purebilibili.danmaku.parser
 
 import android.util.Log
 import java.io.ByteArrayInputStream

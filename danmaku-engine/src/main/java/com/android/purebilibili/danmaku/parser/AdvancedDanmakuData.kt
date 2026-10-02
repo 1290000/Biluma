@@ -1,4 +1,4 @@
-package com.android.purebilibili.feature.video.danmaku
+package com.android.purebilibili.danmaku.parser
 
 /**
  * 高级弹幕数据模型 (Mode 7 / Mode 9 BAS)

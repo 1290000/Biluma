@@ -1,6 +1,8 @@
 // 文件路径: feature/video/danmaku/DanmakuManager.kt
 package com.android.purebilibili.feature.video.danmaku
 
+import com.android.purebilibili.danmaku.parser.*
+
 import android.content.Context
 import android.graphics.Typeface
 import android.os.SystemClock
@@ -19,6 +21,7 @@ import com.android.purebilibili.core.plugin.DanmakuStyle
 import com.android.purebilibili.core.plugin.PluginManager
 import com.android.purebilibili.core.plugin.json.JsonPluginManager
 import com.android.purebilibili.core.store.DanmakuSettings
+import com.android.purebilibili.danmaku.parser.resolveBilibiliDanmakuFontScale
 import com.android.purebilibili.danmaku.engine.DANMAKU_LAYER_BOTTOM
 import com.android.purebilibili.danmaku.engine.DANMAKU_LAYER_REVERSE
 import com.android.purebilibili.danmaku.engine.DANMAKU_LAYER_SCROLL

@@ -185,12 +185,6 @@ internal const val DANMAKU_BASE_TEXT_SIZE_DP = 20f
 internal fun resolveDanmakuTextSizePx(density: Float, fontScale: Float): Float =
     DANMAKU_BASE_TEXT_SIZE_DP * density * fontScale.coerceIn(0.3f, 2f)
 
-/** Converts Bilibili's 18/25/36 size grades into a renderer-independent multiplier. */
-internal fun resolveBilibiliDanmakuFontScale(fontSize: Float): Float {
-    if (!fontSize.isFinite() || fontSize <= 0f) return 1f
-    return (fontSize / BILIBILI_STANDARD_DANMAKU_FONT_SIZE).coerceIn(0.48f, 2.56f)
-}
-
 internal fun resolveDanmakuScrollDurationMillis(
     scrollDurationSeconds: Float,
     speedFactor: Float,
@@ -286,5 +280,3 @@ internal fun resolveDanmakuFallbackMaxLines(displayAreaRatio: Float): Int {
         else -> 16
     }
 }
-
-private const val BILIBILI_STANDARD_DANMAKU_FONT_SIZE = 25f

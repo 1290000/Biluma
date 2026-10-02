@@ -1,4 +1,4 @@
-package com.android.purebilibili.feature.video.danmaku
+package com.android.purebilibili.danmaku.parser
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
