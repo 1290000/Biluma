@@ -11,7 +11,7 @@ object FormatUtils {
     private const val COVER_IMAGE_LOW_WIDTH = 240
     private const val COVER_IMAGE_LOW_HEIGHT = 150
     private val detailedCommentTimeFormatter =
-        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT)
+        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
 
     /**
      * 将数字格式化为 B站风格 (例如: 1.2万)

@@ -138,9 +138,9 @@ class FormatUtilsPublishTimePolicyTest {
     fun formatCommentTime_detailedModeKeepsFullDateRegardlessOfAge() {
         val now = Instant.parse("2026-08-25T12:00:00Z")
         val comments = listOf(
-            "2026-08-25T11:59:30Z" to "2026-08-25 11:59",
-            "2026-08-24T09:30:45Z" to "2026-08-24 09:30",
-            "2025-08-20T09:30:45Z" to "2025-08-20 09:30"
+            "2026-08-25T11:59:30Z" to "2026-08-25 11:59:30",
+            "2026-08-24T09:30:45Z" to "2026-08-24 09:30:45",
+            "2025-08-20T09:30:45Z" to "2025-08-20 09:30:45"
         )
         comments.forEach { (published, expected) ->
             assertEquals(
@@ -162,7 +162,7 @@ class FormatUtilsPublishTimePolicyTest {
         val now = Instant.parse("2026-08-25T12:00:45Z").toEpochMilli()
         val modes = listOf(
             false to "2小时前",
-            true to "2026-08-25 10:00",
+            true to "2026-08-25 10:00:45",
             false to "2小时前"
         )
         modes.forEach { (enabled, expected) ->
@@ -182,7 +182,7 @@ class FormatUtilsPublishTimePolicyTest {
     @Test
     fun formatCommentTime_detailedModeUsesLocalTimeAndHidesMissingTimestamps() {
         assertEquals(
-            "2026-08-26 07:45",
+            "2026-08-26 07:45:59",
             FormatUtils.formatCommentTime(
                 timestampSeconds = Instant.parse("2026-08-25T23:45:59Z").epochSecond,
                 detailedTimeEnabled = true,
