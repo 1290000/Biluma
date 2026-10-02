@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,7 @@ import kotlinx.collections.immutable.ImmutableSet
 import com.android.purebilibili.data.model.response.VideoItem
 import com.android.purebilibili.feature.home.components.BottomBarLiquidSegmentedControl
 import com.android.purebilibili.feature.home.components.HomeHeroCarousel
+import com.android.purebilibili.feature.home.components.HomeHeroCarouselImmersive
 import top.yukonga.miuix.kmp.blur.Backdrop as MiuixBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -588,25 +590,46 @@ internal fun HomeCategoryPageContent(
                         contentType = "home_hero_carousel",
                         span = StaggeredGridItemSpan.FullLine
                     ) {
-                        HomeHeroCarousel(
-                            videos = carouselVideos,
-                            autoplayEnabled = homeHeroCarouselAutoplayEnabled,
-                            onGestureActiveChange = onHeroCarouselGestureActiveChange,
-                            onVideoClick = { video ->
-                                onVideoClick(
-                                    HomeVideoClickRequest(
-                                        bvid = video.bvid,
-                                        dynamicId = video.dynamicId,
-                                        cid = video.cid,
-                                        coverUrl = video.pic,
-                                        isVerticalVideo = video.isVertical,
-                                        source = HomeVideoClickSource.GRID,
-                                        sourceRoute = sourceRoute
+                        if (LocalConfiguration.current.screenWidthDp >= HOME_HERO_CAROUSEL_WIDE_BREAKPOINT_DP.toInt()) {
+                            // 折叠屏/平板展开态:全幅沉浸式 hero(与 TV 首页同一视觉语言)
+                            HomeHeroCarouselImmersive(
+                                videos = carouselVideos,
+                                horizontalEscapeDp = contentPadding.calculateLeftPadding(LocalLayoutDirection.current),
+                                onVideoClick = { video ->
+                                    onVideoClick(
+                                        HomeVideoClickRequest(
+                                            bvid = video.bvid,
+                                            dynamicId = video.dynamicId,
+                                            cid = video.cid,
+                                            coverUrl = video.pic,
+                                            isVerticalVideo = video.isVertical,
+                                            source = HomeVideoClickSource.GRID,
+                                            sourceRoute = sourceRoute
+                                        )
                                     )
-                                )
-                            },
-                            onGetPreviewUrl = onGetPreviewUrl
-                        )
+                                },
+                            )
+                        } else {
+                            HomeHeroCarousel(
+                                videos = carouselVideos,
+                                autoplayEnabled = homeHeroCarouselAutoplayEnabled,
+                                onGestureActiveChange = onHeroCarouselGestureActiveChange,
+                                onVideoClick = { video ->
+                                    onVideoClick(
+                                        HomeVideoClickRequest(
+                                            bvid = video.bvid,
+                                            dynamicId = video.dynamicId,
+                                            cid = video.cid,
+                                            coverUrl = video.pic,
+                                            isVerticalVideo = video.isVertical,
+                                            source = HomeVideoClickSource.GRID,
+                                            sourceRoute = sourceRoute
+                                        )
+                                    )
+                                },
+                                onGetPreviewUrl = onGetPreviewUrl
+                            )
+                        }
                     }
                 }
                 if (todayWatchEnabled) {
