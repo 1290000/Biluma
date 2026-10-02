@@ -3,8 +3,6 @@ package com.android.purebilibili.feature.video.ambient
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -13,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.unit.dp
 
 /** Owns the glow outside player clipping/shared bounds, with a real gutter before body content.
  * playerModifier retains the original video sizing; modifier places the entire host.
@@ -54,9 +51,8 @@ internal fun PlayerAmbientLayout(
                     },
                     content = content,
                 )
-                // Reserve only for a supported effect. Navigation hides drawing without
-                // resizing the player/card bounds; fullscreen never manufactures a margin.
-                if (presentation.layoutEnabled && !fullscreen) Spacer(Modifier.height(48.dp))
+                //  [内联环境光] 底部光晕与预留槽位已随"取消底部沉浸光"一并移除，
+                //  播放器下缘直接衔接简介区，不再保留 48dp 空白。
             }
         }
     }
