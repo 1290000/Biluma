@@ -697,8 +697,9 @@ object DanmakuRepository {
             )
             
             if (response.code == 0 && response.data != null) {
-                com.android.purebilibili.core.util.Logger.d("DanmakuRepo", "✅ Danmaku sent: dmid=${response.data.dmid_str}")
-                Result.success(response.data)
+                val checkedResponseData = requireNotNull(response.data)
+                com.android.purebilibili.core.util.Logger.d("DanmakuRepo", "✅ Danmaku sent: dmid=${checkedResponseData.dmid_str}")
+                Result.success(checkedResponseData)
             } else {
                 val errorMsg = mapSendDanmakuErrorMessage(response.code, response.message)
                 android.util.Log.e("DanmakuRepo", "❌ sendDanmaku failed: ${response.code} - ${response.message}")
@@ -741,7 +742,8 @@ object DanmakuRepository {
                 csrf = csrf
             )
             if (response.code == 0 && response.data != null) {
-                Result.success(response.data)
+                val checkedResponseData = requireNotNull(response.data)
+                Result.success(checkedResponseData)
             } else {
                 Result.failure(Exception(mapSendDanmakuErrorMessage(response.code, response.message)))
             }
@@ -1056,11 +1058,11 @@ object DanmakuRepository {
                 }
             }
 
-            if (response.code != 0 || response.data == null) {
+            val info = response.data
+            if (response.code != 0 || info == null) {
                 return@withContext Result.failure(Exception("获取弹幕服务信息失败: ${response.code} (msg=${response.message})"))
             }
             
-            val info = response.data
             val token = info.token
             val hosts = info.host_list
             

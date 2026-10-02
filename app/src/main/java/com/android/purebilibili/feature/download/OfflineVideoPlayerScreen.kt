@@ -105,6 +105,7 @@ fun OfflineVideoPlayerScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val displayContext = LocalAppWindowAdaptiveInfo.current.displayContext
+    val appWindowAdaptiveInfo = LocalAppWindowAdaptiveInfo.current
     val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     val maxVolume = remember { audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) }
     val miniPlayerManager = remember(context) { MiniPlayerManager.getInstance(context) }
@@ -501,6 +502,8 @@ fun OfflineVideoPlayerScreen(
         }
     }
     
+    // 半开折叠姿态：媒体与控件整体收进首个安全区，不跨物理铰链（对齐主视频/番剧/直播）。
+    val offlinePlayerSurface: @Composable () -> Unit = {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1103,6 +1106,15 @@ fun OfflineVideoPlayerScreen(
                 }
             }
         }
+    }
+    }
+    if (appWindowAdaptiveInfo.shouldAvoidHinge) {
+        com.android.purebilibili.core.ui.adaptive.AppHingePaneLayout(
+            modifier = Modifier.fillMaxSize().background(Color.Black),
+            primaryContent = offlinePlayerSurface,
+        )
+    } else {
+        offlinePlayerSurface()
     }
 }
 

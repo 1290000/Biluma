@@ -10,6 +10,8 @@ object FormatUtils {
     private const val DEFAULT_IMAGE_HEIGHT = 400
     private const val COVER_IMAGE_LOW_WIDTH = 240
     private const val COVER_IMAGE_LOW_HEIGHT = 150
+    private val detailedCommentTimeFormatter =
+        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT)
 
     /**
      * 将数字格式化为 B站风格 (例如: 1.2万)
@@ -108,7 +110,7 @@ object FormatUtils {
     
     /**
      *  格式化发布时间 (相对时间 + 日期)
-     * PiliPlus 全局视频发布时间规则，例如: "3小时前" / "昨天 18:30" / "08-20"
+     * PiliPlus 视频与评论共用规则，例如: "3小时前" / "昨天 18:30" / "08-20"
      */
     fun formatPublishTime(
         timestampSeconds: Long,
@@ -146,6 +148,49 @@ object FormatUtils {
         return java.time.format.DateTimeFormatter
             .ofPattern(pattern, locale)
             .format(published)
+    }
+
+    /**
+     * 评论时间：详细模式固定显示本地年月日时分，否则沿用 PiliPlus 相对时间规则。
+     */
+    fun formatCommentTime(
+        timestampSeconds: Long,
+        detailedTimeEnabled: Boolean,
+        nowMs: Long = System.currentTimeMillis(),
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+        locale: Locale = Locale.getDefault(),
+    ): String {
+        if (timestampSeconds <= 0L) return ""
+        if (!detailedTimeEnabled) {
+            return formatPublishTime(timestampSeconds, nowMs, zoneId, locale)
+        }
+        return detailedCommentTimeFormatter.format(
+            java.time.Instant.ofEpochSecond(timestampSeconds).atZone(zoneId)
+        )
+    }
+
+    /**
+     * 历史条目观看时间，与 PiliPlus `DateFormatUtils.chatFormat(isHistory: true)` 对齐：
+     * 今天 HH:mm / 昨天 HH:mm / 同年 MM-dd HH:mm / 跨年 yyyy-MM-dd HH:mm。
+     */
+    fun formatHistoryViewTime(
+        timestampSeconds: Long,
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+        locale: Locale = Locale.getDefault(),
+    ): String {
+        if (timestampSeconds <= 0) return ""
+
+        val viewed = java.time.Instant.ofEpochSecond(timestampSeconds).atZone(zoneId)
+        val now = java.time.Instant.ofEpochMilli(System.currentTimeMillis()).atZone(zoneId)
+        val clock = java.time.format.DateTimeFormatter.ofPattern("HH:mm", locale).format(viewed)
+        return when (viewed.toLocalDate()) {
+            now.toLocalDate() -> "今天 $clock"
+            now.toLocalDate().minusDays(1) -> "昨天 $clock"
+            else -> {
+                val pattern = if (viewed.year == now.year) "MM-dd HH:mm" else "yyyy-MM-dd HH:mm"
+                java.time.format.DateTimeFormatter.ofPattern(pattern, locale).format(viewed)
+            }
+        }
     }
 
     fun formatPrecisePublishTime(

@@ -71,6 +71,7 @@ import com.android.purebilibili.core.ui.transition.shouldShowVideoCardTransition
 import com.android.purebilibili.core.ui.transition.shouldUseHostOwnedVideoCardTransitionSnapshot
 import com.android.purebilibili.core.ui.adaptive.MotionTier
 import com.android.purebilibili.core.util.CardPositionManager
+import com.android.purebilibili.navigation3.predictiveback.VideoCardBackCompletionPolicy
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackAnimationStyle
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackExitDirection
 import com.android.purebilibili.navigation3.predictiveback.MIUIX_PREDICTIVE_BACK_DEFAULT_MAX_PROGRESS_PERCENT
@@ -756,6 +757,7 @@ internal fun BiliPaiNavDisplayHost(
             onBack = performBack,
             transition = globalTransition,
             effects = effects,
+            backCompletionPolicy = if (cardMorphAvailable) VideoCardBackCompletionPolicy else null,
         ) {
             biliPaiNavEntries(
                 swipeBackDirection = swipeBackDirection,

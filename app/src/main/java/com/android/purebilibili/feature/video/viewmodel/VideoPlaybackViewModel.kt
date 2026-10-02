@@ -39,6 +39,7 @@ import com.android.purebilibili.data.repository.ViewGrpcRepository
 import com.android.purebilibili.data.repository.resolveVideoPlaybackAuthState
 import com.android.purebilibili.data.repository.isExactRequestedQualitySelected
 import com.android.purebilibili.data.repository.shouldScheduleHdrAutoUpgrade
+import com.android.purebilibili.feature.plugin.CdnTransferRuntime
 import com.android.purebilibili.feature.plugin.CdnHealthEvent
 import com.android.purebilibili.feature.plugin.CdnDashPrefetchRequest
 import com.android.purebilibili.feature.plugin.CdnDashSegmentPrefetcher
@@ -98,14 +99,14 @@ import com.android.purebilibili.feature.video.playback.loader.PlaybackRequest
 import com.android.purebilibili.feature.video.playback.loader.PlaybackLoadConfig
 import com.android.purebilibili.feature.video.playback.loader.PlaybackLoadResult
 import com.android.purebilibili.feature.video.playback.loader.PlaybackLoader
-import com.android.purebilibili.feature.video.playback.dash.AdaptiveDashPlaybackSource
+import com.android.purebilibili.core.player.dash.AdaptiveDashPlaybackSource
 import com.android.purebilibili.feature.video.playback.audio.AudioFallbackReason
 import com.android.purebilibili.feature.video.playback.audio.AudioQualityOption
 import com.android.purebilibili.feature.video.playback.audio.AUDIO_QUALITY_AUTO
 import com.android.purebilibili.feature.video.playback.audio.isPremiumAudioPlaybackFailure
 import com.android.purebilibili.feature.video.playback.audio.resolveRequestedAudioQuality
 import com.android.purebilibili.feature.video.playback.policy.PlaybackPostLoadTask
-import com.android.purebilibili.feature.video.playback.policy.PlaybackQualityMode
+import com.android.purebilibili.core.player.policy.PlaybackQualityMode
 import com.android.purebilibili.feature.video.playback.policy.PlaybackHeartbeatSnapshot
 import com.android.purebilibili.feature.video.playback.policy.resolveOnlineCountPollingDelayMs
 import com.android.purebilibili.feature.video.playback.policy.buildPlaybackPostLoadPlan
@@ -1472,8 +1473,9 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                     "NavInfo: code=${result.code}, isLogin=${result.data?.isLogin}, money=${result.data?.money}, wallet=${result.data?.wallet?.bcoin_balance}")
                 
                 if (result.code == 0 && result.data != null) {
-                    if (result.data.isLogin) {
-                        _userCoinBalance.value = result.data.money
+                    val checkedResultData = requireNotNull(result.data)
+                    if (checkedResultData.isLogin) {
+                        _userCoinBalance.value = checkedResultData.money
                     } else {
                         com.android.purebilibili.core.util.Logger.w("VideoPlaybackViewModel", "User not logged in according to getNavInfo")
                         _userCoinBalance.value = -3.0 // API says Not Logged In
@@ -2312,6 +2314,12 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     //  [新增] 播放完成监听器
     private val playbackEndListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
+            if (CdnTransferRuntime.enabled) {
+                CdnTransferRuntime.playback(
+                    exoPlayer?.let { (it.bufferedPosition - it.currentPosition).coerceAtLeast(0) } ?: 0L,
+                    exoPlayer?.videoFormat?.bitrate?.coerceAtLeast(0)?.toLong() ?: 0L
+                )
+            }
             if (playbackState == Player.STATE_READY) {
                 cancelPlaybackStallRecovery()
                 markPlaybackCdnReadyIfMediaReady()
@@ -5380,7 +5388,8 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                 // 使用 Relation 接口精准查询
                 val response = currentApi.getRelation(mid)
                 if (response.code == 0 && response.data != null) {
-                    val isFollowing = response.data.attribute == 2 || response.data.attribute == 6
+                    val checkedResponseData = requireNotNull(response.data)
+                    val isFollowing = checkedResponseData.attribute == 2 || checkedResponseData.attribute == 6
 
                     _uiState.update { state ->
                         if (state is VideoPlaybackUiState.Success) {
@@ -5436,7 +5445,8 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                     try {
                         val result = com.android.purebilibili.core.network.NetworkModule.api.getFollowings(loginMid, page, pageSize)
                         if (result.code == 0 && result.data != null) {
-                            val list = result.data.list ?: break
+                            val checkedResultData = requireNotNull(result.data)
+                            val list = checkedResultData.list ?: break
                             if (list.isEmpty()) break
                             allMids.addAll(list.map { it.mid })
                             if (list.size < pageSize) break
@@ -5546,13 +5556,14 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             try {
                 val response = com.android.purebilibili.core.network.NetworkModule.api.getVideoTags(bvid)
                 if (response.code == 0 && response.data != null) {
+                    val checkedResponseData = requireNotNull(response.data)
                     _uiState.update { current ->
                         if (current is VideoPlaybackUiState.Success && current.info.bvid == bvid) {
-                            current.copy(videoTags = response.data)
+                            current.copy(videoTags = checkedResponseData)
                         } else current
                     }
-                    MiniPlayerManager.getInstance(getApplication<Application>()).updateCachedVideoTags(bvid, response.data)
-                    Logger.d("PlayerVM", "🏷️ Loaded ${response.data.size} video tags")
+                    MiniPlayerManager.getInstance(getApplication<Application>()).updateCachedVideoTags(bvid, checkedResponseData)
+                    Logger.d("PlayerVM", "🏷️ Loaded ${checkedResponseData.size} video tags")
                 }
             } catch (e: Exception) {
                 Logger.d("PlayerVM", " Failed to load video tags: ${e.message}")
@@ -5619,13 +5630,14 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                     ) {
                         val response = com.android.purebilibili.core.network.NetworkModule.api.getOnlineCount(bvid, cid)
                         if (response.code == 0 && response.data != null) {
-                            val onlineText = "${response.data.total}人正在看"
+                            val checkedResponseData = requireNotNull(response.data)
+                            val onlineText = "${checkedResponseData.total}人正在看"
                             _uiState.update { current ->
                                 if (current is VideoPlaybackUiState.Success) {
                                     current.copy(onlineCount = onlineText)
                                 } else current
                             }
-                            Logger.d("PlayerVM", "👀 Online count: ${response.data.total}")
+                            Logger.d("PlayerVM", "👀 Online count: ${checkedResponseData.total}")
                         }
                     }
                 } catch (e: Exception) {
@@ -5722,12 +5734,13 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
 
                     // 2. 处理 BGM 信息
                     if (data.bgmInfo != null) {
+                        val checkedDataBgmInfo = requireNotNull(data.bgmInfo)
                         _uiState.update { current ->
                             if (current is VideoPlaybackUiState.Success) {
-                                current.copy(bgmInfo = data.bgmInfo)
+                                current.copy(bgmInfo = checkedDataBgmInfo)
                             } else current
                         }
-                        Logger.d("PlayerVM", "🎵 Loaded BGM: ${data.bgmInfo.musicTitle}")
+                        Logger.d("PlayerVM", "🎵 Loaded BGM: ${checkedDataBgmInfo.musicTitle}")
                     }
 
                     // 2b. gRPC BGM list (multi-song support)
@@ -6253,7 +6266,7 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         val edgeStartMs = resolveInteractiveEdgeStartPositionMs(data, resolvedEdgeId)
         val triggerOffsetMs = question.startTimeR.toLong().coerceAtLeast(0L)
         val absoluteTriggerMs = resolveInteractiveQuestionTriggerMs(edgeStartMs, triggerOffsetMs)
-        val dimension = data.edges.dimension
+        val dimension = data.edges?.dimension
 
         scheduleInteractiveQuestion(
             edgeId = resolvedEdgeId,
@@ -7926,6 +7939,15 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         lastPluginDispatchPositionMs = null
         pluginCheckJob = viewModelScope.launch {
             while (true) {
+                if (CdnTransferRuntime.enabled) {
+                    exoPlayer?.let { player ->
+                        CdnTransferRuntime.playback(
+                            (player.bufferedPosition - player.currentPosition).coerceAtLeast(0),
+                            (player.videoFormat?.bitrate?.coerceAtLeast(0)?.toLong() ?: 0L) +
+                                (player.audioFormat?.bitrate?.coerceAtLeast(0)?.toLong() ?: 0L)
+                        )
+                    }
+                }
                 val plugins = getSessionPlayerPlugins()
                 refreshSponsorContributionAvailability(plugins)
                 val currentVideo = _uiState.value as? VideoPlaybackUiState.Success

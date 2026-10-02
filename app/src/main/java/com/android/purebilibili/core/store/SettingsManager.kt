@@ -1668,6 +1668,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_LAST_AUTO_CACHE_CLEAR_AT = longPreferencesKey("last_auto_cache_clear_at")
     private val KEY_COMMENT_MEMBER_DECORATIONS_ENABLED =
         booleanPreferencesKey("comment_member_decorations_enabled")
+    private val KEY_DETAILED_COMMENT_TIME_ENABLED =
+        booleanPreferencesKey("detailed_comment_time_enabled")
     private val KEY_SUB_REPLY_LOADED_COUNT_ENABLED =
         booleanPreferencesKey("sub_reply_loaded_count_enabled")
     private val KEY_IMAGE_PREVIEW_LONG_PRESS_SAVE_ENABLED =
@@ -6218,6 +6220,16 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         }
     }
 
+    fun getDetailedCommentTimeEnabled(context: Context): Flow<Boolean> =
+        context.settingsDataStore.data
+            .map { preferences -> preferences[KEY_DETAILED_COMMENT_TIME_ENABLED] ?: false }
+
+    suspend fun setDetailedCommentTimeEnabled(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_DETAILED_COMMENT_TIME_ENABLED] = enabled
+        }
+    }
+
     fun getSubReplyLoadedCountEnabled(context: Context): Flow<Boolean> =
         context.settingsDataStore.data
             .map { preferences -> preferences[KEY_SUB_REPLY_LOADED_COUNT_ENABLED] ?: false }
@@ -7203,6 +7215,31 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         }
     }
 
+    private val KEY_VIDEO_AMBIENT_ENABLED = booleanPreferencesKey("video_ambient_enabled")
+    private val KEY_VIDEO_AMBIENT_STRENGTH = intPreferencesKey("video_ambient_strength")
+    private val KEY_VIDEO_AMBIENT_SAVING = booleanPreferencesKey("video_ambient_saving")
+
+    internal fun getVideoAmbientSettings(context: Context): Flow<com.android.purebilibili.feature.video.ambient.AmbientSettings> =
+        context.settingsDataStore.data.map { preferences ->
+            com.android.purebilibili.feature.video.ambient.AmbientSettings(
+                enabled = preferences[KEY_VIDEO_AMBIENT_ENABLED] ?: false,
+                strength = (preferences[KEY_VIDEO_AMBIENT_STRENGTH] ?: 1).coerceIn(0, 2),
+                powerSaving = preferences[KEY_VIDEO_AMBIENT_SAVING] ?: false,
+            )
+        }
+
+    internal suspend fun setVideoAmbientEnabled(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_VIDEO_AMBIENT_ENABLED] = enabled }
+    }
+
+    internal suspend fun setVideoAmbientStrength(context: Context, strength: Int) {
+        context.settingsDataStore.edit { it[KEY_VIDEO_AMBIENT_STRENGTH] = strength.coerceIn(0, 2) }
+    }
+
+    internal suspend fun setVideoAmbientPowerSaving(context: Context, saving: Boolean) {
+        context.settingsDataStore.edit { it[KEY_VIDEO_AMBIENT_SAVING] = saving }
+    }
+
     fun getHideVideoPageStatusBar(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_HIDE_VIDEO_PAGE_STATUS_BAR] ?: false }
         .onEach { enabledFromDataStore ->
@@ -8121,6 +8158,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             IntShareablePreferenceDefinition(KEY_COMMENT_DEFAULT_SORT_MODE, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_COMMENT_FRAUD_DETECTION_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_COMMENT_MEMBER_DECORATIONS_ENABLED, SettingsShareSection.PLAYBACK),
+            BooleanShareablePreferenceDefinition(KEY_DETAILED_COMMENT_TIME_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_IMAGE_PREVIEW_LONG_PRESS_SAVE_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_IMAGE_PREVIEW_3D_PAGE_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_STOP_PLAYBACK_ON_EXIT, SettingsShareSection.PLAYBACK),

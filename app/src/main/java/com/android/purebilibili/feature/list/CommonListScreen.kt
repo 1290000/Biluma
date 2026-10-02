@@ -1137,6 +1137,10 @@ fun CommonListScreen(
             AppSurfaceTokens.groupedListContainer()
         }
     ) { scaffoldPadding ->
+        // 遮挡铰链时整页内容落入最大安全区，软折痕允许跨越（与首页/动态/搜索一致）。
+        com.android.purebilibili.core.ui.adaptive.AppHingeSafeContent(
+            modifier = Modifier.fillMaxSize(),
+        ) {
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -2103,6 +2107,7 @@ fun CommonListScreen(
                     }
                 }
             }
+        }
         }
     }
 
