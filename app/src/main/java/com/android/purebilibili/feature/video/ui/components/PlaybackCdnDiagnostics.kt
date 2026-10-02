@@ -1,5 +1,6 @@
 package com.android.purebilibili.feature.video.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -9,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.purebilibili.core.plugin.PluginManager
 import com.android.purebilibili.core.ui.components.AppButton
@@ -35,7 +37,10 @@ internal fun PlaybackCdnDiagnostics(
     val plugin = PluginManager.getEnabledPlugins(PlaybackCdnPlugin::class).filterIsInstance<CdnRegionPlugin>().firstOrNull()
     val scope = rememberCoroutineScope()
     var message by remember { mutableStateOf<String?>(null) }
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         AppButton(
             modifier = Modifier.fillMaxWidth(),
             enabled = canCheck,

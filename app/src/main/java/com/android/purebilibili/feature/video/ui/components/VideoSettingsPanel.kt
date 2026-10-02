@@ -1099,6 +1099,7 @@ fun VideoSettingsPanel(
                         ) {
                             AppText(if (showDiagnostics) "收起线路可视化" else "查看实时线路与播放加速")
                         }
+                        Spacer(modifier = Modifier.height(AppSpacingTokens.Small))
                         if (showDiagnostics) {
                             PlaybackCdnDiagnostics(
                                 diagnostics = cdnLineDiagnostics,
