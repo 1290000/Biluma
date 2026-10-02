@@ -99,8 +99,10 @@ internal fun resolveHomeHeroCarouselWidthDp(containerWidthDp: Float): Float {
     return when {
         availableWidthDp >= HOME_HERO_CAROUSEL_WIDE_BREAKPOINT_DP ->
             availableWidthDp.coerceAtMost(HOME_HERO_CAROUSEL_WIDE_MAX_WIDTH_DP)
+        //  [满宽] 840dp 以下（手机与小平板/折叠内屏）banner 不再收窄：
+        //  容器超过 760dp 时两侧会露出邻卡边条，直接取满容器宽度。
         availableWidthDp >= HOME_HERO_CAROUSEL_TABLET_BREAKPOINT_DP ->
-            availableWidthDp.coerceAtMost(HOME_HERO_CAROUSEL_TABLET_MAX_WIDTH_DP)
+            availableWidthDp
         else -> availableWidthDp
     }
 }
