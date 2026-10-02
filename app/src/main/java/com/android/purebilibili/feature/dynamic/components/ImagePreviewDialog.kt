@@ -433,7 +433,9 @@ private fun ImagePreviewOverlayContent(
     
     //  保存原始导航栏颜色
     val originalNavBarColor = remember { window?.navigationBarColor ?: android.graphics.Color.BLACK }
-    
+    //  [修复] 同步保存原始导航栏图标明暗，退出时一并还原
+    val originalNavBarsLight = remember { insetsController?.isAppearanceLightNavigationBars }
+
     //  进入时动画过渡到沉浸式导航栏（透明黑色），退出时动画恢复，避免颜色瞬间跳变
     DisposableEffect(Unit) {
         animateWindowNavigationBarColor(window, Color.Transparent.toArgb())
@@ -441,6 +443,9 @@ private fun ImagePreviewOverlayContent(
 
         onDispose {
             animateWindowNavigationBarColor(window, originalNavBarColor)
+            originalNavBarsLight?.let { light ->
+                insetsController?.isAppearanceLightNavigationBars = light
+            }
         }
     }
     

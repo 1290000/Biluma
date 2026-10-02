@@ -1,5 +1,6 @@
 package com.android.purebilibili.feature.video.screen
 
+import com.android.purebilibili.feature.video.ambient.PlayerAmbientLayout
 import com.android.purebilibili.navigation.animatePagerSelection
 
 import android.content.res.Configuration
@@ -518,105 +519,109 @@ private fun CinemaStagePlayer(
         } else {
             playerWidth * 9f / 16f
         }
-        AppSurface(
-            modifier = playerContainerModifier
-                .align(Alignment.Center)
+        PlayerAmbientLayout(
+            modifier = Modifier.fillMaxWidth().align(Alignment.Center),
+            playerModifier = playerContainerModifier
                 .width(playerWidth)
                 .height(videoHeight)
                 .aspectRatio(playerWidth / videoHeight),
-            shape = AppShapes.container(ContainerLevel.Floating),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-            tonalElevation = 4.dp
         ) {
-            VideoPlayerSection(
-                state = VideoPlayerSectionState(
-                    playerState = playerState,
-                    uiState = uiState,
-                    isFullscreen = false,
-                    isInPipMode = isInPipMode,
-                    danmakuHostActive = danmakuHostActive,
-                    useTextureSurfaceForNavigation = resolveNavigationLiveSurfaceTextureEnabled(
-                        cardTransitionEnabled = transitionEnabled,
-                        liveSurfaceCardTransitionEnabled = liveSurfaceCardTransitionEnabled,
+            AppSurface(
+                modifier = Modifier.fillMaxSize(),
+                shape = AppShapes.container(ContainerLevel.Floating),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                tonalElevation = 4.dp,
+            ) {
+                VideoPlayerSection(
+                    state = VideoPlayerSectionState(
+                        playerState = playerState,
+                        uiState = uiState,
+                        isFullscreen = false,
+                        isInPipMode = isInPipMode,
+                        danmakuHostActive = danmakuHostActive,
+                        useTextureSurfaceForNavigation = resolveNavigationLiveSurfaceTextureEnabled(
+                            cardTransitionEnabled = transitionEnabled,
+                            liveSurfaceCardTransitionEnabled = liveSurfaceCardTransitionEnabled,
+                        ),
+                        allowLivePlayerSharedElement = resolveAllowLivePlayerSharedElementForMorph(
+                            cardTransitionEnabled = transitionEnabled,
+                            liveSurfaceCardTransitionEnabled = liveSurfaceCardTransitionEnabled,
+                        ),
+                        predictiveBackCancelRecoveryGeneration = predictiveBackCancelRecoveryGeneration,
+                        bvid = bvid,
+                        coverUrl = coverUrl,
+                        currentCdnIndex = success?.currentCdnIndex ?: 0,
+                        cdnCount = success?.cdnCount ?: 1,
+                        cdnLineDiagnostics = success?.cdnLineDiagnostics.orEmpty(),
+                        isCdnProbing = success?.isCdnProbing ?: false,
+                        isAudioOnly = false,
+                        sleepTimerMinutes = sleepTimerMinutes,
+                        videoshotData = success?.videoshotData,
+                        viewPoints = viewPoints,
+                        pbpProgressData = pbpProgressData,
+                        isVerticalVideo = isVerticalVideo,
+                        isPortraitFullscreen = isPortraitFullscreen,
+                        viewportWidthDpOverride = playerViewportWidthDp,
+                        currentCodec = currentCodec,
+                        currentSecondCodec = currentSecondCodec,
+                        currentAudioQuality = currentAudioQuality,
+                        currentPlayMode = currentPlayMode,
+                        relatedVideos = success?.related ?: emptyList(),
+                        forceCoverOnly = forceCoverOnlyOnReturn,
+                        ugcSeason = success?.info?.ugc_season,
+                        isFollowed = engagementState.isFollowing,
+                        isLiked = engagementState.isLiked,
+                        isCoined = engagementState.coinCount > 0,
+                        isFavorited = engagementState.isFavorited,
+                        sponsorContributionState = sponsorContributionState,
                     ),
-                    allowLivePlayerSharedElement = resolveAllowLivePlayerSharedElementForMorph(
-                        cardTransitionEnabled = transitionEnabled,
-                        liveSurfaceCardTransitionEnabled = liveSurfaceCardTransitionEnabled,
+                    actions = VideoPlayerSectionActions(
+                        onToggleFullscreen = onToggleFullscreen,
+                        onQualityChange = playbackActions.changeQuality,
+                        onBack = onBack,
+                        onHomeClick = onHomeClick,
+                        onDoubleTapLike = engagementActions.toggleLike,
+                        onReloadVideo = playbackActions.reloadVideo,
+                        onSwitchCdn = playbackActions.switchCdn,
+                        onSwitchCdnTo = playbackActions.switchCdnTo,
+                        onProbeCdnCandidates = playbackActions.probeCdnCandidates,
+                        onAudioOnlyToggle = {
+                            playbackActions.setAudioMode(true)
+                            onNavigateToAudioMode()
+                        },
+                        onSleepTimerChange = playbackActions.setSleepTimer,
+                        onPortraitFullscreen = onPortraitFullscreen,
+                        onPipClick = onPipClick,
+                        onCodecChange = onCodecChange,
+                        onSecondCodecChange = onSecondCodecChange,
+                        onAudioQualityChange = onAudioQualityChange,
+                        onPlaybackSpeedChange = playbackActions.applyPlaybackSpeed,
+                        onSaveCover = playbackActions.saveCover,
+                        onDownloadAudio = playbackActions.downloadAudio,
+                        onPlayModeClick = onPlayModeClick,
+                        onRelatedVideoClick = onRelatedVideoClick,
+                        onToggleFollow = engagementActions.toggleFollow,
+                        onToggleLike = engagementActions.toggleLike,
+                        onDislike = playbackActions.markVideoNotInterested,
+                        onCoin = engagementActions.openCoinDialog,
+                        onToggleFavorite = { engagementActions.onFavoriteAction(false) },
+                        onTriple = engagementActions.doTripleAction,
+                        onSubtitleTrackSelected = playbackActions.selectSubtitleTrack,
+                        onDanmakuInputClick = playbackActions.showDanmakuSendDialog,
+                        onSponsorContributionMarkBoundary = playbackActions.markSponsorContributionBoundary,
+                        onSponsorContributionMarkWholeVideo = playbackActions.markWholeVideoAsSponsor,
+                        onSponsorContributionCategoryChange = playbackActions.setSponsorContributionCategory,
+                        onSponsorContributionActionTypeChange = playbackActions.setSponsorContributionActionType,
+                        onSponsorContributionSubmit = playbackActions.submitSponsorContribution,
+                        onSponsorContributionCancel = playbackActions.cancelSponsorContribution,
+                        onLikeDanmaku = playbackActions.likeDanmaku,
+                        onLikeDanmakuToggle = playbackActions.likeDanmakuToggle,
+                        likedDanmakuIds = playbackActions.likedDanmakuIds,
+                        onReportDanmaku = playbackActions.reportDanmaku,
+                        onRecallDanmaku = playbackActions.recallDanmaku,
                     ),
-                    predictiveBackCancelRecoveryGeneration = predictiveBackCancelRecoveryGeneration,
-                    bvid = bvid,
-                    coverUrl = coverUrl,
-                    currentCdnIndex = success?.currentCdnIndex ?: 0,
-                    cdnCount = success?.cdnCount ?: 1,
-                    cdnLineDiagnostics = success?.cdnLineDiagnostics.orEmpty(),
-                    isCdnProbing = success?.isCdnProbing ?: false,
-                    isAudioOnly = false,
-                    sleepTimerMinutes = sleepTimerMinutes,
-                    videoshotData = success?.videoshotData,
-                    viewPoints = viewPoints,
-                    pbpProgressData = pbpProgressData,
-                    isVerticalVideo = isVerticalVideo,
-                    isPortraitFullscreen = isPortraitFullscreen,
-                    viewportWidthDpOverride = playerViewportWidthDp,
-                    currentCodec = currentCodec,
-                    currentSecondCodec = currentSecondCodec,
-                    currentAudioQuality = currentAudioQuality,
-                    currentPlayMode = currentPlayMode,
-                    relatedVideos = success?.related ?: emptyList(),
-                    forceCoverOnly = forceCoverOnlyOnReturn,
-                    ugcSeason = success?.info?.ugc_season,
-                    isFollowed = engagementState.isFollowing,
-                    isLiked = engagementState.isLiked,
-                    isCoined = engagementState.coinCount > 0,
-                    isFavorited = engagementState.isFavorited,
-                    sponsorContributionState = sponsorContributionState,
-                ),
-                actions = VideoPlayerSectionActions(
-                    onToggleFullscreen = onToggleFullscreen,
-                    onQualityChange = playbackActions.changeQuality,
-                    onBack = onBack,
-                    onHomeClick = onHomeClick,
-                    onDoubleTapLike = engagementActions.toggleLike,
-                    onReloadVideo = playbackActions.reloadVideo,
-                    onSwitchCdn = playbackActions.switchCdn,
-                    onSwitchCdnTo = playbackActions.switchCdnTo,
-                    onProbeCdnCandidates = playbackActions.probeCdnCandidates,
-                    onAudioOnlyToggle = {
-                        playbackActions.setAudioMode(true)
-                        onNavigateToAudioMode()
-                    },
-                    onSleepTimerChange = playbackActions.setSleepTimer,
-                    onPortraitFullscreen = onPortraitFullscreen,
-                    onPipClick = onPipClick,
-                    onCodecChange = onCodecChange,
-                    onSecondCodecChange = onSecondCodecChange,
-                    onAudioQualityChange = onAudioQualityChange,
-                    onPlaybackSpeedChange = playbackActions.applyPlaybackSpeed,
-                    onSaveCover = playbackActions.saveCover,
-                    onDownloadAudio = playbackActions.downloadAudio,
-                    onPlayModeClick = onPlayModeClick,
-                    onRelatedVideoClick = onRelatedVideoClick,
-                    onToggleFollow = engagementActions.toggleFollow,
-                    onToggleLike = engagementActions.toggleLike,
-                    onDislike = playbackActions.markVideoNotInterested,
-                    onCoin = engagementActions.openCoinDialog,
-                    onToggleFavorite = { engagementActions.onFavoriteAction(false) },
-                    onTriple = engagementActions.doTripleAction,
-                    onSubtitleTrackSelected = playbackActions.selectSubtitleTrack,
-                    onDanmakuInputClick = playbackActions.showDanmakuSendDialog,
-                    onSponsorContributionMarkBoundary = playbackActions.markSponsorContributionBoundary,
-                    onSponsorContributionMarkWholeVideo = playbackActions.markWholeVideoAsSponsor,
-                    onSponsorContributionCategoryChange = playbackActions.setSponsorContributionCategory,
-                    onSponsorContributionActionTypeChange = playbackActions.setSponsorContributionActionType,
-                    onSponsorContributionSubmit = playbackActions.submitSponsorContribution,
-                    onSponsorContributionCancel = playbackActions.cancelSponsorContribution,
-                    onLikeDanmaku = playbackActions.likeDanmaku,
-                    onLikeDanmakuToggle = playbackActions.likeDanmakuToggle,
-                    likedDanmakuIds = playbackActions.likedDanmakuIds,
-                    onReportDanmaku = playbackActions.reportDanmaku,
-                    onRecallDanmaku = playbackActions.recallDanmaku,
-                ),
-            )
+                )
+            }
         }
     }
 }

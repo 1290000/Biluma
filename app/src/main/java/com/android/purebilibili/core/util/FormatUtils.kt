@@ -148,6 +148,30 @@ object FormatUtils {
             .format(published)
     }
 
+    /**
+     * 历史条目观看时间，与 PiliPlus `DateFormatUtils.chatFormat(isHistory: true)` 对齐：
+     * 今天 HH:mm / 昨天 HH:mm / 同年 MM-dd HH:mm / 跨年 yyyy-MM-dd HH:mm。
+     */
+    fun formatHistoryViewTime(
+        timestampSeconds: Long,
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+        locale: Locale = Locale.getDefault(),
+    ): String {
+        if (timestampSeconds <= 0) return ""
+
+        val viewed = java.time.Instant.ofEpochSecond(timestampSeconds).atZone(zoneId)
+        val now = java.time.Instant.ofEpochMilli(System.currentTimeMillis()).atZone(zoneId)
+        val clock = java.time.format.DateTimeFormatter.ofPattern("HH:mm", locale).format(viewed)
+        return when (viewed.toLocalDate()) {
+            now.toLocalDate() -> "今天 $clock"
+            now.toLocalDate().minusDays(1) -> "昨天 $clock"
+            else -> {
+                val pattern = if (viewed.year == now.year) "MM-dd HH:mm" else "yyyy-MM-dd HH:mm"
+                java.time.format.DateTimeFormatter.ofPattern(pattern, locale).format(viewed)
+            }
+        }
+    }
+
     fun formatPrecisePublishTime(
         timestampSeconds: Long,
         pattern: String = "yyyy-MM-dd HH:mm",

@@ -1004,16 +1004,8 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             while (isTvPolling) {
                 delay(2000)
                 try {
-                    val params = mapOf(
-                        "appkey" to com.android.purebilibili.core.network.AppSignUtils.TV_APP_KEY,
-                        "auth_code" to tvAuthCode,
-                        "local_id" to "0",
-                        "ts" to com.android.purebilibili.core.network.AppSignUtils.getTimestamp().toString()
-                    )
-                    val signedParams = com.android.purebilibili.core.network.AppSignUtils.signForTvLogin(params)
-                    
-                    val response = NetworkModule.passportApi.pollTvQrCode(signedParams)
-                    
+                    val response = com.android.purebilibili.data.repository.QrLoginRepository.poll(tvAuthCode)
+
                     Logger.d("TvLogin", "TV 轮询状态: code=${response.code}")
                     
                     when (response.code) {

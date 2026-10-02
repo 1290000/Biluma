@@ -1930,10 +1930,11 @@ class DynamicViewModel(application: Application) : AndroidViewModel(application)
                 if (response.code != 0 || response.data == null) {
                     throw IllegalStateException(response.message.ifBlank { "预约操作失败" })
                 }
+                val data = requireNotNull(response.data)
                 val result = DynamicReserveResult(
-                    description = response.data.desc_update,
-                    reserveTotal = response.data.reserve_update,
-                    buttonStatus = response.data.final_btn_status,
+                    description = data.desc_update,
+                    reserveTotal = data.reserve_update,
+                    buttonStatus = data.final_btn_status,
                 )
                 if (action.buttonType > 0 && result.buttonStatus == action.buttonType) {
                     LiveReserveReminderScheduler.schedule(getApplication(), action)

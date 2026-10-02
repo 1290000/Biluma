@@ -2403,6 +2403,8 @@ private fun PlaybackFullscreenGestureSettingsSection(
         val horizontalAdaptationEnabled by com.android.purebilibili.core.store.SettingsManager
             .getHorizontalAdaptationEnabled(context)
             .collectAsStateWithLifecycle(initialValue = isLargeScreenDevice)
+        val videoAmbientSettings by SettingsManager.getVideoAmbientSettings(context)
+            .collectAsStateWithLifecycle(initialValue = com.android.purebilibili.feature.video.ambient.AmbientSettings())
         val immersiveVideoPageStatusBar by com.android.purebilibili.core.store.SettingsManager
             .getHideVideoPageStatusBar(context)
             .collectAsStateWithLifecycle(initialValue = false)
@@ -2572,6 +2574,40 @@ private fun PlaybackFullscreenGestureSettingsSection(
             },
             iconTint = com.android.purebilibili.core.theme.iOSPurple
         )
+        AppPreferenceDivider()
+        AppSwitchPreference(
+            icon = rememberSettingsSemanticIcon(SettingsIconRole.IMMERSIVE_STATUS_BAR),
+            title = "动态环境光",
+            subtitle = "在播放器周边显示随画面变化的柔和光晕；HDR、Anime4K 和小窗下不启用",
+            checked = videoAmbientSettings.enabled,
+            onCheckedChange = { enabled -> scope.launch { SettingsManager.setVideoAmbientEnabled(context, enabled) } },
+            iconTint = com.android.purebilibili.core.theme.iOSTeal,
+        )
+        if (videoAmbientSettings.enabled) {
+            AppPreferenceDivider()
+            SettingsSingleChoicePreference(
+                title = "环境光强度",
+                subtitle = "调整周边光晕亮度，不改变视频画面",
+                options = listOf(
+                    com.android.purebilibili.core.ui.components.AppSegmentOption(0, "柔和"),
+                    com.android.purebilibili.core.ui.components.AppSegmentOption(1, "标准"),
+                    com.android.purebilibili.core.ui.components.AppSegmentOption(2, "强烈"),
+                ),
+                selectedValue = videoAmbientSettings.strength,
+                onSelectionChange = { value -> scope.launch { SettingsManager.setVideoAmbientStrength(context, value) } },
+            )
+            AppPreferenceDivider()
+            SettingsSingleChoicePreference(
+                title = "环境光质量",
+                subtitle = "自动模式会根据省电、温度和静态画面降低刷新频率",
+                options = listOf(
+                    com.android.purebilibili.core.ui.components.AppSegmentOption(false, "自动"),
+                    com.android.purebilibili.core.ui.components.AppSegmentOption(true, "省电"),
+                ),
+                selectedValue = videoAmbientSettings.powerSaving,
+                onSelectionChange = { value -> scope.launch { SettingsManager.setVideoAmbientPowerSaving(context, value) } },
+            )
+        }
         AppPreferenceDivider()
 	        AppSwitchPreference(
             icon = rememberSettingsSemanticIcon(SettingsIconRole.IMMERSIVE_STATUS_BAR),

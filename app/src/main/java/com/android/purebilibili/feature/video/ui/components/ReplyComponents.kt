@@ -1162,7 +1162,7 @@ internal fun resolveReplyPreviewTextContent(
             replyId = item.rpid,
             authorName = item.member.uname,
             avatarUrl = item.member.avatar,
-            timeText = formatTime(item.ctime),
+            timeText = formatReplyRootTime(item.ctime),
             body = item.content.message,
             originalSizeLabels = originalSizeLabels,
             likeCount = item.like,
@@ -1258,7 +1258,7 @@ fun ReplyItemView(
     }
     val metadataText = remember(item.ctime, displayLocation) {
         buildString {
-            append(formatTime(item.ctime))
+            append(formatReplyRootTime(item.ctime))
             if (!displayLocation.isNullOrEmpty()) {
                 append(" · $displayLocation")
             }
@@ -2720,24 +2720,53 @@ private fun parseHexColorOrNull(hex: String?): Color? {
 
 // 评论行组合期热路径：共享 formatter，避免每条评论格式化时间都新建 SimpleDateFormat。
 // 仅主线程（Compose 组合）调用，不涉及 SimpleDateFormat 的线程安全问题。
-private val replyPublishTimeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-private val replyPublishDayFormatter = SimpleDateFormat("MM-dd", Locale.getDefault())
-private val replyPublishYearDayFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-private val replyPublishCalendar = Calendar.getInstance()
+private val replyRelativeTimeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+private val replyShortFormatter = SimpleDateFormat("MM-dd", Locale.getDefault())
+private val replyLongFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+private val replyRootFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+private val replyTimeCalendar = Calendar.getInstance()
 
+/**
+ * 楼中楼相对时间，与 PiliPlus `DateFormatUtils.dateFormat` 对齐：
+ * 刚刚 / N分钟前 / N小时前 / 昨天 HH:mm / N天前 / 同年 MM-dd / 跨年 yyyy-MM-dd。
+ */
 fun formatTime(timestamp: Long): String {
+    if (timestamp <= 0L) return ""
+    val nowMillis = System.currentTimeMillis()
     val date = Date(timestamp * 1000)
-    val calendar = replyPublishCalendar
-    val now = calendar.clone() as Calendar
+    val diffMinutes = ((nowMillis - date.time) / 60_000L).toInt()
+    if (diffMinutes < 1) return "刚刚"
+    if (diffMinutes < 60) return "${diffMinutes}分钟前"
+    val diffHours = diffMinutes / 60
+    if (diffHours < 24) return "${diffHours}小时前"
+
+    val calendar = replyTimeCalendar
+    val today = calendar.clone() as Calendar
+    today.timeInMillis = nowMillis
+    today.set(Calendar.HOUR_OF_DAY, 0)
+    today.set(Calendar.MINUTE, 0)
+    today.set(Calendar.SECOND, 0)
+    today.set(Calendar.MILLISECOND, 0)
     calendar.time = date
-    val sameDay = calendar.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
-        calendar.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR)
-    return when {
-        sameDay -> replyPublishTimeFormatter.format(date)
-        calendar.get(Calendar.YEAR) == now.get(Calendar.YEAR) ->
-            replyPublishDayFormatter.format(date)
-        else -> replyPublishYearDayFormatter.format(date)
+    val dateDay = calendar.clone() as Calendar
+    dateDay.set(Calendar.HOUR_OF_DAY, 0)
+    dateDay.set(Calendar.MINUTE, 0)
+    dateDay.set(Calendar.SECOND, 0)
+    dateDay.set(Calendar.MILLISECOND, 0)
+    val dayDiff = ((today.timeInMillis - dateDay.timeInMillis) / 86_400_000L).toInt()
+    if (dayDiff == 1) return "昨天 ${replyRelativeTimeFormatter.format(date)}"
+    if (dayDiff < 4) return "${dayDiff}天前"
+    return if (today.get(Calendar.YEAR) == calendar.get(Calendar.YEAR)) {
+        replyShortFormatter.format(date)
+    } else {
+        replyLongFormatter.format(date)
     }
+}
+
+/** 一级评论绝对时间，与 PiliPlus 对齐为 `yyyy-MM-dd HH:mm:ss`。 */
+fun formatReplyRootTime(timestamp: Long): String {
+    if (timestamp <= 0L) return ""
+    return replyRootFormatter.format(Date(timestamp * 1000))
 }
 
 @Composable
@@ -2826,6 +2855,8 @@ internal fun ReplyActionSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // M3 路径的 modalWindowInsets 已消费导航栏 insets（此处为 0）；
+                // 这层 padding 是给 CenteredDialog/平板限宽弹层路径兜底的，勿删。
                 .navigationBarsPadding()
                 .padding(bottom = 12.dp)
         ) {

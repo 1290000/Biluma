@@ -1427,17 +1427,20 @@ open class MainActivity : AppCompatActivity() {
                 uiStyle = appThemeSettings.uiStyle
             )
 
-            //  [新增] 根据主题动态更新状态栏样式
+            //  [新增] 根据主题动态更新状态栏/导航栏样式（两条系统栏均保持透明，
+            //  只翻转图标明暗；补传 navigationBarStyle 避免回落到 enableEdgeToEdge 的默认 scrim）
+            val edgeToEdgeSystemBarStyle = if (useDarkTheme) {
+                SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            } else {
+                SystemBarStyle.light(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT
+                )
+            }
             LaunchedEffect(useDarkTheme) {
                 enableEdgeToEdge(
-                    statusBarStyle = if (useDarkTheme) {
-                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                    } else {
-                        SystemBarStyle.light(
-                            android.graphics.Color.TRANSPARENT,
-                            android.graphics.Color.TRANSPARENT
-                        )
-                    }
+                    statusBarStyle = edgeToEdgeSystemBarStyle,
+                    navigationBarStyle = edgeToEdgeSystemBarStyle
                 )
             }
 

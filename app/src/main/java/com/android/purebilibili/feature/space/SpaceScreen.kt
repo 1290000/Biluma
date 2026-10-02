@@ -1360,6 +1360,10 @@ private fun SpaceContent(
     // 网格容器在根坐标系中的顶边（悬浮条的父容器），用于换算相对 padding。
     var gridContainerRootTopPx by remember { mutableStateOf(0f) }
 
+    // 遮挡铰链时整页内容落入最大安全区，软折痕允许跨越（与首页/动态/搜索一致）。
+    com.android.purebilibili.core.ui.adaptive.AppHingeSafeContent(
+        modifier = Modifier.fillMaxSize(),
+    ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -2592,6 +2596,7 @@ private fun SpaceContent(
                 .align(Alignment.TopCenter)
                 .padding(top = chromeTopInset + 16.dp)
         )
+    }
     }
 }
 

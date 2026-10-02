@@ -1402,7 +1402,7 @@ class BangumiPlayerViewModel : BasePlayerViewModel() {
                 }
 
                 _userCoinBalance.value = when {
-                    result.code == 0 && result.data?.isLogin == true -> result.data.money
+                    result.code == 0 && result.data?.isLogin == true -> requireNotNull(result.data).money
                     result.code == 0 -> -3.0
                     else -> -1.0
                 }

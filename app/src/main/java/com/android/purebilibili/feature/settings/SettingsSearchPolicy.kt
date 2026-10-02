@@ -84,7 +84,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "播放与画质",
         subtitle = "视频解码、画质、字幕、倍速、连播与省流量设置",
         section = "设置",
-        aliases = listOf("播放", "解码", "画质", "音质", "默认画质", "默认音质", "Hi-Res", "杜比", "最高画质", "自动最高画质", "省流量", "定向流量", "字幕", "倍速", "自动连播")
+        aliases = listOf("播放", "解码", "画质", "音质", "默认画质", "默认音质", "Hi-Res", "杜比", "最高画质", "自动最高画质", "省流量", "定向流量", "字幕", "倍速", "自动连播", "动态环境光", "环境光", "光晕", "ambient", "ambilight")
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.FULLSCREEN_GESTURE,

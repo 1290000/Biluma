@@ -449,7 +449,7 @@ internal fun resolveDynamicCardMediaAction(
     val images = when {
         opusImages.isNotEmpty() -> opusImages.map { it.url }
         drawImages.isNotEmpty() -> drawImages.map { it.src }
-        major.article != null -> resolveArticleCoverUrls(major.article)
+        major.article != null -> resolveArticleCoverUrls(requireNotNull(major.article))
         else -> emptyList()
     }
     if (clickedIndex !in images.indices) return DynamicCardMediaAction.None

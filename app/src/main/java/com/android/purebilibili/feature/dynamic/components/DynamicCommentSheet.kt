@@ -1505,18 +1505,47 @@ private fun CommentItem(
 // 仅主线程（Compose 组合）调用，不涉及 SimpleDateFormat 的线程安全问题。
 private val commentDayFormatter =
     java.text.SimpleDateFormat("MM-dd", java.util.Locale.CHINA)
+private val commentYearDayFormatter =
+    java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
+private val commentClockFormatter =
+    java.text.SimpleDateFormat("HH:mm", java.util.Locale.CHINA)
+private val commentDayCalendar = java.util.Calendar.getInstance()
 
 /**
- * 格式化时间戳
+ * 格式化时间戳：与 PiliPlus `DateFormatUtils.dateFormat` 对齐——
+ * 刚刚 / N分钟前 / N小时前 / 昨天 HH:mm / N天前 / 同年 MM-dd / 跨年 yyyy-MM-dd。
  */
 private fun formatTime(timestamp: Long): String {
-    val now = System.currentTimeMillis() / 1000
-    val diff = now - timestamp
-    return when {
-        diff < 60 -> "刚刚"
-        diff < 3600 -> "${diff / 60}分钟前"
-        diff < 86400 -> "${diff / 3600}小时前"
-        diff < 604800 -> "${diff / 86400}天前"
-        else -> commentDayFormatter.format(java.util.Date(timestamp * 1000))
+    if (timestamp <= 0L) return ""
+    val nowMillis = System.currentTimeMillis()
+    val date = java.util.Date(timestamp * 1000)
+    val diffMinutes = ((nowMillis - date.time) / 60_000L).toInt()
+    if (diffMinutes < 1) return "刚刚"
+    if (diffMinutes < 60) return "${diffMinutes}分钟前"
+    val diffHours = diffMinutes / 60
+    if (diffHours < 24) return "${diffHours}小时前"
+
+    val calendar = commentDayCalendar
+    val today = (calendar.clone() as java.util.Calendar).apply {
+        timeInMillis = nowMillis
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    calendar.time = date
+    val dateDay = (calendar.clone() as java.util.Calendar).apply {
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    val dayDiff = ((today.timeInMillis - dateDay.timeInMillis) / 86_400_000L).toInt()
+    if (dayDiff == 1) return "昨天 ${commentClockFormatter.format(date)}"
+    if (dayDiff < 4) return "${dayDiff}天前"
+    return if (today.get(java.util.Calendar.YEAR) == calendar.get(java.util.Calendar.YEAR)) {
+        commentDayFormatter.format(date)
+    } else {
+        commentYearDayFormatter.format(date)
     }
 }

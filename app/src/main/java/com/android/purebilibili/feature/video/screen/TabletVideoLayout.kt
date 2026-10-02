@@ -1,6 +1,7 @@
 // 文件路径: feature/video/screen/TabletVideoLayout.kt
 package com.android.purebilibili.feature.video.screen
 
+import com.android.purebilibili.feature.video.ambient.PlayerAmbientLayout
 import com.android.purebilibili.navigation.animatePagerSelection
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppIconButton
@@ -401,11 +402,11 @@ internal fun TabletVideoLayout(
                     } else {
                         playerWidth * 9f / 16f
                     }
-                    Box(
-                        modifier = playerContainerModifier
+                    PlayerAmbientLayout(
+                        modifier = Modifier.fillMaxWidth().align(Alignment.Center),
+                        playerModifier = playerContainerModifier
                             .width(playerWidth)
                             .height(videoHeight)
-                            .align(Alignment.Center)
                             .background(MaterialTheme.colorScheme.scrim)
                     ) {
                         if (playerContent != null) {

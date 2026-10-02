@@ -36,7 +36,7 @@ internal fun buildReplyCommentImageSpec(
     val url = resolveReplyCommentShareUrl(item)
     val likeText = item.like.takeIf { it > 0 }?.let { "${it}赞" }
     val metadata = listOfNotNull(
-        formatTime(item.ctime).takeIf { item.ctime > 0L },
+        formatReplyRootTime(item.ctime).takeIf { item.ctime > 0L },
         likeText
     ).joinToString(" · ")
     val generatedAt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
