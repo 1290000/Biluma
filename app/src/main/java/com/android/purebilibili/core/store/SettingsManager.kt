@@ -7206,6 +7206,31 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         }
     }
 
+    private val KEY_VIDEO_AMBIENT_ENABLED = booleanPreferencesKey("video_ambient_enabled")
+    private val KEY_VIDEO_AMBIENT_STRENGTH = intPreferencesKey("video_ambient_strength")
+    private val KEY_VIDEO_AMBIENT_SAVING = booleanPreferencesKey("video_ambient_saving")
+
+    internal fun getVideoAmbientSettings(context: Context): Flow<com.android.purebilibili.feature.video.ambient.AmbientSettings> =
+        context.settingsDataStore.data.map { preferences ->
+            com.android.purebilibili.feature.video.ambient.AmbientSettings(
+                enabled = preferences[KEY_VIDEO_AMBIENT_ENABLED] ?: false,
+                strength = (preferences[KEY_VIDEO_AMBIENT_STRENGTH] ?: 1).coerceIn(0, 2),
+                powerSaving = preferences[KEY_VIDEO_AMBIENT_SAVING] ?: false,
+            )
+        }
+
+    internal suspend fun setVideoAmbientEnabled(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_VIDEO_AMBIENT_ENABLED] = enabled }
+    }
+
+    internal suspend fun setVideoAmbientStrength(context: Context, strength: Int) {
+        context.settingsDataStore.edit { it[KEY_VIDEO_AMBIENT_STRENGTH] = strength.coerceIn(0, 2) }
+    }
+
+    internal suspend fun setVideoAmbientPowerSaving(context: Context, saving: Boolean) {
+        context.settingsDataStore.edit { it[KEY_VIDEO_AMBIENT_SAVING] = saving }
+    }
+
     fun getHideVideoPageStatusBar(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_HIDE_VIDEO_PAGE_STATUS_BAR] ?: false }
         .onEach { enabledFromDataStore ->

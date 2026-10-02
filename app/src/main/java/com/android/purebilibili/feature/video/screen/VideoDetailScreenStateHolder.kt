@@ -1,6 +1,7 @@
 // 文件路径: feature/video/screen/VideoDetailScreen.kt
 package com.android.purebilibili.feature.video.screen
 
+import com.android.purebilibili.feature.video.ambient.PlayerAmbientLayout
 import coil3.request.crossfade
 import kotlinx.coroutines.flow.first
 import com.android.purebilibili.core.ui.resolveFilledButtonContainerColor
@@ -1534,13 +1535,36 @@ internal fun VideoDetailScreenStateHolder(
             WindowCompat.getInsetsController(window, window.decorView)
         } else null
     }
-    val originalSystemBarsSnapshot = remember(window, insetsController) {
-        resolveVideoDetailSystemBarsSnapshot(
-            statusBarColor = window?.statusBarColor,
-            navigationBarColor = window?.navigationBarColor,
-            lightStatusBars = insetsController?.isAppearanceLightStatusBars,
-            lightNavigationBars = insetsController?.isAppearanceLightNavigationBars,
-            systemBarsBehavior = insetsController?.systemBarsBehavior,
+    var originalSystemBarsSnapshot by remember(window, insetsController) {
+        mutableStateOf(
+            resolveVideoDetailSystemBarsSnapshot(
+                statusBarColor = window?.statusBarColor,
+                navigationBarColor = window?.navigationBarColor,
+                lightStatusBars = insetsController?.isAppearanceLightStatusBars,
+                lightNavigationBars = insetsController?.isAppearanceLightNavigationBars,
+                systemBarsBehavior = insetsController?.systemBarsBehavior,
+                fallbackColor = android.graphics.Color.TRANSPARENT,
+                fallbackLightBars = true,
+                fallbackSystemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+            )
+        )
+    }
+    //  [修复] 系统栏可见期间持续刷新快照：此前只在首次组合捕获一次，若用户在
+    //  沉浸播放期间切换深浅主题，退出时会恢复到陈旧的图标明暗/栏色。
+    //  仅在系统栏可见时刷新，避免把沉浸期间被本页隐藏的状态当作"原始状态"。
+    SideEffect {
+        val controller = insetsController
+        val hostWindow = window
+        if (controller == null || hostWindow == null) return@SideEffect
+        val systemBarsVisible = ViewCompat.getRootWindowInsets(hostWindow.decorView)
+            ?.isVisible(WindowInsetsCompat.Type.systemBars()) ?: true
+        if (!systemBarsVisible) return@SideEffect
+        originalSystemBarsSnapshot = resolveVideoDetailSystemBarsSnapshot(
+            statusBarColor = hostWindow.statusBarColor,
+            navigationBarColor = hostWindow.navigationBarColor,
+            lightStatusBars = controller.isAppearanceLightStatusBars,
+            lightNavigationBars = controller.isAppearanceLightNavigationBars,
+            systemBarsBehavior = controller.systemBarsBehavior,
             fallbackColor = android.graphics.Color.TRANSPARENT,
             fallbackLightBars = true,
             fallbackSystemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
@@ -3475,15 +3499,35 @@ internal fun VideoDetailScreenStateHolder(
                         isFullscreenMode = isFullscreenMode
                     )
                 if (continuousFullscreenTransitionEnabled) {
-                    continuousPlayerContent(
-                        ContinuousPlayerHostLayout(
-                            modifier = Modifier.fillMaxSize(),
-                            viewportWidth = configuration.screenWidthDp.dp,
-                            alpha = continuousPlayerUnitState,
-                            scale = continuousPlayerUnitState,
-                            isFullscreen = true,
+                    // 全屏＋半开姿态：媒体与播放控件收进首个安全区，不跨物理铰链（对齐番剧/直播策略）。
+                    if (appWindowAdaptiveInfo.shouldAvoidHinge) {
+                        com.android.purebilibili.core.ui.adaptive.AppHingePaneLayout(
+                            modifier = Modifier.fillMaxSize().background(Color.Black),
+                            primaryContent = {
+                                BoxWithConstraints(Modifier.fillMaxSize()) {
+                                    continuousPlayerContent(
+                                        ContinuousPlayerHostLayout(
+                                            modifier = Modifier.fillMaxSize(),
+                                            viewportWidth = maxWidth,
+                                            alpha = continuousPlayerUnitState,
+                                            scale = continuousPlayerUnitState,
+                                            isFullscreen = true,
+                                        )
+                                    )
+                                }
+                            },
                         )
-                    )
+                    } else {
+                        continuousPlayerContent(
+                            ContinuousPlayerHostLayout(
+                                modifier = Modifier.fillMaxSize(),
+                                viewportWidth = configuration.screenWidthDp.dp,
+                                alpha = continuousPlayerUnitState,
+                                scale = continuousPlayerUnitState,
+                                isFullscreen = true,
+                            )
+                        )
+                    }
                     val success = uiState as? VideoPlaybackUiState.Success
                     if (canShowLandscapeComments && landscapeCommentPanelVisible && success != null) {
                         LandscapeCommentPanel(
@@ -3564,7 +3608,8 @@ internal fun VideoDetailScreenStateHolder(
                         )
                     }
                 } else {
-                    VideoPlayerSection(
+                    val fullscreenPlayerSection: @Composable () -> Unit = {
+                        VideoPlayerSection(
                     state = VideoPlayerSectionState(
                         playerState = playerState,
                         uiState = uiState,
@@ -3711,6 +3756,16 @@ internal fun VideoDetailScreenStateHolder(
                         onSubtitleTrackSelected = viewModel::selectSubtitleTrack,
                     ),
                     )
+                    }
+                    // 全屏＋半开姿态：媒体与播放控件收进首个安全区，不跨物理铰链（对齐番剧/直播策略）。
+                    if (appWindowAdaptiveInfo.shouldAvoidHinge) {
+                        com.android.purebilibili.core.ui.adaptive.AppHingePaneLayout(
+                            modifier = Modifier.fillMaxSize().background(Color.Black),
+                            primaryContent = fullscreenPlayerSection,
+                        )
+                    } else {
+                        fullscreenPlayerSection()
+                    }
                     val success = uiState as? VideoPlaybackUiState.Success
                     if (canShowLandscapeComments && landscapeCommentPanelVisible && success != null) {
                         LandscapeCommentPanel(
@@ -4648,8 +4703,10 @@ internal fun VideoDetailScreenStateHolder(
                                     miuixLandingState.sourceChromeSnapshot?.isNowPlayingBar == true,
                             )
                         }
-                        Box(
-                            modifier = playerContainerModifier
+                        PlayerAmbientLayout(
+                            modifier = Modifier.fillMaxWidth(),
+                            fullscreen = isFullscreenMode,
+                            playerModifier = playerContainerModifier
                                 .fillMaxWidth()
                                 .continuousPlayerViewportHeight(
                                     progressProvider = { continuousPlayerProgress.value },

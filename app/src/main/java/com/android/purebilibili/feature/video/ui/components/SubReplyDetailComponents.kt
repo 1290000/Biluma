@@ -1409,7 +1409,7 @@ private fun SubReplyDetailItem(
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(modifier = Modifier.heightIn(max = 220.dp)) {
                         CommentPictures(
-                            pictures = item.content.pictures,
+                            pictures = item.content.pictures.orEmpty(),
                             onImageClick = { images, index, rect ->
                                 onImagePreview?.invoke(
                                     images,

@@ -32,7 +32,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -50,6 +49,8 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -77,6 +78,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import java.io.File
+import com.android.purebilibili.core.ui.HingeSafeInputOverlayHost
 import com.android.purebilibili.core.ui.motion.resolveCommentVerticalContentRevealMotionSpec
 import com.android.purebilibili.core.ui.motion.verticalContentRevealEnterTransition
 import com.android.purebilibili.core.ui.motion.verticalContentRevealExitTransition
@@ -258,16 +260,28 @@ fun CommentInputDialog(
             isTablet = isTablet
         )
     }
+    // 宽窗口限宽居中；半开折叠时弹层整体由 HingeSafeInputOverlayHost 收进铰链安全区。
+    val inputOverlayMaxWidthDp = remember(configuration.screenWidthDp) {
+        resolveBottomInputOverlayMaxWidthDp(configuration.screenWidthDp)
+    }
 
     // 状态
-    var textFieldValue by remember { mutableStateOf(commentDraftTextFieldValue(initialText)) }
-    var isForwardToDynamic by remember { mutableStateOf(initialSyncToDynamic) } // 转发到动态
+    var textFieldValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(commentDraftTextFieldValue(initialText))
+    }
+    var isForwardToDynamic by rememberSaveable { mutableStateOf(initialSyncToDynamic) } // 转发到动态
     var showEmojiPanel by remember { mutableStateOf(false) }    // 表情面板
     var showMentionPanel by remember { mutableStateOf(false) }
     var mentionSearchText by remember { mutableStateOf("") }
     var currentTab by remember { mutableLongStateOf(1L) }
-    var selectedImageUris by remember { mutableStateOf(initialImageUris) }
+    var selectedImageUris by rememberSaveable(
+        stateSaver = listSaver<List<Uri>, String>(
+            save = { uris -> uris.map(Uri::toString) },
+            restore = { uris -> uris.map(Uri::parse) },
+        )
+    ) { mutableStateOf(initialImageUris) }
     var lastKeyboardHeightDp by remember(configuration.orientation) { mutableIntStateOf(0) }
+    var inputWasVisible by rememberSaveable { mutableStateOf(false) }
     val text = textFieldValue.text
     val canPublish = canPublishCommentDraft(
         text = text,
@@ -277,6 +291,15 @@ fun CommentInputDialog(
     )
     
     val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val dismissDialog = remember(onDismiss, keyboardController, focusManager) {
+        {
+            keyboardController?.hide()
+            focusManager.clearFocus(force = true)
+            onDismiss()
+        }
+    }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         PickMultipleGalleryVisualMedia(maxItems = 9)
     ) { uris ->
@@ -317,8 +340,21 @@ fun CommentInputDialog(
     
     // 重置状态
     LaunchedEffect(visible) {
-        if (!visible) return@LaunchedEffect
-        // 草稿更新不能作为 effect key，否则会持续覆盖 IME 选区。
+        if (!visible) {
+            // 外部关闭（例如导航离开详情页）也要立即撤销输入焦点，避免输入光标
+            // 在弹层退场期间继续显示在播放详情页上。
+            if (inputWasVisible) {
+                keyboardController?.hide()
+                focusManager.clearFocus(force = true)
+                inputWasVisible = false
+            }
+            return@LaunchedEffect
+        }
+
+        // 恢复后的可见会话保留正文、选区、图片及转发状态；重新打开才加载上游草稿。
+        if (inputWasVisible) return@LaunchedEffect
+        inputWasVisible = true
+        // 草稿更新会随每次输入回流，不能作为 effect key，否则会持续覆盖 IME 选区。
         textFieldValue = commentDraftTextFieldValue(initialText)
         isForwardToDynamic = initialSyncToDynamic
         showEmojiPanel = false
@@ -334,7 +370,7 @@ fun CommentInputDialog(
         exit = fadeOut() + slideOutVertically { it }
     ) {
         Dialog(
-            onDismissRequest = onDismiss,
+            onDismissRequest = dismissDialog,
             properties = DialogProperties(
                 dismissOnBackPress = true,
                 dismissOnClickOutside = true,
@@ -342,9 +378,6 @@ fun CommentInputDialog(
                 decorFitsSystemWindows = false   // 沉浸式：内容延伸到状态栏/导航栏下
             )
         ) {
-            // Dialog 有独立的 Compose owner；必须控制它自己的输入焦点和 IME。
-            val focusManager = LocalFocusManager.current
-            val keyboardController = LocalSoftwareKeyboardController.current
             val density = LocalDensity.current
             val imeBottomPx = WindowInsets.ime.getBottom(density)
             val navigationBarsBottomPx = WindowInsets.navigationBars.getBottom(density)
@@ -371,13 +404,6 @@ fun CommentInputDialog(
                 keyboardHeightDp = maxOf(lastKeyboardHeightDp, keyboardHeightDp),
                 availableHeightDp = availablePanelHeightDp,
             )
-            val dismissDialog = remember(onDismiss, keyboardController, focusManager) {
-                {
-                    keyboardController?.hide()
-                    focusManager.clearFocus(force = true)
-                    onDismiss()
-                }
-            }
             LaunchedEffect(showEmojiPanel, visible, canInputComment) {
                 if (!shouldAutoShowCommentKeyboard(visible, canInputComment, showEmojiPanel)) {
                     keyboardController?.hide()
@@ -396,27 +422,19 @@ fun CommentInputDialog(
                     focusManager.clearFocus(force = true)
                 }
             }
-            Column(
+            // 统一输入弹层宿主：半开折叠时弹层整体收进铰链安全区，避免输入控件跨缝；
+            // 平铺窗口时点击空白处关闭、底部对齐，宽窗口由 widthIn 限宽并水平居中。
+            // 表情面板替代键盘时不再避让 IME，避免双重底部空隙。
+            HingeSafeInputOverlayHost(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(if (showEmojiPanel) Modifier else Modifier.imePadding()),
-                verticalArrangement = Arrangement.Bottom // 底部对齐
+                onDismissRequest = dismissDialog,
             ) {
-                // 点击上半部分空白区域关闭
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                            onClick = dismissDialog
-                        )
-                )
-                
                 // 输入区域
                 AppSurface(
                     modifier = modifier
+                        .widthIn(max = inputOverlayMaxWidthDp.dp)
                         .fillMaxWidth()
                         .wrapContentHeight(),
                     shape = AppShapes.container(ContainerLevel.Sheet),

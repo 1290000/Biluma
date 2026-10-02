@@ -435,13 +435,13 @@ fun BangumiPlayerContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     AppText(
-                        text = "选集 (${detail.episodes.size})",
+                        text = "选集 (${detail.episodes.orEmpty().size})",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     
                     // 当集数超过 50 时显示快速跳转
-                    if (detail.episodes.size > 50) {
+                    if (detail.episodes.orEmpty().size > 50) {
                         var showJumpDialog by remember { mutableStateOf(false) }
                         
                         AppSurface(
@@ -460,9 +460,9 @@ fun BangumiPlayerContent(
                         // 快速跳转对话框
                         if (showJumpDialog) {
                             EpisodeJumpDialog(
-                                totalEpisodes = detail.episodes.size,
+                                totalEpisodes = detail.episodes.orEmpty().size,
                                 onJump = { epNumber ->
-                                    val targetEpisode = detail.episodes.getOrNull(epNumber - 1)
+                                    val targetEpisode = detail.episodes.orEmpty().getOrNull(epNumber - 1)
                                     if (targetEpisode != null) {
                                         onEpisodeClick(targetEpisode)
                                     }
@@ -476,14 +476,14 @@ fun BangumiPlayerContent(
             }
             
             // 对于超长剧集，添加范围选择器
-            if (detail.episodes.size > 50) {
+            if (detail.episodes.orEmpty().size > 50) {
                 item {
                     val episodesPerPage = 50
-                    val totalPages = (detail.episodes.size + episodesPerPage - 1) / episodesPerPage
+                    val totalPages = (detail.episodes.orEmpty().size + episodesPerPage - 1) / episodesPerPage
                     var selectedPage by remember { mutableIntStateOf(0) }
                     
                     // 当前集所在的页
-                    val currentEpisodeIndex = detail.episodes.indexOfFirst { it.id == currentEpisode.id }
+                    val currentEpisodeIndex = detail.episodes.orEmpty().indexOfFirst { it.id == currentEpisode.id }
                     LaunchedEffect(currentEpisodeIndex) {
                         if (currentEpisodeIndex >= 0) {
                             selectedPage = currentEpisodeIndex / episodesPerPage
@@ -498,7 +498,7 @@ fun BangumiPlayerContent(
                     ) {
                         items(totalPages, key = { it }) { page ->
                             val start = page * episodesPerPage + 1
-                            val end = minOf((page + 1) * episodesPerPage, detail.episodes.size)
+                            val end = minOf((page + 1) * episodesPerPage, detail.episodes.orEmpty().size)
                             val isCurrentPage = page == selectedPage
                             
                             AppSurface(
@@ -518,8 +518,8 @@ fun BangumiPlayerContent(
                     
                     // 当前页的剧集
                     val pageStart = selectedPage * episodesPerPage
-                    val pageEnd = minOf(pageStart + episodesPerPage, detail.episodes.size)
-                    val pageEpisodes = detail.episodes.subList(pageStart, pageEnd)
+                    val pageEnd = minOf(pageStart + episodesPerPage, detail.episodes.orEmpty().size)
+                    val pageEpisodes = detail.episodes.orEmpty().subList(pageStart, pageEnd)
                     
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -542,7 +542,7 @@ fun BangumiPlayerContent(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(detail.episodes, key = { it.id }) { episode ->
+                        items(detail.episodes.orEmpty(), key = { it.id }) { episode ->
                             EpisodeChipSelectable(
                                 episode = episode,
                                 isSelected = episode.id == currentEpisode.id,
@@ -591,7 +591,7 @@ fun BangumiPlayerContent(
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    detail.briefImgs.forEach { briefImg ->
+                    detail.briefImgs.orEmpty().forEach { briefImg ->
                         if (briefImg.url.isNotBlank()) {
                             val ratio = (1f / briefImg.aspectRatio.coerceAtLeast(0.1f)).coerceIn(0.2f, 5f)
                             AsyncImage(

@@ -1716,7 +1716,7 @@ fun ReplyItemView(
                     if (!item.content.pictures.isNullOrEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         CommentPictures(
-                            pictures = item.content.pictures,
+                            pictures = item.content.pictures.orEmpty(),
                             onImageClick = { images, index, rect ->
                                 onImagePreview?.invoke(
                                     images,
@@ -2830,6 +2830,8 @@ internal fun ReplyActionSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // M3 路径的 modalWindowInsets 已消费导航栏 insets（此处为 0）；
+                // 这层 padding 是给 CenteredDialog/平板限宽弹层路径兜底的，勿删。
                 .navigationBarsPadding()
                 .padding(bottom = 12.dp)
         ) {

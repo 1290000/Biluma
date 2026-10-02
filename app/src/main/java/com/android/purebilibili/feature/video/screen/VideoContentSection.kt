@@ -1759,108 +1759,115 @@ internal fun LandscapeCommentPanel(
     var showCommentSearchSheet by remember { mutableStateOf(false) }
     val commentAppearance = rememberVideoCommentAppearance()
 
-    LandscapeSidePanel(
-        visible = true,
-        edge = if (isOnLeft) LandscapeSidePanelEdge.Start else LandscapeSidePanelEdge.End,
-        width = drawerWidth,
-        onDismiss = onDismiss,
-        modifier = modifier,
-    ) { requestDismiss ->
-        AppSurface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.surface,
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppText("评论 $replyCount", style = MaterialTheme.typography.titleMedium)
-                    CommentSortFilterBar(
-                        sortMode = sortMode,
-                        onSortModeChange = onSortModeChange,
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                        onSearchClick = { showCommentSearchSheet = true },
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    AppTextButton(
-                        onClick = onSwitchSide,
-                        modifier = Modifier.widthIn(min = 76.dp),
+    com.android.purebilibili.core.ui.adaptive.AppHingeSafeSidePanel(
+        isStart = isOnLeft,
+        modifier = modifier.fillMaxSize(),
+    ) {
+        LandscapeSidePanel(
+            visible = true,
+            edge = if (isOnLeft) LandscapeSidePanelEdge.Start else LandscapeSidePanelEdge.End,
+            width = drawerWidth.coerceAtMost(maxWidth),
+            onDismiss = onDismiss,
+            modifier = Modifier
+                .align(if (isOnLeft) Alignment.CenterStart else Alignment.CenterEnd)
+                .fillMaxHeight(),
+        ) { requestDismiss ->
+            AppSurface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AppText(
-                            text = if (isOnLeft) "移至右侧" else "移至左侧",
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Clip,
+                        AppText("评论 $replyCount", style = MaterialTheme.typography.titleMedium)
+                        CommentSortFilterBar(
+                            sortMode = sortMode,
+                            onSortModeChange = onSortModeChange,
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            onSearchClick = { showCommentSearchSheet = true },
                         )
+                        Spacer(modifier = Modifier.weight(1f))
+                        AppTextButton(
+                            onClick = onSwitchSide,
+                            modifier = Modifier.widthIn(min = 76.dp),
+                        ) {
+                            AppText(
+                                text = if (isOnLeft) "移至右侧" else "移至左侧",
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Clip,
+                            )
+                        }
+                        AppTextButton(
+                            onClick = requestDismiss,
+                            modifier = Modifier.widthIn(min = 56.dp),
+                        ) {
+                            AppText(
+                                text = "关闭",
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Clip,
+                            )
+                        }
                     }
-                    AppTextButton(
-                        onClick = requestDismiss,
-                        modifier = Modifier.widthIn(min = 56.dp),
-                    ) {
-                        AppText(
-                            text = "关闭",
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Clip,
-                        )
-                    }
-                }
-                AppHorizontalDivider(color = commentAppearance.secondaryTextColor.copy(alpha = 0.18f))
-                if (threadContent != null) {
-                    threadContent { images, index, rect, textContent ->
-                        previewImages = images
-                        previewInitialIndex = index
-                        previewSourceRect = rect
-                        previewTextContent = textContent
-                        showImagePreview = true
-                    }
-                } else {
-                    VideoCommentTab(
-                        listState = listState,
-                        modifier = Modifier.weight(1f),
-                        info = info,
-                        replies = replies,
-                        replyCount = replyCount,
-                        emoteMap = emoteMap,
-                        isRepliesLoading = isRepliesLoading,
-                        isRepliesRefreshing = isRepliesRefreshing,
-                        repliesError = repliesError,
-                        isRepliesEnd = isRepliesEnd,
-                        voteCard = voteCard,
-                        videoTags = videoTags,
-                        onUpClick = onUpClick,
-                        onSubReplyClick = onSubReplyClick,
-                        onCommentReplyClick = onCommentReplyClick,
-                        onLoadMoreReplies = onLoadMoreReplies,
-                        onRefreshReplies = onRefreshReplies,
-                        onImagePreview = { images, index, rect, textContent ->
+                    AppHorizontalDivider(color = commentAppearance.secondaryTextColor.copy(alpha = 0.18f))
+                    if (threadContent != null) {
+                        threadContent { images, index, rect, textContent ->
                             previewImages = images
                             previewInitialIndex = index
                             previewSourceRect = rect
                             previewTextContent = textContent
                             showImagePreview = true
-                        },
-                        onTimestampClick = onTimestampClick,
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        currentMid = currentMid,
-                        showUpFlag = showUpFlag,
-                        dissolvingIds = dissolvingIds,
-                        onDeleteComment = onDeleteComment,
-                        onDissolveStart = onDissolveStart,
-                        onCommentLike = onCommentLike,
-                        onCommentHate = onCommentHate,
-                        likedComments = likedComments,
-                        hatedComments = hatedComments,
-                        onCommentUrlClick = onCommentUrlClick,
-                        onReportComment = onReportComment,
-                        onToggleTopComment = onToggleTopComment,
-                        onCheckCommentFraud = onCheckCommentFraud,
-                        showIdentityDecorations = showIdentityDecorations,
-                        lightweightCommentRendering = false,
-                    )
+                        }
+                    } else {
+                        VideoCommentTab(
+                            listState = listState,
+                            modifier = Modifier.weight(1f),
+                            info = info,
+                            replies = replies,
+                            replyCount = replyCount,
+                            emoteMap = emoteMap,
+                            isRepliesLoading = isRepliesLoading,
+                            isRepliesRefreshing = isRepliesRefreshing,
+                            repliesError = repliesError,
+                            isRepliesEnd = isRepliesEnd,
+                            voteCard = voteCard,
+                            videoTags = videoTags,
+                            onUpClick = onUpClick,
+                            onSubReplyClick = onSubReplyClick,
+                            onCommentReplyClick = onCommentReplyClick,
+                            onLoadMoreReplies = onLoadMoreReplies,
+                            onRefreshReplies = onRefreshReplies,
+                            onImagePreview = { images, index, rect, textContent ->
+                                previewImages = images
+                                previewInitialIndex = index
+                                previewSourceRect = rect
+                                previewTextContent = textContent
+                                showImagePreview = true
+                            },
+                            onTimestampClick = onTimestampClick,
+                            contentPadding = PaddingValues(bottom = 16.dp),
+                            currentMid = currentMid,
+                            showUpFlag = showUpFlag,
+                            dissolvingIds = dissolvingIds,
+                            onDeleteComment = onDeleteComment,
+                            onDissolveStart = onDissolveStart,
+                            onCommentLike = onCommentLike,
+                            onCommentHate = onCommentHate,
+                            likedComments = likedComments,
+                            hatedComments = hatedComments,
+                            onCommentUrlClick = onCommentUrlClick,
+                            onReportComment = onReportComment,
+                            onToggleTopComment = onToggleTopComment,
+                            onCheckCommentFraud = onCheckCommentFraud,
+                            showIdentityDecorations = showIdentityDecorations,
+                            lightweightCommentRendering = false,
+                        )
+                    }
                 }
             }
         }

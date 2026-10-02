@@ -639,8 +639,26 @@ fun BangumiPlayerScreen(
                 setWindowNavigationBarColor(window, Color.Black.toArgb())
             } else {
                 insetsController.show(WindowInsetsCompat.Type.systemBars())
+                insetsController.systemBarsBehavior =
+                    androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
                 setWindowStatusBarColor(window, Color.Transparent.toArgb())
                 setWindowNavigationBarColor(window, Color.Transparent.toArgb())
+            }
+        }
+    }
+
+    //  [修复] 离开番剧页时恢复系统栏：横屏沉浸路径（isFullscreen=true）此前没有
+    //  onDispose，经小窗/深链等非返回手势路径离开会泄漏隐藏的系统栏。
+    if (!view.isInEditMode) {
+        DisposableEffect(Unit) {
+            onDispose {
+                val exitWindow = view.context.findActivity()?.window ?: return@onDispose
+                val exitController = WindowCompat.getInsetsController(exitWindow, view)
+                exitController.show(WindowInsetsCompat.Type.systemBars())
+                exitController.systemBarsBehavior =
+                    androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                setWindowStatusBarColor(exitWindow, Color.Transparent.toArgb())
+                setWindowNavigationBarColor(exitWindow, Color.Transparent.toArgb())
             }
         }
     }
