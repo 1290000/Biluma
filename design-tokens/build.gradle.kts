@@ -18,4 +18,6 @@ android {
 dependencies {
     api(platform(libs.androidx.compose.bom))
     api("androidx.compose.ui:ui-graphics")
+    api("androidx.compose.ui:ui-text")
+    api("androidx.compose.animation:animation-core")
 }
