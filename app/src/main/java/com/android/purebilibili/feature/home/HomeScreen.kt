@@ -1427,15 +1427,19 @@ fun HomeScreen(
         SideEffect {
             val window = (context as? android.app.Activity)?.window ?: return@SideEffect
             val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
-            //  沉浸式播放覆盖层（小窗全屏播放等）隐藏系统栏期间，首页不得抢权恢复，
-            //  否则会打断播放器的沉浸；覆盖层退出时会通过快照自行还原。
+            //  根据背景亮度设置状态栏/导航栏图标颜色。
+            //  [关键] 图标明暗必须在系统栏隐藏时也照常写入：从沉浸播放页返回的瞬间
+            //  系统栏尚未恢复可见，若因此跳过，insets 恢复不会触发重组，图标会停留
+            //  在上一页的明暗（浅色模式下白色图标压白底不可见）。隐藏时写入不可见，
+            //  且沉浸页面的 effect 会在自己的重组中重新 assert，无竞争副作用。
+            insetsController.isAppearanceLightStatusBars = useDarkStatusBarIcons
+            insetsController.isAppearanceLightNavigationBars = isLightBackground
+            //  沉浸式播放覆盖层（小窗全屏播放等）隐藏系统栏期间，首页不得抢权恢复
+            //  系统栏可见性/滑出行为，否则会打断播放器的沉浸；覆盖层退出时会通过
+            //  快照自行还原。仅 show() 与 behavior 需要这层守卫。
             val systemBarsVisible = androidx.core.view.ViewCompat.getRootWindowInsets(view)
                 ?.isVisible(androidx.core.view.WindowInsetsCompat.Type.systemBars()) ?: true
             if (!systemBarsVisible) return@SideEffect
-            //  根据背景亮度设置状态栏图标颜色
-            insetsController.isAppearanceLightStatusBars = useDarkStatusBarIcons
-            //  [修复] 导航栏也需要根据背景亮度设置图标颜色
-            insetsController.isAppearanceLightNavigationBars = isLightBackground
             //  [修复] 从直播/番剧等沉浸页面返回时导航栏可能仍被隐藏，系统栏整体恢复，
             //  并重置滑出行为，避免上一页面遗留 BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             insetsController.systemBarsBehavior =
