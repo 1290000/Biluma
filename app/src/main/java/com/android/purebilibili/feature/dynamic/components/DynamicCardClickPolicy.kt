@@ -407,10 +407,11 @@ internal fun resolveDynamicCardPrimaryAction(item: DynamicItem): DynamicCardPrim
         )?.let { return it }
     }
 
-    major?.live?.id?.trim()?.toLongOrNull()?.takeIf { it > 0L }?.let { roomId ->
+    val live = major?.live
+    live?.id?.trim()?.toLongOrNull()?.takeIf { it > 0L }?.let { roomId ->
         return DynamicCardPrimaryAction.OpenLive(
             roomId = roomId,
-            title = major.live.title.ifBlank { "直播间" },
+            title = live.title.ifBlank { "直播间" },
             uname = target.modules.module_author?.name.orEmpty()
         )
     }

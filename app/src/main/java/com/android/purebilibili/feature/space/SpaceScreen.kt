@@ -246,7 +246,7 @@ import com.android.purebilibili.feature.dynamic.components.prepareImagePreviewSo
 import com.android.purebilibili.feature.dynamic.components.resolveImagePreviewPlaceholderCacheKey
 import com.android.purebilibili.feature.dynamic.components.RepostDialog
 import com.android.purebilibili.feature.list.VideoProgressDisplayState
-import com.android.purebilibili.feature.video.controller.PlaybackProgressManager
+import com.android.purebilibili.core.player.PlaybackProgressManager
 import com.android.purebilibili.core.ui.blur.hazeSourceCompat
 import kotlinx.coroutines.launch
 
@@ -3001,7 +3001,8 @@ private fun SpaceHeaderIdentityInfo(
                 }
             }
 
-            if (userInfo.liveRoom?.liveStatus == 1 && userInfo.liveRoom.url.isNotBlank()) {
+            val liveRoom = userInfo.liveRoom
+            if (liveRoom?.liveStatus == 1 && liveRoom.url.isNotBlank()) {
                 FlowRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3014,15 +3015,15 @@ private fun SpaceHeaderIdentityInfo(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                         onClick = {
-                            val roomId = userInfo.liveRoom.roomId.takeIf { it > 0L }
-                                ?: userInfo.liveRoom.url
+                            val roomId = liveRoom.roomId.takeIf { it > 0L }
+                                ?: liveRoom.url
                                     .substringAfterLast('/')
                                     .substringBefore('?')
                                     .toLongOrNull()
                                 ?: 0L
                             onLiveClick(
                                 roomId,
-                                userInfo.liveRoom.title.ifBlank { userInfo.name },
+                                liveRoom.title.ifBlank { userInfo.name },
                                 userInfo.name
                             )
                         }
@@ -4611,7 +4612,7 @@ private fun SpaceCheeseCard(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         AppText(
-                            text = item.marks.joinToString(" · "),
+                            text = item.marks.orEmpty().joinToString(" · "),
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             style = MaterialTheme.typography.labelSmall
                         )
@@ -4632,7 +4633,7 @@ private fun SpaceCheeseCard(
                 if (!item.status.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     AppText(
-                        text = item.status,
+                        text = item.status.orEmpty(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -5189,9 +5190,10 @@ private fun SpaceHeaderBanner(
                 colorFilter = bannerColorFilter,
                 modifier = Modifier.fillMaxSize()
             )
-            if (item.title != null && item.title.title.isNotBlank()) {
+            if (item.title != null && requireNotNull(item.title).title.isNotBlank()) {
+                val checkedItemTitle = requireNotNull(item.title)
                 SpaceHeaderTitleBadge(
-                    title = item.title,
+                    title = checkedItemTitle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(bottom = 4.dp)

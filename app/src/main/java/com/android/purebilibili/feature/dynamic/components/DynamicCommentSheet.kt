@@ -1335,7 +1335,7 @@ private fun CommentItem(
             if (!reply.content.pictures.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(AppSpacingTokens.Small))
                 CommentPictures(
-                    pictures = reply.content.pictures,
+                    pictures = reply.content.pictures.orEmpty(),
                     onImageClick = { images, index, rect ->
                         onImagePreview(
                             images,
@@ -1445,7 +1445,7 @@ private fun CommentItem(
                                 }
                                 if (!subReply.content.pictures.isNullOrEmpty()) {
                                     CommentPictures(
-                                        pictures = subReply.content.pictures,
+                                        pictures = subReply.content.pictures.orEmpty(),
                                         onImageClick = { images, index, rect ->
                                             onImagePreview(
                                                 images,

@@ -513,7 +513,8 @@ object CommentRepository {
                 readPlan.fallback != null &&
                 shouldFallbackCommentRead(primaryResponse.code)
             ) {
-                val fallbackMode = readPlan.fallback
+                val checkedReadPlanFallback = requireNotNull(readPlan.fallback)
+                val fallbackMode = checkedReadPlanFallback
                 Logger.w(
                     "CommentRepo",
                     "getComments fallback triggered: code=${primaryResponse.code}, from=$primaryMode to=$fallbackMode, oid=$oid, type=$type, page=$page, mode=$mode"
@@ -751,7 +752,8 @@ object CommentRepository {
                 readPlan.fallback != null &&
                 shouldFallbackCommentRead(primaryResponse.code)
             ) {
-                val fallbackMode = readPlan.fallback
+                val checkedReadPlanFallback = requireNotNull(readPlan.fallback)
+                val fallbackMode = checkedReadPlanFallback
                 Logger.w(
                     "CommentRepo",
                     "getSubComments fallback triggered: code=${primaryResponse.code}, from=$primaryMode to=$fallbackMode, oid=$oid, type=$type, root=$rootId, page=$page"
@@ -1074,7 +1076,8 @@ object CommentRepository {
             )
 
             if (response.code == 0 && response.data != null) {
-                val data = response.data
+                val checkedResponseData = requireNotNull(response.data)
+                val data = checkedResponseData
                 Result.success(
                     ReplyPicture(
                         imgSrc = data.imageUrl,

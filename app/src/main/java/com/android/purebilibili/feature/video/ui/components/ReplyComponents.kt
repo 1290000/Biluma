@@ -1691,7 +1691,7 @@ fun ReplyItemView(
                     if (!item.content.pictures.isNullOrEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         CommentPictures(
-                            pictures = item.content.pictures,
+                            pictures = item.content.pictures.orEmpty(),
                             onImageClick = { images, index, rect ->
                                 onImagePreview?.invoke(
                                     images,
