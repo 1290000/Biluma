@@ -39,7 +39,11 @@ HDR preference, codec or Anime4K shader is changed.
 - Phone/tablet/cinema detail hosts own the inline canvas outside the clipped/shared
   player. A separate 48dp bottom gutter is reserved only for supported, enabled
   ambient light; the original video size/aspect is retained. Title/comments start
-  after that gutter. Tablet/cinema hosts also use existing side space for corners.
+  after that gutter. The gutter has a black backing below the glow: its first
+  24% stays black, fades to the theme page background by 85%, and finishes with
+  that background before the tabs. The backing is drawn outside shared-card
+  bounds and hidden by the same transition gate as the glow. Tablet/cinema hosts
+  also use existing side space for corners.
   Fullscreen has no gutter. Transition visibility gates hide the glow without
   adding it to the shared video-card bounds.
 - HDR, Anime4K, audio-only, portrait pager, mini-player, PiP, hidden entries and

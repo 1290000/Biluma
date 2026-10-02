@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import android.graphics.BitmapShader
@@ -76,6 +77,8 @@ internal fun PlayerAmbientGlow(presentation: AmbientPresentation, fullscreen: Bo
                 }
             }
     }
+    val backgroundLuminance = com.android.purebilibili.core.ui.AppSurfaceTokens.background().luminance()
+    val inlineGlowStrength = if (backgroundLuminance > 0.5f) 0.45f else 1f
     Canvas(modifier.onGloballyPositioned { originInWindow = it.positionInWindow() }) {
         val current = presentation.current
         if (current == null) {
@@ -100,9 +103,22 @@ internal fun PlayerAmbientGlow(presentation: AmbientPresentation, fullscreen: Bo
             top = video.top.coerceAtLeast(0f) * 1.25f,
             right = (size.width - video.right).coerceAtLeast(0f) * 1.25f,
             bottom = (size.height - video.bottom).coerceAtLeast(0f) * 1.25f,
-        ) else AmbientGlowInsets.uniform(48.dp.toPx())
-        val opacity = if (fullscreen) (presentation.opacity * 1.6f).coerceAtMost(0.72f)
-            else presentation.opacity
+        //  [内联环境光] 手机详情页视频满宽，顶部/左右本无扩散空间；底部光晕压在
+        //  浅色内容区上读起来像阴影/脏渐变，按反馈取消底部扩散（bottom=0 时
+        //  底边与底角蒙版尺寸为 0，直接跳过绘制）。平板等留白布局的侧面光晕保留。
+        ) else AmbientGlowInsets(
+            left = 30.dp.toPx(),
+            top = 30.dp.toPx(),
+            right = 30.dp.toPx(),
+            bottom = 0f,
+        )
+        val opacity = if (fullscreen) {
+            (presentation.opacity * 1.6f).coerceAtMost(0.72f)
+        } else {
+            //  [内联环境光] 浅色背景下光晕是"深色压白底"，读起来像污渍而非光；
+            //  降档保留氛围，深色主题维持原强度。
+            presentation.opacity * inlineGlowStrength
+        }
         // The host owns real layout space; no drawing behind the title/comments.
         clipRect(0f, 0f, size.width, size.height) {
             clipRect(video.left, video.top, video.right, video.bottom, ClipOp.Difference) {
@@ -175,17 +191,13 @@ private class AmbientEdgePainter {
         }
         fun position(shader: BitmapShader?, image: androidx.compose.ui.graphics.ImageBitmap?, region: AmbientEdgeRegion) {
             if (shader == null || image == null) return
-            if (fullscreen) {
-                // The existing Gaussian blur averages a neighborhood around this interior
-                // strip. Do not clamp a dark outermost column across the entire black bar.
-                sourceRect.set(region.source.left * image.width, region.source.top * image.height,
-                    region.source.right * image.width, region.source.bottom * image.height)
-                destinationRect.set(region.bounds.left, region.bounds.top, region.bounds.right, region.bounds.bottom)
-                matrix.setRectToRect(sourceRect, destinationRect, Matrix.ScaleToFit.FILL)
-            } else {
-                matrix.setScale(video.width / image.width, video.height / image.height)
-                matrix.postTranslate(video.left, video.top)
-            }
+            //  [内联环境光] 统一使用内侧条带采样（全屏模式同款）：把每条边内侧 10–22%
+            //  的模糊条带映射到对应扩散区域，保住边缘色彩；此前内联把整帧拉伸到视频
+            //  矩形，底部光晕颜色取决于模糊帧底部几行，容易采出一坨无色彩倾向的灰。
+            sourceRect.set(region.source.left * image.width, region.source.top * image.height,
+                region.source.right * image.width, region.source.bottom * image.height)
+            destinationRect.set(region.bounds.left, region.bounds.top, region.bounds.right, region.bounds.bottom)
+            matrix.setRectToRect(sourceRect, destinationRect, Matrix.ScaleToFit.FILL)
             shader.setLocalMatrix(matrix)
         }
         if (maskVideo != video || maskSpread != spread || maskFullscreen != fullscreen) {
@@ -222,9 +234,10 @@ private class AmbientEdgePainter {
         val white = android.graphics.Color.WHITE
         val clear = android.graphics.Color.TRANSPARENT
         // Retain most of the light close to the video; decay towards the screen edge.
-        val colors = if (fullscreen) intArrayOf(white, 0xf5ffffff.toInt(), 0xa0ffffff.toInt(), clear)
-            else intArrayOf(white, clear)
-        val stops = if (fullscreen) floatArrayOf(0f, 0.45f, 0.8f, 1f) else floatArrayOf(0f, 1f)
+        //  [内联环境光] 统一使用 4 色标衰减曲线（贴边 45% 基本不衰减，尾部才散开）；
+        //  此前内联是 white→clear 一路线性渐变，看起来像阴影而非光。
+        val colors = intArrayOf(white, 0xf5ffffff.toInt(), 0xa0ffffff.toInt(), clear)
+        val stops = floatArrayOf(0f, 0.45f, 0.8f, 1f)
         val l = video.left; val t = video.top; val r = video.right; val b = video.bottom
         val sl = spread.left; val st = spread.top; val sr = spread.right; val sb = spread.bottom
         return buildList {
