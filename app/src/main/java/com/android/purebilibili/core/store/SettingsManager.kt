@@ -1392,6 +1392,7 @@ object SettingsManager {
     private val KEY_PLAYER_PROGRESS_PLACEMENT = intPreferencesKey("player_progress_placement")
     private val KEY_SEARCH_HOT_SECTION_ENABLED = booleanPreferencesKey("search_hot_section_enabled")
     private val KEY_SEARCH_DISCOVER_SECTION_ENABLED = booleanPreferencesKey("search_discover_section_enabled")
+    private val KEY_SEARCH_SUGGESTIONS_ENABLED = booleanPreferencesKey("search_suggestions_enabled")
     //  [新增] 双击跳转秒数 (可分开设置快进和后退)
     private val KEY_DOUBLE_TAP_SEEK_ENABLED = booleanPreferencesKey("double_tap_seek_enabled")
     private val KEY_SEEK_FORWARD_SECONDS = intPreferencesKey("seek_forward_seconds")
@@ -1667,6 +1668,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_LAST_AUTO_CACHE_CLEAR_AT = longPreferencesKey("last_auto_cache_clear_at")
     private val KEY_COMMENT_MEMBER_DECORATIONS_ENABLED =
         booleanPreferencesKey("comment_member_decorations_enabled")
+    private val KEY_DETAILED_COMMENT_TIME_ENABLED =
+        booleanPreferencesKey("detailed_comment_time_enabled")
     private val KEY_SUB_REPLY_LOADED_COUNT_ENABLED =
         booleanPreferencesKey("sub_reply_loaded_count_enabled")
     private val KEY_IMAGE_PREVIEW_LONG_PRESS_SAVE_ENABLED =
@@ -3791,11 +3794,28 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         context.settingsDataStore.edit { preferences -> preferences[KEY_SEARCH_HOT_SECTION_ENABLED] = value }
     }
 
+    internal fun resolveSearchDiscoverSectionEnabled(preferences: Preferences): Boolean =
+        preferences[KEY_SEARCH_DISCOVER_SECTION_ENABLED] ?: true
+
+    internal fun resolveSearchSuggestionsEnabled(preferences: Preferences): Boolean =
+        preferences[KEY_SEARCH_SUGGESTIONS_ENABLED] ?: true
+
+    fun getSearchSuggestionsEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
+        .map(::resolveSearchSuggestionsEnabled)
+
+    suspend fun setSearchSuggestionsEnabled(context: Context, value: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_SEARCH_SUGGESTIONS_ENABLED] = value
+        }
+    }
+
     fun getSearchDiscoverSectionEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SEARCH_DISCOVER_SECTION_ENABLED] ?: true }
+        .map(::resolveSearchDiscoverSectionEnabled)
 
     suspend fun setSearchDiscoverSectionEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences -> preferences[KEY_SEARCH_DISCOVER_SECTION_ENABLED] = value }
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_SEARCH_DISCOVER_SECTION_ENABLED] = value
+        }
     }
     
     //  [新增] --- 底栏显示模式 (0=图标+文字, 1=仅图标, 2=仅文字) ---
@@ -6200,6 +6220,16 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         }
     }
 
+    fun getDetailedCommentTimeEnabled(context: Context): Flow<Boolean> =
+        context.settingsDataStore.data
+            .map { preferences -> preferences[KEY_DETAILED_COMMENT_TIME_ENABLED] ?: false }
+
+    suspend fun setDetailedCommentTimeEnabled(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_DETAILED_COMMENT_TIME_ENABLED] = enabled
+        }
+    }
+
     fun getSubReplyLoadedCountEnabled(context: Context): Flow<Boolean> =
         context.settingsDataStore.data
             .map { preferences -> preferences[KEY_SUB_REPLY_LOADED_COUNT_ENABLED] ?: false }
@@ -6352,15 +6382,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_PRIVACY_CONTENT_AUTHENTICATION_ENABLED =
         booleanPreferencesKey("privacy_content_authentication_enabled")
     
-    private val KEY_SEARCH_SUGGESTIONS_ENABLED = booleanPreferencesKey("search_suggestions_enabled")
-
-    fun getSearchSuggestionsEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SEARCH_SUGGESTIONS_ENABLED] ?: true }
-
-    suspend fun setSearchSuggestionsEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { it[KEY_SEARCH_SUGGESTIONS_ENABLED] = value }
-    }
-
     // --- 不记录播放历史和搜索历史 ---
     fun getPrivacyModeEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_PRIVACY_MODE_ENABLED] ?: false }  // 默认关闭
@@ -8137,6 +8158,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             IntShareablePreferenceDefinition(KEY_COMMENT_DEFAULT_SORT_MODE, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_COMMENT_FRAUD_DETECTION_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_COMMENT_MEMBER_DECORATIONS_ENABLED, SettingsShareSection.PLAYBACK),
+            BooleanShareablePreferenceDefinition(KEY_DETAILED_COMMENT_TIME_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_IMAGE_PREVIEW_LONG_PRESS_SAVE_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_IMAGE_PREVIEW_3D_PAGE_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_STOP_PLAYBACK_ON_EXIT, SettingsShareSection.PLAYBACK),

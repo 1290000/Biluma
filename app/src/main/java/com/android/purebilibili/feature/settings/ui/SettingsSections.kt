@@ -1311,8 +1311,8 @@ fun PrivacySection(
 
         SettingSwitchItem(
             icon = visibilityOffIcon,
-            title = "搜索推荐词",
-            subtitle = "在搜索页显示关注更新和推荐词（如关注 UP 主更新等），默认开启",
+            title = "个性化搜索推荐",
+            subtitle = "开启时使用官方搜索推荐；关闭后改用公开热搜词",
             checked = searchSuggestionsEnabled,
             onCheckedChange = onSearchSuggestionsChange,
             iconTint = siblingTints[0],

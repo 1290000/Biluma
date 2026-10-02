@@ -109,6 +109,14 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         focusId = SettingsSearchFocusIds.PLAYBACK_INTERACTION,
     ),
     SettingsSearchEntry(
+        target = SettingsSearchTarget.INTERACTION_COMMENT,
+        title = "详细评论时间显示",
+        subtitle = "开启后始终显示 yyyy-MM-dd HH:mm；关闭后按相对时间显示",
+        section = "设置",
+        aliases = listOf("评论时间", "详细评论时间", "评论发布时间", "完整时间", "绝对时间"),
+        focusId = SettingsSearchFocusIds.PLAYBACK_INTERACTION,
+    ),
+    SettingsSearchEntry(
         target = SettingsSearchTarget.DATA_BACKUP,
         title = "数据与备份",
         subtitle = "设置分享、WebDAV、下载位置与清除缓存",
@@ -120,7 +128,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "隐私与权限",
         subtitle = "隐私无痕、权限管理与黑名单",
         section = "设置",
-        aliases = listOf("搜索框默认词", "搜索框推荐词", "默认搜索词", "一小时前搜索", "搜索提示", "搜索推荐词", "搜索发现推荐", "推荐词", "搜索联想词", "搜索建议", "联想开关", "隐私", "无痕", "权限", "权限管理", "黑名单", "屏蔽", "拉黑")
+        aliases = listOf("搜索框默认词", "搜索框推荐词", "默认搜索词", "一小时前搜索", "搜索提示", "个性化搜索推荐", "搜索推荐词", "推荐词", "搜索联想词", "搜索建议", "联想开关", "隐私", "无痕", "权限", "权限管理", "黑名单", "屏蔽", "拉黑")
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.DIAGNOSTICS,

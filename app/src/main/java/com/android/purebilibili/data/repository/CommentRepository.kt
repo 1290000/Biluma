@@ -33,6 +33,23 @@ import okio.BufferedSink
 import okio.source
 import java.util.TreeMap
 
+private val COMMENT_STANDARD_EMOTE_IDS = listOf(1L, 2L, 53L, 4L)
+
+internal fun mergeCommentEmotePackages(
+    userData: EmoteData?,
+    standardPackages: List<EmotePackage>,
+): List<EmotePackage> {
+    val userPackages = userData?.packages?.takeIf { it.isNotEmpty() }
+        ?: userData?.all_packages.orEmpty()
+    val packages = userPackages.associateByTo(linkedMapOf()) { it.id }
+    standardPackages.forEach { pkg ->
+        if (packages[pkg.id]?.emote.isNullOrEmpty()) {
+            packages[pkg.id] = pkg
+        }
+    }
+    return packages.values.toList()
+}
+
 /**
  * 评论相关数据仓库
  * 从 VideoRepository 拆分出来，专注于评论功能
@@ -831,15 +848,9 @@ object CommentRepository {
         map["[doge]"] = "http://i0.hdslb.com/bfs/emote/6f8743c3c13009f4705307b2750e32f5068225e3.png"
         map["[笑哭]"] = "http://i0.hdslb.com/bfs/emote/500b63b2f293309a909403a746566fdd6104d498.png"
         map["[妙啊]"] = "http://i0.hdslb.com/bfs/emote/03c39c8eb009f63568971032b49c716259c72441.png"
-        try {
-            val params = mutableMapOf("business" to "reply")
-            
-            val response = api.getEmotes(params)
-            val packages = response.data?.packages ?: response.data?.all_packages
-            packages?.forEach { pkg ->
-                pkg.emote?.forEach { emote -> map[emote.text] = emote.url }
-            }
-        } catch (e: Exception) { e.printStackTrace() }
+        getEmotePackages().getOrNull()?.forEach { pkg ->
+            pkg.emote?.forEach { emote -> map[emote.text] = emote.url }
+        }
         map
     }
 
@@ -848,16 +859,32 @@ object CommentRepository {
      */
     suspend fun getEmotePackages(): Result<List<EmotePackage>> = withContext(Dispatchers.IO) {
         try {
-            val params = mutableMapOf("business" to "reply")
-            
-            val response = api.getEmotes(params)
-            if (response.code == 0) {
-                val data = response.data
-                val pkgs = data?.packages ?: data?.all_packages ?: emptyList()
-                Result.success(pkgs)
-            } else {
-                Result.failure(Exception(response.message))
+            val response = api.getEmotes(mapOf("business" to "reply"))
+            val userData = if (response.code == 0) response.data else null
+            val userPackages = userData?.packages?.takeIf { it.isNotEmpty() }
+                ?: userData?.all_packages.orEmpty()
+            val missingIds = COMMENT_STANDARD_EMOTE_IDS.filter { id ->
+                userPackages.none { it.id == id && !it.emote.isNullOrEmpty() }
             }
+            if (missingIds.isEmpty()) {
+                return@withContext Result.success(userPackages)
+            }
+
+            // 用户面板可能成功返回空列表；从 B 站明细接口取回缺失的原始基础包。
+            val details = api.getEmotePackageDetails(
+                mapOf("business" to "reply", "ids" to missingIds.joinToString(","))
+            )
+            if (details.code != 0) {
+                return@withContext Result.failure(Exception(details.message))
+            }
+            val packages = mergeCommentEmotePackages(userData, details.data?.packages.orEmpty())
+            if (missingIds.any { id -> packages.none { it.id == id && !it.emote.isNullOrEmpty() } }) {
+                Result.failure(Exception("基础表情包加载失败"))
+            } else {
+                Result.success(packages)
+            }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

@@ -93,6 +93,7 @@ import com.android.purebilibili.feature.video.viewmodel.VideoEngagementUiState
 import com.android.purebilibili.feature.video.viewmodel.VideoPlaybackUiState
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import com.android.purebilibili.core.ui.AdaptivePullToRefreshBox
 import com.android.purebilibili.core.ui.AdaptiveLoadingIndicator
 import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
 import com.android.purebilibili.core.ui.motion.AppMotionEasing
@@ -1007,7 +1008,15 @@ internal fun TabletSecondaryContent(
             when (tabs[page]) {
                 TabletSecondaryTab.COMMENTS -> {
                     val listState = rememberLazyListState()
-                    val shouldLoadMore by remember(listState) {
+                    val repliesError = commentState.repliesError
+                    val shouldLoadMore by remember(
+                        listState,
+                        commentState.isRepliesLoading,
+                        commentState.isRepliesRefreshing,
+                        repliesError,
+                        commentState.isRepliesEnd,
+                        commentState.replies.size,
+                    ) {
                         derivedStateOf {
                             val layoutInfo = listState.layoutInfo
                             val totalItems = layoutInfo.totalItemsCount
@@ -1018,12 +1027,16 @@ internal fun TabletSecondaryContent(
                     LaunchedEffect(
                         shouldLoadMore,
                         commentState.isRepliesLoading,
+                        commentState.isRepliesRefreshing,
+                        repliesError,
                         commentState.isRepliesEnd,
                         commentState.replies.size,
                     ) {
                         if (
                             shouldLoadMore &&
                             !commentState.isRepliesLoading &&
+                            !commentState.isRepliesRefreshing &&
+                            repliesError == null &&
                             !commentState.isRepliesEnd
                         ) {
                             commentActions.loadComments()
@@ -1037,6 +1050,7 @@ internal fun TabletSecondaryContent(
                             emoteMap = success.emoteMap,
                             maxTimestampMs = success.videoDurationMs.takeIf { it > 0L },
                             onLoadMore = commentActions.loadMoreSubReplies,
+                            onRefresh = commentActions.refreshSubReplies,
                             onSortModeChange = commentActions.setSubReplySortMode,
                             onDismiss = commentActions.closeSubReply,
                             onRootCommentClick = playbackActions.openRootCommentComposer,
@@ -1080,7 +1094,12 @@ internal fun TabletSecondaryContent(
                                 onSearchClick = { showCommentSearchSheet = true },
                             )
                             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                            LazyColumn(
+                            AdaptivePullToRefreshBox(
+                                isRefreshing = commentState.isRepliesRefreshing,
+                                onRefresh = commentActions.refreshComments,
+                                modifier = Modifier.fillMaxSize(),
+                            ) {
+                                LazyColumn(
                                 state = listState,
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -1098,6 +1117,26 @@ internal fun TabletSecondaryContent(
                                         card = card,
                                         modifier = Modifier.fillMaxWidth().padding(12.dp),
                                     )
+                                }
+                            }
+                            if (repliesError != null) {
+                                item(key = "tablet_comment_refresh_error") {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        AppText(
+                                            text = repliesError,
+                                            color = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                        AppTextButton(onClick = commentActions.refreshComments) {
+                                            AppText("重试")
+                                        }
+                                    }
                                 }
                             }
                             items(
@@ -1154,11 +1193,18 @@ internal fun TabletSecondaryContent(
                                     )
                                 }
                             }
-                            if (commentState.isRepliesLoading && commentState.replies.isEmpty()) {
+                            if (
+                                commentState.isRepliesLoading &&
+                                !commentState.isRepliesRefreshing &&
+                                commentState.replies.isEmpty()
+                            ) {
                                 item(key = "tablet_comment_skeleton") {
                                     com.android.purebilibili.core.ui.skeleton.CommentListColumnSkeleton()
                                 }
-                            } else if (commentState.isRepliesLoading) {
+                            } else if (
+                                commentState.isRepliesLoading &&
+                                !commentState.isRepliesRefreshing
+                            ) {
                                 item {
                                     Box(
                                         modifier = Modifier
@@ -1171,8 +1217,14 @@ internal fun TabletSecondaryContent(
                                 }
                             }
                             }
+                            }
 
-                        if (commentState.replies.isEmpty() && !commentState.isRepliesLoading) {
+                        if (
+                            commentState.replies.isEmpty() &&
+                            !commentState.isRepliesLoading &&
+                            !commentState.isRepliesRefreshing &&
+                            repliesError == null
+                        ) {
                             Column(
                                 modifier = Modifier
                                     .align(Alignment.Center)

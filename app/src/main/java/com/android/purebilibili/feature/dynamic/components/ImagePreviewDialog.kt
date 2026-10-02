@@ -71,6 +71,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import coil3.compose.AsyncImage
+import coil3.Image
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -209,6 +210,23 @@ fun isImagePreviewSourceHidden(
     return sourceRect.inflate(8f).contains(bounds.center)
 }
 
+@Composable
+internal fun rememberImagePreviewSourceImage(sourceKey: String): Image? {
+    val sourceImages by ImagePreviewOverlayController.sourceImages.collectAsStateWithLifecycle()
+    var retainedImage by remember(sourceKey) { mutableStateOf<Image?>(null) }
+    val sourceImage = sourceImages[sourceKey]
+    if (sourceImage != null && retainedImage !== sourceImage) {
+        SideEffect { retainedImage = sourceImage }
+    }
+    return sourceImage ?: retainedImage
+}
+
+@Composable
+internal fun isImagePreviewOpen(): Boolean {
+    val request by ImagePreviewOverlayController.request.collectAsStateWithLifecycle()
+    return request != null
+}
+
 internal fun prepareImagePreviewSourceTransition(
     sourceRect: androidx.compose.ui.geometry.Rect?,
     sourceKey: String? = null,
@@ -221,9 +239,21 @@ private object ImagePreviewOverlayController {
     private val _activeSourceRect = MutableStateFlow<androidx.compose.ui.geometry.Rect?>(null)
     private val _preparedSourceRect = MutableStateFlow<androidx.compose.ui.geometry.Rect?>(null)
     private val _activeSourceKey = MutableStateFlow<String?>(null)
+    private val _sourceImages = MutableStateFlow<Map<String, Image>>(emptyMap())
     val request = _request.asStateFlow()
     val activeSourceRect = _activeSourceRect.asStateFlow()
     val activeSourceKey = _activeSourceKey.asStateFlow()
+    val sourceImages = _sourceImages.asStateFlow()
+
+    fun recordSourceImage(token: Long, sourceKey: String, image: Image) {
+        if (_request.value?.token != token) return
+        // Keep only the current pager window; source tiles retain their own image reference.
+        val images = LinkedHashMap(_sourceImages.value)
+        images.remove(sourceKey)
+        images[sourceKey] = image
+        if (images.size > 3) images.remove(images.keys.first())
+        _sourceImages.value = images
+    }
 
     fun prepareSourceTransition(
         sourceRect: androidx.compose.ui.geometry.Rect?,
@@ -237,6 +267,7 @@ private object ImagePreviewOverlayController {
     }
 
     fun show(request: ImagePreviewOverlayRequest) {
+        _sourceImages.value = emptyMap()
         val activeSourceRect = request.activeSourceRect ?: _preparedSourceRect.value
         _request.value = request.copy(activeSourceRect = activeSourceRect)
         // 不在这里发布 activeSourceRect：Dialog 窗口要晚 1-2 帧才画出第一帧，
@@ -271,6 +302,7 @@ private object ImagePreviewOverlayController {
             _activeSourceRect.value = null
             _preparedSourceRect.value = null
             _activeSourceKey.value = null
+            _sourceImages.value = emptyMap()
         }
     }
 
@@ -1135,7 +1167,7 @@ private fun ImagePreviewOverlayContent(
                                 }
                             )
                         }
-                        val previewRequest = remember(context, imageUrl, decodeSize, placeholderCacheKey) {
+                        val previewRequest = remember(context, imageUrl, decodeSize, placeholderCacheKey, requestToken) {
                             ImageRequest.Builder(context)
                                 .data(imageUrl)
                                 // 预览必须采样解码，避免超大原图超过 Canvas 单位图绘制上限。
@@ -1144,6 +1176,17 @@ private fun ImagePreviewOverlayContent(
                                 .httpHeaders(NetworkHeaders.Builder().set("Referer", "https://www.bilibili.com/").build())
                                 // 进出场由画廊自身的 morph 控制，图片请求不能随退出状态重建。
                                 .crossfade(false)
+                                .listener(
+                                    onSuccess = { _, result ->
+                                        if (placeholderCacheKey != null) {
+                                            ImagePreviewOverlayController.recordSourceImage(
+                                                requestToken,
+                                                placeholderCacheKey,
+                                                result.image,
+                                            )
+                                        }
+                                    }
+                                )
                                 .build()
                         }
 
