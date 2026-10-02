@@ -1381,6 +1381,9 @@ private fun PlaybackInteractionSettingsSection(
     val commentMemberDecorationsEnabled by com.android.purebilibili.core.store.SettingsManager
         .getCommentMemberDecorationsEnabled(context)
         .collectAsStateWithLifecycle(initialValue = false)
+    val detailedCommentTimeEnabled by SettingsManager
+        .getDetailedCommentTimeEnabled(context)
+        .collectAsStateWithLifecycle(initialValue = false)
     val subReplyLoadedCountEnabled by com.android.purebilibili.core.store.SettingsManager
         .getSubReplyLoadedCountEnabled(context)
         .collectAsStateWithLifecycle(initialValue = false)
@@ -1619,6 +1622,19 @@ private fun PlaybackInteractionSettingsSection(
                     modifier = Modifier.size(24.dp),
                 )
             },
+        )
+        AppPreferenceDivider()
+        AppSwitchPreference(
+            icon = rememberSettingsSemanticIcon(SettingsIconRole.COMMENT_DECORATION),
+            title = "详细评论时间显示",
+            subtitle = "开启后始终显示 yyyy-MM-dd HH:mm；关闭后按相对时间显示",
+            checked = detailedCommentTimeEnabled,
+            onCheckedChange = { enabled ->
+                scope.launch {
+                    SettingsManager.setDetailedCommentTimeEnabled(context, enabled)
+                }
+            },
+            iconTint = iOSTeal,
         )
         AppPreferenceDivider()
         AppSwitchPreference(

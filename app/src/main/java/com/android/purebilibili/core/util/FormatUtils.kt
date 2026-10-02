@@ -10,6 +10,8 @@ object FormatUtils {
     private const val DEFAULT_IMAGE_HEIGHT = 400
     private const val COVER_IMAGE_LOW_WIDTH = 240
     private const val COVER_IMAGE_LOW_HEIGHT = 150
+    private val detailedCommentTimeFormatter =
+        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT)
 
     /**
      * 将数字格式化为 B站风格 (例如: 1.2万)
@@ -108,7 +110,7 @@ object FormatUtils {
     
     /**
      *  格式化发布时间 (相对时间 + 日期)
-     * PiliPlus 全局视频发布时间规则，例如: "3小时前" / "昨天 18:30" / "08-20"
+     * PiliPlus 视频与评论共用规则，例如: "3小时前" / "昨天 18:30" / "08-20"
      */
     fun formatPublishTime(
         timestampSeconds: Long,
@@ -146,6 +148,25 @@ object FormatUtils {
         return java.time.format.DateTimeFormatter
             .ofPattern(pattern, locale)
             .format(published)
+    }
+
+    /**
+     * 评论时间：详细模式固定显示本地年月日时分，否则沿用 PiliPlus 相对时间规则。
+     */
+    fun formatCommentTime(
+        timestampSeconds: Long,
+        detailedTimeEnabled: Boolean,
+        nowMs: Long = System.currentTimeMillis(),
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+        locale: Locale = Locale.getDefault(),
+    ): String {
+        if (timestampSeconds <= 0L) return ""
+        if (!detailedTimeEnabled) {
+            return formatPublishTime(timestampSeconds, nowMs, zoneId, locale)
+        }
+        return detailedCommentTimeFormatter.format(
+            java.time.Instant.ofEpochSecond(timestampSeconds).atZone(zoneId)
+        )
     }
 
     fun formatPrecisePublishTime(

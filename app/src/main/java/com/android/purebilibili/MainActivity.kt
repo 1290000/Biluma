@@ -83,6 +83,7 @@ import androidx.window.layout.WindowMetrics
 import androidx.window.layout.WindowMetricsCalculator
 import coil3.compose.AsyncImage
 import com.android.purebilibili.core.store.SettingsManager
+import com.android.purebilibili.core.ui.LocalDetailedCommentTimeEnabled
 import com.android.purebilibili.core.coroutines.AppScope
 
 import com.android.purebilibili.core.theme.LocalDisplayMetricsSnapshot
@@ -1368,6 +1369,9 @@ open class MainActivity : AppCompatActivity() {
             val globalTextTapCopyEnabled by SettingsManager
                 .getGlobalTextTapCopyEnabled(context)
                 .collectAsStateWithLifecycle(initialValue = false)
+            val detailedCommentTimeEnabled by remember(context) {
+                SettingsManager.getDetailedCommentTimeEnabled(context)
+            }.collectAsStateWithLifecycle(initialValue = false)
             val uiEntranceAnimationEnabled by SettingsManager
                 .getUiEntranceAnimationEnabled(context)
                 .collectAsStateWithLifecycle(initialValue = true)
@@ -1511,6 +1515,7 @@ open class MainActivity : AppCompatActivity() {
                     //  📐 [平板适配] 提供全局 WindowSizeClass
                     CompositionLocalProvider(
                         LocalDensity provides effectiveDensity,
+                        LocalDetailedCommentTimeEnabled provides detailedCommentTimeEnabled,
                         LocalWindowSizeClass provides windowSizeClass,
                         LocalAppWindowAdaptiveInfo provides appWindowAdaptiveInfo,
                         com.android.purebilibili.core.ui.LocalHingeSafeOverlayRegions provides

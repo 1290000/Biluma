@@ -630,7 +630,8 @@ fun BangumiPlayerContent(
                                 previewIndex = index
                                 previewSourceRect = rect
                                 previewTextContent = textContent
-                            }
+                            },
+                            onRefresh = commentViewModel::refreshComments,
                         )
                     } else {
                         Box(
@@ -698,6 +699,7 @@ fun BangumiPlayerContent(
         onDismiss = commentViewModel::closeSubReply,
         onCoveredBlurProgressChange = { subReplyCoveredBlurProgress.floatValue = it },
         onLoadMore = commentViewModel::loadMoreSubReplies,
+        onRefresh = commentViewModel::refreshSubReplies,
         onSortModeChange = commentViewModel::setSubReplySortMode,
         onCommentLike = commentViewModel::likeComment,
         likedComments = commentState.likedComments,

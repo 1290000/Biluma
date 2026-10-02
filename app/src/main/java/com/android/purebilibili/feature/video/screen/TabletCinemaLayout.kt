@@ -53,6 +53,7 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.KeyboardDoubleArrowLeft
 import androidx.compose.material.icons.outlined.KeyboardDoubleArrowRight
 import androidx.compose.material.icons.outlined.PlaylistPlay
+import com.android.purebilibili.core.ui.AdaptivePullToRefreshBox
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppIconButton
 import com.android.purebilibili.core.ui.rememberBackToTopButtonEnabled
@@ -61,6 +62,7 @@ import com.android.purebilibili.feature.video.ui.components.shouldShowVideoComme
 import androidx.compose.material3.MaterialTheme
 import com.android.purebilibili.core.ui.components.AppSurface
 import com.android.purebilibili.core.ui.components.AppText
+import com.android.purebilibili.core.ui.components.AppTextButton
 import com.android.purebilibili.core.ui.common.verticalPriorityHorizontalPagerSwipe
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -1307,12 +1309,29 @@ private fun CinemaCommentsPane(
         derivedStateOf {
             val totalItems = listState.layoutInfo.totalItemsCount
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            totalItems > 0 && lastVisibleItem >= totalItems - 3 && !commentState.isRepliesLoading
+            totalItems > 0 &&
+                lastVisibleItem >= totalItems - 3 &&
+                !commentState.isRepliesLoading &&
+                !commentState.isRepliesRefreshing &&
+                commentState.repliesError == null
         }
     }
 
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) {
+    LaunchedEffect(
+        shouldLoadMore,
+        commentState.isRepliesLoading,
+        commentState.isRepliesRefreshing,
+        commentState.repliesError,
+        commentState.isRepliesEnd,
+        commentState.replies.size,
+    ) {
+        if (
+            shouldLoadMore &&
+            !commentState.isRepliesLoading &&
+            !commentState.isRepliesRefreshing &&
+            commentState.repliesError == null &&
+            !commentState.isRepliesEnd
+        ) {
             commentActions.loadComments()
         }
     }
@@ -1340,6 +1359,7 @@ private fun CinemaCommentsPane(
             emoteMap = success.emoteMap,
             maxTimestampMs = success.videoDurationMs.takeIf { it > 0L },
             onLoadMore = commentActions.loadMoreSubReplies,
+            onRefresh = commentActions.refreshSubReplies,
             onSortModeChange = commentActions.setSubReplySortMode,
             onDismiss = commentActions.closeSubReply,
             onRootCommentClick = playbackActions.openRootCommentComposer,
@@ -1382,19 +1402,45 @@ private fun CinemaCommentsPane(
                 onSearchClick = { showCommentSearchSheet = true },
             )
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .layerBackdrop(commentChromeBackdrop),
-                contentPadding = PaddingValues(bottom = 112.dp)
+            AdaptivePullToRefreshBox(
+                isRefreshing = commentState.isRepliesRefreshing,
+                onRefresh = commentActions.refreshComments,
+                modifier = Modifier.fillMaxSize(),
             ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .layerBackdrop(commentChromeBackdrop),
+                    contentPadding = PaddingValues(bottom = 112.dp)
+                ) {
             commentState.voteCard?.let { card ->
                 item(key = "curtain_vote_${card.voteId}") {
                     com.android.purebilibili.feature.video.ui.components.VideoCommentVoteCard(
                         card = card,
                         modifier = Modifier.fillMaxWidth().padding(12.dp),
                     )
+                }
+            }
+            val repliesError = commentState.repliesError
+            if (repliesError != null) {
+                item(key = "cinema_comment_refresh_error") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        AppText(
+                            text = repliesError,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        AppTextButton(onClick = commentActions.refreshComments) {
+                            AppText("重试")
+                        }
+                    }
                 }
             }
             items(
@@ -1447,11 +1493,15 @@ private fun CinemaCommentsPane(
                     }
                 )
             }
-            if (commentState.isRepliesLoading && commentState.replies.isEmpty()) {
+            if (
+                commentState.isRepliesLoading &&
+                !commentState.isRepliesRefreshing &&
+                commentState.replies.isEmpty()
+            ) {
                 item(key = "cinema_comment_skeleton") {
                     com.android.purebilibili.core.ui.skeleton.CommentListColumnSkeleton()
                 }
-            } else if (commentState.isRepliesLoading) {
+            } else if (commentState.isRepliesLoading && !commentState.isRepliesRefreshing) {
                 item {
                     Box(
                         modifier = Modifier
@@ -1463,7 +1513,12 @@ private fun CinemaCommentsPane(
                     }
                 }
             }
-            if (commentState.replies.isEmpty() && !commentState.isRepliesLoading) {
+            if (
+                commentState.replies.isEmpty() &&
+                !commentState.isRepliesLoading &&
+                !commentState.isRepliesRefreshing &&
+                commentState.repliesError == null
+            ) {
                 item {
                     Box(
                         modifier = Modifier
@@ -1478,6 +1533,7 @@ private fun CinemaCommentsPane(
                         )
                     }
                 }
+            }
             }
             }
 
