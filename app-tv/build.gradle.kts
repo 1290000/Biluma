@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":design-tokens"))
     implementation(project(":core-data"))
     implementation(project(":core-player"))
+    implementation(project(":danmaku-engine"))
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.compose.foundation:foundation")

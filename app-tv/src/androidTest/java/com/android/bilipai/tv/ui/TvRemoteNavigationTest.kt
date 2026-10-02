@@ -90,4 +90,24 @@ class TvRemoteNavigationTest {
         }
         compose.onNodeWithTag("video:BV-second").assertIsFocused()
     }
+
+    @Test fun scrollingNearTheEndLoadsTheNextPageAutomatically() {
+        val catalog = mutableStateOf(TvCatalogState(items = listOf(first, second)))
+        var loads = 0
+        compose.setContent {
+            TvTheme {
+                TvVideoGrid(catalog.value, remember { FocusRequester() }, remember { FocusRequester() },
+                    onOpen = {}, onFocused = {}, onScroll = { _, _ -> },
+                    canLoadMore = true, onLoadMore = { loads++ })
+            }
+        }
+        // 两项不足以填满一行：末行可见即触发一次自动分页
+        compose.waitUntil(5_000) { loads > 0 }
+        compose.runOnIdle {
+            loads = 0
+            catalog.value = catalog.value.copy(items = catalog.value.items + VideoItem(bvid = "BV-third", title = "第三个视频"))
+        }
+        compose.onNodeWithTag("video:BV-third").assertExists()
+        compose.runOnIdle { check(loads == 0) { "内容更新不应重复触发分页" } }
+    }
 }

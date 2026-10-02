@@ -56,7 +56,7 @@ import kotlinx.coroutines.isActive
 private enum class PlayerDialog { Quality, Speed, Episodes }
 
 @Composable
-internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Boolean, onCheckpoint: (SharedPlaybackState) -> Unit, onBack: (SharedPlaybackState) -> Unit) {
+internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Boolean, danmakuEnabled: Boolean, onCheckpoint: (SharedPlaybackState) -> Unit, onBack: (SharedPlaybackState) -> Unit) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val session = remember { SharedPlaybackSession(context) }
@@ -189,6 +189,9 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
             descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
             keepScreenOn = true
         } }, update = { it.player = session.player }, modifier = Modifier.fillMaxSize())
+        if (danmakuEnabled && state.status != PlaybackStatus.Failed) {
+            TvDanmakuOverlay(session = session, state = state, cid = cid, modifier = Modifier.fillMaxSize())
+        }
         // A pointer has its own activation surface; the native video view never owns D-pad focus.
         if (!controls && state.status != PlaybackStatus.Failed) Box(Modifier.fillMaxSize().clickable { interact(); controls = true })
         if (state.status == PlaybackStatus.Loading || state.buffering) {

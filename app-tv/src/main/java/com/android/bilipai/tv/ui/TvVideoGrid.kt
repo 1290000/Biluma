@@ -4,12 +4,8 @@ package com.android.bilipai.tv.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -23,14 +19,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Card
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
-import coil3.compose.AsyncImage
+import com.android.bilipai.tv.ui.components.TvVideoCard
 import com.android.bilipai.tv.TvCatalogState
 import com.android.bilipai.tv.tvId
 import com.android.purebilibili.data.model.response.VideoItem
@@ -42,6 +32,7 @@ fun TvVideoGrid(
     state: TvCatalogState, contentFocus: FocusRequester, navigationFocus: FocusRequester,
     onOpen: (VideoItem) -> Unit, onFocused: (String) -> Unit,
     onScroll: (Int, Int) -> Unit, modifier: Modifier = Modifier,
+    canLoadMore: Boolean = false, onLoadMore: () -> Unit = {},
 ) {
     val ids = state.items.map { it.tvId() }
     val restoreIndex = remember(ids) { resolveTvFocusIndex(ids, state.focusedId, state.focusedIndex) }
@@ -67,29 +58,29 @@ fun TvVideoGrid(
     }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val columns = (maxWidth.value / 240f).toInt().coerceIn(2, 6)
+        val availableWidth = (maxWidth - TvUiTokens.gridPadding * 2).value
+        val columns = ((availableWidth + TvUiTokens.cardGap.value) /
+            (TvUiTokens.minimumCardWidth.value + TvUiTokens.cardGap.value)).toInt().coerceIn(1, 6)
+        // 滚动近末行即自动追加下一页（分页不抢焦点；失败后由 ViewModel 阻断自动重试）
+        LaunchedEffect(gridState, canLoadMore) {
+            snapshotFlow {
+                val info = gridState.layoutInfo
+                (info.visibleItemsInfo.lastOrNull()?.index ?: -1) to info.totalItemsCount
+            }.collect { (lastVisible, total) ->
+                if (canLoadMore && total > 0 && lastVisible >= total - columns) onLoadMore()
+            }
+        }
         LazyVerticalGrid(columns = GridCells.Fixed(columns), state = gridState,
-            contentPadding = PaddingValues(12.dp), horizontalArrangement = Arrangement.spacedBy(20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.fillMaxSize().testTag("tv-grid")) {
+            contentPadding = PaddingValues(TvUiTokens.gridPadding), horizontalArrangement = Arrangement.spacedBy(TvUiTokens.cardGap),
+            verticalArrangement = Arrangement.spacedBy(TvUiTokens.cardGap), modifier = Modifier.fillMaxSize().testTag("tv-grid")) {
             itemsIndexed(state.items, key = { _, item -> item.tvId() }) { index, item ->
                 val requester = requesters.getValue(item.tvId())
-                Card(onClick = { onOpen(item) }, modifier = Modifier
+                TvVideoCard(video = item, onClick = { onOpen(item) }, modifier = Modifier
                     .focusRequester(if (index == entryIndex) contentFocus else requester)
                     .then(if (index == entryIndex) Modifier.focusRequester(requester) else Modifier)
                     .focusProperties { if (index % columns == 0) left = navigationFocus }
                     .onFocusChanged { if (it.isFocused) onFocused(item.tvId()) }
-                    .testTag("video:${item.tvId()}")) {
-                    Column {
-                        AsyncImage(model = item.pic.let { if (it.startsWith("//")) "https:$it" else it },
-                            contentDescription = null, contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f))
-                        Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 2,
-                            overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(12.dp))
-                        Text(item.owner.name, style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp))
-                    }
-                }
+                    .testTag("video:${item.tvId()}"))
             }
         }
     }

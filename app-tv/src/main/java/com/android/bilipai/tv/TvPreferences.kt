@@ -12,6 +12,9 @@ class TvPreferences(context: Context) {
     var autoContinue: Boolean
         get() = prefs.getBoolean("auto_continue", false)
         set(value) { prefs.edit().putBoolean("auto_continue", value).apply() }
+    var danmakuEnabled: Boolean
+        get() = prefs.getBoolean("danmaku_enabled", true)
+        set(value) { prefs.edit().putBoolean("danmaku_enabled", value).apply() }
     var privacyMode: Boolean
         get() = prefs.getBoolean("privacy_mode", false)
         set(value) { prefs.edit().putBoolean("privacy_mode", value).apply() }

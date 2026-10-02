@@ -61,6 +61,7 @@ data class TvUiState(
     val account: NavData? = null, val accountError: String? = null, val qr: TvQrState = TvQrState(),
     val query: String = "", val searchHistory: List<String> = emptyList(), val trending: List<String> = emptyList(),
     val quality: Int = 64, val autoContinue: Boolean = false, val privacyMode: Boolean = false,
+    val danmakuEnabled: Boolean = true,
     val notice: String? = null,
 )
 
@@ -75,7 +76,8 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
     private val details = mutableMapOf<String, ViewInfo>()
     private val mutableState = MutableStateFlow(TvUiState(route = stack.last(), rootScreen = stack.first().screen,
         query = savedState["query"] ?: "", searchHistory = preferences.searchHistory,
-        quality = preferences.quality, autoContinue = preferences.autoContinue, privacyMode = preferences.privacyMode))
+        quality = preferences.quality, autoContinue = preferences.autoContinue, privacyMode = preferences.privacyMode,
+        danmakuEnabled = preferences.danmakuEnabled))
     val state = mutableState.asStateFlow()
     private var contentJob: Job? = null
     private var qrJob: Job? = null
@@ -83,6 +85,8 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
     private var accountRevision = 0L
     private var started = false
     private var revision = 0L
+    // 自动分页失败后阻断继续自动请求，避免滚动位置未变时形成重试风暴；刷新/重试后解除
+    private var autoLoadBlocked = false
 
     fun start() {
         if (started) return
@@ -125,6 +129,12 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
 
     fun open(video: VideoItem) = navigate(TvRoute(TvScreen.Detail, video.bvid,
         video.aid.takeIf { it > 0 } ?: video.id, video.cid))
+    /** banner 主操作：推荐流带 cid 时直达播放器，否则走详情兜底。 */
+    fun playItem(video: VideoItem) {
+        val cid = video.cid.takeIf { it > 0 } ?: return open(video)
+        navigate(TvRoute(TvScreen.Player, video.bvid,
+            video.aid.takeIf { it > 0 } ?: video.id, cid, label = video.title))
+    }
     fun play(cid: Long) {
         val info = mutableState.value.detail ?: return
         navigate(TvRoute(TvScreen.Player, info.bvid, info.aid, cid, label = info.title))
@@ -197,6 +207,7 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
     }
 
     fun loadMore() {
+        if (autoLoadBlocked) return
         val catalog = mutableState.value.catalog
         if (!catalog.loading && catalog.hasMore) loadCatalog(reset = false)
     }
@@ -214,6 +225,7 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
         val previous = mutableState.value.catalog
         val page = if (reset) 1 else previous.page + 1
         val query = mutableState.value.query
+        if (reset) autoLoadBlocked = false
         mutableState.update { it.copy(catalog = it.catalog.copy(loading = true, error = null)) }
         contentJob = viewModelScope.launch {
             try {
@@ -257,7 +269,10 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                if (ticket == revision) mutableState.update { it.copy(catalog = it.catalog.copy(loading = false, error = error.message ?: "加载失败")) }
+                if (ticket == revision) {
+                    if (!reset) autoLoadBlocked = true
+                    mutableState.update { it.copy(catalog = it.catalog.copy(loading = false, error = error.message ?: "加载失败")) }
+                }
             }
         }
     }
@@ -358,6 +373,7 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
 
     fun updateQuality(value: Int) { preferences.quality = value; mutableState.update { it.copy(quality = value) } }
     fun toggleAutoContinue() { preferences.autoContinue = !preferences.autoContinue; mutableState.update { it.copy(autoContinue = preferences.autoContinue) } }
+    fun toggleDanmaku() { preferences.danmakuEnabled = !preferences.danmakuEnabled; mutableState.update { it.copy(danmakuEnabled = preferences.danmakuEnabled) } }
     fun togglePrivacy() { preferences.privacyMode = !preferences.privacyMode; mutableState.update { it.copy(privacyMode = preferences.privacyMode) } }
     fun clearSearchHistory() { preferences.clearSearchHistory(); mutableState.update { it.copy(searchHistory = emptyList()) } }
 

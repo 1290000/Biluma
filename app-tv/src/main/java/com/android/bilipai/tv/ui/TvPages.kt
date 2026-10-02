@@ -125,7 +125,7 @@ internal fun TvDetailContent(state: TvUiState, requester: FocusRequester,
         return
     }
     LaunchedEffect(requester, info.bvid) { requester.requestFocus() }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Column(Modifier.fillMaxSize().padding(horizontal = TvUiTokens.pagePadding).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
             AsyncImage(model = info.pic, contentDescription = null, contentScale = ContentScale.Crop,
                 modifier = Modifier.width(320.dp).aspectRatio(16f / 9f))
@@ -152,7 +152,7 @@ internal fun TvDetailContent(state: TvUiState, requester: FocusRequester,
 @Composable
 internal fun TvLoginContent(state: TvUiState, requester: FocusRequester, onRefresh: () -> Unit, onSignOut: () -> Unit) {
     LaunchedEffect(requester, state.qr.phase == QrPhase.Success || state.account != null) { requester.requestFocus() }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Column(Modifier.fillMaxSize().padding(horizontal = TvUiTokens.pagePadding).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Text("账号", style = MaterialTheme.typography.headlineLarge)
         if (state.account != null || state.qr.phase == QrPhase.Success) {
             Text("已登录 · ${state.account?.uname ?: "正在读取账号信息"}", style = MaterialTheme.typography.titleLarge)
@@ -181,20 +181,21 @@ internal fun TvLoginContent(state: TvUiState, requester: FocusRequester, onRefre
 
 @Composable
 internal fun TvSettingsContent(state: TvUiState, requester: FocusRequester, onQuality: (Int) -> Unit,
-    onAutoContinue: () -> Unit, onPrivacy: () -> Unit, onClearSearchHistory: () -> Unit) {
+    onAutoContinue: () -> Unit, onDanmaku: () -> Unit, onPrivacy: () -> Unit, onClearSearchHistory: () -> Unit) {
     var chooseQuality by remember { mutableStateOf(false) }
     LaunchedEffect(requester, chooseQuality) { if (!chooseQuality) requester.requestFocus() }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+    Column(Modifier.fillMaxSize().padding(horizontal = TvUiTokens.pagePadding).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Text("播放与隐私", style = MaterialTheme.typography.headlineLarge)
         Button(onClick = { chooseQuality = true }, modifier = Modifier.focusRequester(requester)) {
             Text("默认画质：${VideoQuality.fromCode(state.quality)?.description ?: state.quality}")
         }
         Button(onClick = onAutoContinue) { Text("播完自动播放下一 P：${if (state.autoContinue) "开启" else "关闭"}") }
+        Button(onClick = onDanmaku) { Text("弹幕显示：${if (state.danmakuEnabled) "开启" else "关闭"}") }
         Button(onClick = onPrivacy) { Text("暂停上报观看历史：${if (state.privacyMode) "开启" else "关闭"}") }
         Button(onClick = onClearSearchHistory) { Text("清空搜索历史") }
         Spacer(Modifier.height(8.dp))
         Text("画质可用性由账号权限、视频内容和设备能力决定。")
-        Text("默认使用轻量界面；不启用背景模糊和持续背景动画。")
+        Text("界面动效遵循系统“减少动画”设置；首页背景取自轮播封面。")
     }
     if (chooseQuality) TvChoiceDialog("默认画质", listOf(32, 64, 80, 112, 116, 120).map {
         it to (VideoQuality.fromCode(it)?.description ?: "$it")
