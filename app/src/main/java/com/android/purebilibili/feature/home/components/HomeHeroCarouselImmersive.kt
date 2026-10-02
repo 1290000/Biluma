@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -75,13 +74,21 @@ internal fun HomeHeroCarouselImmersive(
         }
     }
 
-    Box(
+    //  [高度鲁棒] 用可见宽度强制 2.2:1：祖先若传入有界 maxHeight（如铰链分栏、
+    //  折叠桌面形态），aspectRatio 会被钳制成矮条；这里显式按宽算高，不受影响。
+    //  越界绘制 (escape) 后画布宽为 W+2*escape，页面比例按同一宽度推导。
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(2.2f)
             .escapeHorizontal(horizontalEscapeDp)
             .clipToBounds(),
     ) {
+        val heroHeight = maxWidth / 2.2f
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(heroHeight)
+        ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.matchParentSize(),
@@ -169,6 +176,7 @@ internal fun HomeHeroCarouselImmersive(
                         ),
                 )
             }
+        }
         }
     }
 }

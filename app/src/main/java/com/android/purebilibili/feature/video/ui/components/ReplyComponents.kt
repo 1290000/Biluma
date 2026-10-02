@@ -2864,8 +2864,12 @@ internal fun ReplyActionSheet(
                                 SettingsManager.setDetailedCommentTimeEnabled(sheetContext, next)
                                 Toast.makeText(
                                     sheetContext,
-                                    if (next) "评论时间已切换为绝对时间" else "评论时间已切换为相对时间",
-                                    Toast.LENGTH_SHORT
+                                    if (next) {
+                                        "已切换为绝对时间：楼中楼与动态评论将显示 yyyy-MM-dd HH:mm:ss"
+                                    } else {
+                                        "已切换为相对时间（默认）：一级评论保持精确时间，楼中楼/动态按相对显示"
+                                    },
+                                    Toast.LENGTH_LONG
                                 ).show()
                             }
                             ReplyActionSheetAction.SAVE -> onSave()
