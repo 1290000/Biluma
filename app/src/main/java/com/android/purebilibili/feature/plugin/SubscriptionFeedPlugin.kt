@@ -393,11 +393,13 @@ private fun SubscriptionFeedSettings(modifier: Modifier = Modifier) {
             text = { AppText("将删除 ${selectedIds.size} 个订阅来源。") },
             confirmButton = {
                 AppDialogAction(onClick = {
-                    val removedUrls = feeds.filter { it.id in selectedIds }.map { it.url }.toSet()
+                    // 固定本次删除目标，避免下面清空选择后协程读取到空集合。
+                    val idsToRemove = selectedIds.toSet()
+                    val removedUrls = feeds.filter { it.id in idsToRemove }.map { it.url }.toSet()
                     scope.launch {
                         withContext(Dispatchers.IO) {
                             runCatching { FeedConditionalStore.clear(context, removedUrls) }
-                            SubscriptionFeedStore.removeAll(context, selectedIds)
+                            SubscriptionFeedStore.removeAll(context, idsToRemove)
                         }
                     }
                     selectedIds = emptySet()

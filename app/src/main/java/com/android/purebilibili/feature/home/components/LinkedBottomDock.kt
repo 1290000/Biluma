@@ -94,7 +94,7 @@ internal fun LinkedBottomDock(
     navigationContent: @Composable () -> Unit,
 ) {
     val hasAudio = nowPlayingContent != null
-    var internalPhase by remember(currentItem, searchEnabled, hasAudio) {
+    var internalPhase by remember(currentItem, searchEnabled) {
         mutableStateOf(
             resolveLinkedDockInitialPhase(
                 currentItem = currentItem,
@@ -150,8 +150,8 @@ internal fun LinkedBottomDock(
                 if ((offset <= 0f && delta < 0f) || accumulated <= -threshold) {
                     updatePhase(LinkedDockPhase.Expanded)
                     accumulated = 0f
-                } else if ((hasAudio || searchEnabled) && accumulated >= threshold) {
-                    updatePhase(if (hasAudio) LinkedDockPhase.Playback else LinkedDockPhase.Compact)
+                } else if (hasAudio && accumulated >= threshold) {
+                    updatePhase(LinkedDockPhase.Playback)
                     accumulated = 0f
                 }
             }
@@ -271,9 +271,15 @@ internal fun LinkedBottomDock(
     val slotGeometryPresenceProvider = remember {
         { if (slotEntering.value) 1f else presence.value.coerceIn(0f, 1f) }
     }
-    val latestNowPlayingContent by rememberUpdatedState(nowPlayingContent)
+    // 保留最后一个有效播放条，退出动画完成后再释放；最新值在关闭时已是 null。
+    var retainedNowPlayingContent by remember { mutableStateOf(nowPlayingContent) }
+    SideEffect {
+        if (nowPlayingContent != null || !keepSlotComposed) {
+            retainedNowPlayingContent = nowPlayingContent
+        }
+    }
     val nowPlayingSlot = nowPlayingContent
-        ?: latestNowPlayingContent.takeIf { keepSlotComposed }
+        ?: retainedNowPlayingContent.takeIf { keepSlotComposed }
 
     val shape = resolveSharedBottomBarCapsuleShape()
     val contentColor = MaterialTheme.colorScheme.onSurface

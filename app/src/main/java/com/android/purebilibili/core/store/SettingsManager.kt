@@ -5848,9 +5848,9 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         }
     }
 
-    /** 订阅页回顾板块开关，默认开启。 */
+    /** 历史页「我的回顾」开关，默认关闭。 */
     fun getSubscriptionRecapEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SUBSCRIPTION_RECAP_ENABLED] ?: true }
+        .map { preferences -> preferences[KEY_SUBSCRIPTION_RECAP_ENABLED] ?: false }
 
     suspend fun setSubscriptionRecapEnabled(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->
@@ -7093,6 +7093,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_BOTTOM_PROGRESS_BEHAVIOR = intPreferencesKey("bottom_progress_behavior")
     private val KEY_PROGRESS_PEAK_DANMAKU_ENABLED =
         booleanPreferencesKey("progress_peak_danmaku_enabled")
+    private val KEY_DANMAKU_HOT_BAR_ENABLED =
+        booleanPreferencesKey("danmaku_hot_bar_enabled")
     private val KEY_HORIZONTAL_ADAPTATION = booleanPreferencesKey("horizontal_adaptation_enabled")
     private val KEY_FULLSCREEN_MODE = intPreferencesKey("fullscreen_mode")
     private val KEY_FULLSCREEN_ASPECT_RATIO = intPreferencesKey("fullscreen_aspect_ratio")
@@ -7632,6 +7634,17 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         context.settingsDataStore.data.map { preferences ->
             preferences[KEY_PROGRESS_PEAK_DANMAKU_ENABLED] ?: false
         }
+
+    fun getDanmakuHotBarEnabled(context: Context): Flow<Boolean> =
+        context.settingsDataStore.data.map { preferences ->
+            preferences[KEY_DANMAKU_HOT_BAR_ENABLED] ?: true
+        }
+
+    suspend fun setDanmakuHotBarEnabled(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_DANMAKU_HOT_BAR_ENABLED] = enabled
+        }
+    }
 
     suspend fun setProgressPeakDanmakuEnabled(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->

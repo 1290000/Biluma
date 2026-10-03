@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import com.android.purebilibili.core.store.HomeDurationStyle
 import com.android.purebilibili.core.store.HomeFeedCardStyle
 import com.android.purebilibili.core.store.HomeWallpaperEffectMode
+import com.android.purebilibili.core.ui.animation.DissolvableVideoCard
 import com.android.purebilibili.core.ui.animation.DissolveAnimationPreset
 import com.android.purebilibili.core.ui.animation.MaybeDissolvableVideoCard
 import com.android.purebilibili.core.ui.adaptive.MotionTier
@@ -229,6 +230,7 @@ internal fun HomeCategoryPageContent(
     oldContentStartIndex: Int? = null,
     oldContentLocatorRefreshKey: Long = 0L,
     onOldContentDividerClick: () -> Unit = {},
+    overlayPillColors: com.android.purebilibili.feature.home.HomeGlassResolvedColors,
     todayWatchEnabled: Boolean = false,
     todayWatchMode: TodayWatchMode = TodayWatchMode.RELAX,
     todayWatchPlan: TodayWatchPlan? = null,
@@ -378,6 +380,10 @@ internal fun HomeCategoryPageContent(
     }
     val oldContentLocatorScope = rememberCoroutineScope()
     var oldContentLocatorDismissed by remember(oldContentLocatorRefreshKey) {
+        mutableStateOf(false)
+    }
+
+    var oldContentLocatorDissolving by remember(oldContentLocatorRefreshKey) {
         mutableStateOf(false)
     }
 
@@ -796,11 +802,12 @@ internal fun HomeCategoryPageContent(
             .AudioNowPlayingSession.barOverlayVisible
             .collectAsStateWithLifecycle()
         AnimatedVisibility(
-            visible = category == HomeCategory.RECOMMEND &&
-                oldContentGridItemIndex != null &&
+            visible = ((category == HomeCategory.RECOMMEND &&
+                oldContentGridItemIndex != null) || oldContentLocatorDissolving) &&
                 !oldContentLocatorDismissed,
             enter = fadeIn() + scaleIn(initialScale = 0.92f),
-            exit = fadeOut() + scaleOut(targetScale = 0.92f),
+            exit = if (oldContentLocatorDismissed) androidx.compose.animation.ExitTransition.None else
+                fadeOut() + scaleOut(targetScale = 0.92f),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
@@ -812,33 +819,47 @@ internal fun HomeCategoryPageContent(
                         if (nowPlayingBarOverlayVisible) 76.dp else 0.dp,
                 ),
         ) {
-            AppButton(
-                onClick = {
+            DissolvableVideoCard(
+                isDissolving = oldContentLocatorDissolving,
+                onDissolveComplete = {
                     oldContentLocatorDismissed = true
-                    oldContentGridItemIndex?.let { targetIndex ->
-                        oldContentLocatorScope.launch {
-                            gridState.animateScrollToItem(targetIndex)
-                        }
-                    }
+                    oldContentLocatorDissolving = false
                 },
-                modifier = Modifier.heightIn(min = 48.dp),
-                shape = RoundedCornerShape(24.dp),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                cardId = "old-content-locator-$oldContentLocatorRefreshKey",
+                preset = DissolveAnimationPreset.TELEGRAM_FAST,
+                collapseAfterDissolve = false,
+                publishGlobalDissolveState = false,
+                keepInvisibleAfterDissolve = true,
             ) {
-                AppText("定位上次刷新")
-                Spacer(modifier = Modifier.width(6.dp))
-                Box(
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .clickable { oldContentLocatorDismissed = true },
-                    contentAlignment = Alignment.Center
+                com.android.purebilibili.feature.home.components.HomeOverlayPillButton(
+                    overlayPillColors = overlayPillColors,
+                    onClick = {
+                        if (!oldContentLocatorDissolving) {
+                            oldContentLocatorDismissed = true
+                            oldContentGridItemIndex?.let { targetIndex ->
+                                oldContentLocatorScope.launch {
+                                    gridState.animateScrollToItem(targetIndex)
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.heightIn(min = 48.dp),
                 ) {
-                    AppIcon(
-                        imageVector = Icons.Outlined.Close,
-                        contentDescription = "关闭",
-                        modifier = Modifier.size(14.dp)
-                    )
+                    AppText("定位上次刷新")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .clickable(enabled = !oldContentLocatorDissolving) { oldContentLocatorDissolving = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AppIcon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = "关闭",
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
             }
         }

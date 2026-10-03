@@ -1278,7 +1278,15 @@ fun DynamicScreen(
                 enter = fadeIn() + scaleIn(initialScale = 0.92f),
                 exit = fadeOut() + scaleOut(targetScale = 0.92f),
             ) {
-                Button(
+                // 与首页「撤销刷新」胶囊共用同一套悬浮玻璃样式（含关闭壁纸的退化形态）。
+                val locatorPillColors = com.android.purebilibili.feature.home.rememberHomeGlassPillColors(
+                    glassEnabled = appThemeConfig.liquidGlassEnabled,
+                    blurEnabled = appThemeConfig.headerBlurEnabled,
+                    emphasized = true,
+                    baseColor = com.android.purebilibili.core.ui.AppSurfaceTokens.cardContainer()
+                )
+                com.android.purebilibili.feature.home.components.HomeOverlayPillButton(
+                    overlayPillColors = locatorPillColors,
                     onClick = {
                         val gridIndex = resolveDynamicRefreshDividerGridIndex(oldContentDividerIndex)
                         if (gridIndex >= 0) {
@@ -1286,8 +1294,6 @@ fun DynamicScreen(
                         }
                     },
                     modifier = Modifier.heightIn(min = 48.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                 ) {
                     AppText("定位上次刷新")
                     Spacer(modifier = Modifier.width(6.dp))

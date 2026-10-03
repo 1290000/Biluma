@@ -2570,8 +2570,7 @@ private fun SpaceContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = pinnedTabsTopPadding, start = 12.dp, end = 12.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .padding(top = pinnedTabsTopPadding)
                         .background(
                             com.android.purebilibili.core.ui.globalWallpaperAwareChromeColor(
                                 MaterialTheme.colorScheme.surface
@@ -2579,6 +2578,7 @@ private fun SpaceContent(
                         )
                 ) {
                     SpaceContributionVideoSummaryBar(
+                        modifier = Modifier.padding(horizontal = outerPaddingDp),
                         totalCount = state.totalVideos.takeIf { it > 0 } ?: state.videos.size,
                         currentOrder = state.sortOrder,
                         onSelectSortOrder = onSelectSortOrder,

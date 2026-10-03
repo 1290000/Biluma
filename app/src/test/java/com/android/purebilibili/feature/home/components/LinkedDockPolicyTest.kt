@@ -83,10 +83,14 @@ class LinkedDockPolicyTest {
     }
 
     @Test
-    fun audioChangePreservesCompactDockWhenPlaybackStops() {
+    fun audioDismissalRestoresExpandedDockAndPreservesSearch() {
         assertEquals(
-            LinkedDockPhase.Compact,
+            LinkedDockPhase.Expanded,
             resolveLinkedDockPhaseOnAudioChange(LinkedDockPhase.Playback, hasAudio = false),
+        )
+        assertEquals(
+            LinkedDockPhase.Expanded,
+            resolveLinkedDockPhaseOnAudioChange(LinkedDockPhase.Compact, hasAudio = false),
         )
         assertEquals(
             LinkedDockPhase.Playback,
@@ -127,7 +131,7 @@ class LinkedDockPolicyTest {
             ),
         )
         assertEquals(
-            LinkedDockPhase.Compact,
+            LinkedDockPhase.Expanded,
             resolveLinkedDockInitialPhase(
                 currentItem = BottomNavItem.HOME,
                 collapseRequested = false,
@@ -302,7 +306,7 @@ class LinkedDockPolicyTest {
         assertTrue(shouldResetLinkedDockSearchQuery(LinkedDockPhase.Playback))
         assertFalse(shouldResetLinkedDockSearchQuery(LinkedDockPhase.Search))
         assertEquals(
-            LinkedDockPhase.Compact,
+            LinkedDockPhase.Expanded,
             resolveLinkedDockPhaseOnSearchDismiss(
                 hasAudio = false,
                 previousPhase = LinkedDockPhase.Compact,

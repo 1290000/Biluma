@@ -1287,6 +1287,9 @@ fun PrivacySection(
     val searchHintEnabled by remember(context) {
         com.android.purebilibili.core.store.SearchHintSettingsStore.isEnabled(context)
     }.collectAsStateWithLifecycle(initialValue = true)
+    val personalRecapEnabled by remember(context) {
+        SettingsManager.getSubscriptionRecapEnabled(context)
+    }.collectAsStateWithLifecycle(initialValue = false)
     val siblingTints = remember { resolveSettingsSiblingIconTints(4, paletteOffset = 4) }
     val permissionVisual = rememberSettingsEntryVisual(SettingsSearchTarget.PERMISSION)
     val messageNotificationVisual =
@@ -1328,6 +1331,17 @@ fun PrivacySection(
             checked = privacyModeEnabled,
             onCheckedChange = onPrivacyModeChange,
             iconTint = siblingTints[0]
+        )
+        SettingsAdaptiveDivider()
+        SettingSwitchItem(
+            icon = visibilityOffIcon,
+            title = "我的回顾",
+            subtitle = "在历史页显示阅读与观看统计、趋势图和最近爱看的 UP 主",
+            checked = personalRecapEnabled,
+            onCheckedChange = { enabled ->
+                scope.launch { SettingsManager.setSubscriptionRecapEnabled(context, enabled) }
+            },
+            iconTint = siblingTints[0],
         )
         SettingsAdaptiveDivider()
         SettingSwitchItem(

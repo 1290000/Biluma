@@ -2338,9 +2338,6 @@ fun AppNavigation(
                                 onSearchClick = { pushNavigation3Key(BiliPaiNavKey.Search) },
                                 onAvatarClick = { pushNavigation3Key(BiliPaiNavKey.Login) },
                                 onProfileClick = { pushNavigation3Route(ScreenRoutes.Profile.route) },
-                                onUserSpaceClick = { mid ->
-                                    pushNavigation3Route(ScreenRoutes.Space.createRoute(mid))
-                                },
                                 onLogout = {
                                     coroutineScope.launch {
                                         com.android.purebilibili.core.store.TokenManager.clear(context)
