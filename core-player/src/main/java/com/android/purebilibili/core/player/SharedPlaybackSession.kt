@@ -48,6 +48,8 @@ data class SharedPlaybackState(
     val error: String? = null,
     val realPlayedMs: Long = 0,
     val startTsSec: Long = 0,
+    val bufferedPositionMs: Long = 0,
+    val canSeek: Boolean = false,
 )
 
 /** Owned by a screen/service. Caller owns loading coroutines, ticker, and close(). */
@@ -208,7 +210,7 @@ class SharedPlaybackSession(context: Context) : AutoCloseable {
     }
     fun pause() { if (!closed) { player.pause(); persistPosition() } }
     fun seekTo(positionMs: Long) {
-        if (closed) return
+        if (closed || !player.isCurrentMediaItemSeekable) return
         val duration = player.duration.takeIf { it > 0 } ?: mutableState.value.durationMs
         if (duration > 0) {
             if (mutableState.value.status == PlaybackStatus.Ended) mutableState.update { it.copy(status = PlaybackStatus.Ready) }
@@ -224,7 +226,9 @@ class SharedPlaybackSession(context: Context) : AutoCloseable {
         lastTickMs = now
         mutableState.update { it.copy(realPlayedMs = it.realPlayedMs + if (it.playing) elapsed else 0,
             playing = player.isPlaying, buffering = player.playbackState == Player.STATE_BUFFERING,
-            positionMs = player.currentPosition.coerceAtLeast(0), durationMs = player.duration.takeIf { it > 0 } ?: it.durationMs) }
+            positionMs = player.currentPosition.coerceAtLeast(0), durationMs = player.duration.takeIf { it > 0 } ?: it.durationMs,
+            bufferedPositionMs = player.bufferedPosition.coerceAtLeast(0),
+            canSeek = player.isCurrentMediaItemSeekable) }
     }
 
     fun persistPosition() {

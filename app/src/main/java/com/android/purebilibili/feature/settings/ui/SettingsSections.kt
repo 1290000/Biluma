@@ -61,11 +61,14 @@ import com.android.purebilibili.core.store.MIN_HOME_REFRESH_COUNT
 import com.android.purebilibili.core.store.NetworkProxyStore
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.network.policy.AppHttpProxySettings
+import com.android.purebilibili.core.network.policy.ProxyRouteMode
 import com.android.purebilibili.core.network.policy.formatAppHttpProxyEndpoint
 import com.android.purebilibili.core.network.policy.formatAppHttpProxySummary
 import com.android.purebilibili.core.network.policy.isAppHttpProxyConfigured
+import com.android.purebilibili.core.network.policy.parseProxyDomainRules
 import com.android.purebilibili.core.network.policy.sanitizeProxyHostInput
 import com.android.purebilibili.core.network.policy.sanitizeProxyPortInput
+import androidx.compose.ui.draw.alpha
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.purebilibili.feature.dynamic.allDynamicTabSpecs
 import com.android.purebilibili.feature.dynamic.shouldAllowDynamicTabVisibilityToggleOff
@@ -1551,9 +1554,9 @@ private fun DiagnosticsSection(
         SettingsAdaptiveDivider()
         SettingSwitchItem(
             icon = com.android.purebilibili.feature.settings.rememberMaterialSymbol(com.android.purebilibili.R.drawable.ms_lan_24),
-            title = "HTTP 代理",
+            title = "网络代理",
             subtitle = formatAppHttpProxySummary(proxySettings) +
-                "（仅应用接口和登录请求，视频播放仍直接连接）",
+                "（作用于应用内网络请求；视频播放始终直连）",
             checked = proxySettings.enabled,
             onCheckedChange = { enabled ->
                 if (enabled && !isAppHttpProxyConfigured(proxySettings)) {
@@ -1641,10 +1644,16 @@ private fun NetworkProxyEditDialog(
     var host by remember(initial) { mutableStateOf(initial.host) }
     var portText by remember(initial) { mutableStateOf(initial.portText) }
     var enabled by remember(initial) { mutableStateOf(initial.enabled) }
+    var splitByDomain by remember(initial) { mutableStateOf(initial.routeMode == ProxyRouteMode.SPLIT) }
+    var domainsText by remember(initial) {
+        mutableStateOf(initial.proxiedDomains.joinToString(separator = "\n"))
+    }
     val draft = AppHttpProxySettings(
         enabled = enabled,
         host = sanitizeProxyHostInput(host),
         portText = sanitizeProxyPortInput(portText),
+        routeMode = if (splitByDomain) ProxyRouteMode.SPLIT else ProxyRouteMode.GLOBAL,
+        proxiedDomains = parseProxyDomainRules(domainsText),
     )
     val canSave = !enabled || isAppHttpProxyConfigured(draft)
 
@@ -1652,14 +1661,18 @@ private fun NetworkProxyEditDialog(
         onDismissRequest = onDismiss,
         title = {
             AppText(
-                text = "设置 HTTP 代理",
+                text = "设置网络代理",
                 fontWeight = FontWeight.Bold,
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AppText(
-                    text = "仅作用于 API / 登录请求。播放媒体仍直连，避免本地代理端口不可用导致卡顿。",
+                    text = if (enabled && splitByDomain) {
+                        "只有下方域名走代理，其余请求（包括视频播放）都直连。"
+                    } else {
+                        "作用于应用内的网络请求（接口、登录、RSS、图片等）。视频播放始终直连，避免本地代理端口不可用导致卡顿。"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1691,6 +1704,49 @@ private fun NetworkProxyEditDialog(
                     AppAdaptiveSwitch(
                         checked = enabled,
                         onCheckedChange = { enabled = it },
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(if (enabled) 1f else 0.38f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        AppText(
+                            text = "仅指定域名走代理",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        AppText(
+                            text = "开启后只在访问下方域名时使用代理，其余请求直连",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    AppAdaptiveSwitch(
+                        checked = splitByDomain,
+                        onCheckedChange = { splitByDomain = it },
+                        enabled = enabled,
+                    )
+                }
+                if (enabled && splitByDomain) {
+                    AppTextField(
+                        value = domainsText,
+                        onValueChange = { domainsText = it },
+                        label = "代理域名（每行一个）",
+                        placeholder = "aicu.cc",
+                        singleLine = false,
+                        minLines = 3,
+                        maxLines = 6,
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = {
+                            AppText(
+                                text = "填写主域名即可，自动匹配其子域；例如 aicu.cc 会同时覆盖 www.aicu.cc",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
                     )
                 }
                 if (enabled && !isAppHttpProxyConfigured(draft)) {

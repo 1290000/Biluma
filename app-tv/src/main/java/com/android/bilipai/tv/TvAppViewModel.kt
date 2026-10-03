@@ -7,6 +7,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.android.purebilibili.core.store.TokenManager
 import com.android.purebilibili.core.player.SharedPlaybackState
+import com.android.purebilibili.core.player.PlaybackProgressManager
+import com.android.purebilibili.core.player.resolvePlaybackResumePosition
 import com.android.purebilibili.data.model.response.FavFolder
 import com.android.purebilibili.data.model.response.HistoryCursor
 import com.android.purebilibili.data.model.response.NavData
@@ -58,6 +60,7 @@ data class TvQrState(val phase: QrPhase = QrPhase.Loading, val bitmap: Bitmap? =
 data class TvUiState(
     val route: TvRoute = TvRoute(), val rootScreen: TvScreen = TvScreen.Home, val catalog: TvCatalogState = TvCatalogState(),
     val detail: ViewInfo? = null, val detailLoading: Boolean = false, val detailError: String? = null,
+    val detailResumePositionMs: Long = 0,
     val account: NavData? = null, val accountError: String? = null, val qr: TvQrState = TvQrState(),
     val query: String = "", val searchHistory: List<String> = emptyList(), val trending: List<String> = emptyList(),
     val quality: Int = 64, val autoContinue: Boolean = false, val privacyMode: Boolean = false,
@@ -105,7 +108,7 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
         if (root) { stack.clear(); stack.add(route) } else stack.add(route)
         savedState["routes"] = Json.encodeToString(stack.toList())
         mutableState.update { it.copy(route = route, rootScreen = stack.first().screen, catalog = catalogs[route.key] ?: TvCatalogState(),
-            detail = details[route.key], detailLoading = false, detailError = null, notice = null) }
+            detail = details[route.key], detailLoading = false, detailError = null, detailResumePositionMs = 0, notice = null) }
         loadRoute()
     }
 
@@ -122,7 +125,7 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
         val route = stack.last()
         savedState["routes"] = Json.encodeToString(stack.toList())
         mutableState.update { it.copy(route = route, rootScreen = stack.first().screen, catalog = catalogs[route.key] ?: TvCatalogState(),
-            detail = details[route.key], detailLoading = false, detailError = null, notice = null) }
+            detail = details[route.key], detailLoading = false, detailError = null, detailResumePositionMs = 0, notice = null) }
         loadRoute()
         return true
     }
@@ -146,10 +149,14 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
         details.entries.forEach { entry ->
             if (entry.value.bvid == info.bvid) entry.setValue(entry.value.copy(cid = info.cid))
         }
-        // Updating cached cards preserves the originating history page and its focus anchor.
+        // Preserve the originating personal list and focus anchor while updating its watched position.
         catalogs.entries.forEach { entry ->
-            if (entry.key.startsWith("History:")) entry.setValue(entry.value.copy(items = entry.value.items.map { item ->
-                if (item.bvid == info.bvid) item.copy(cid = info.cid, progress = (snapshot.positionMs / 1000).toInt()) else item
+            if (entry.key.startsWith("History:") || entry.key.startsWith("WatchLater:")) entry.setValue(entry.value.copy(items = entry.value.items.map { item ->
+                if (item.bvid == info.bvid) item.copy(
+                    cid = info.cid,
+                    progress = (snapshot.positionMs / 1000).toInt(),
+                    duration = if (snapshot.durationMs > 0) (snapshot.durationMs / 1000).toInt() else item.duration,
+                ) else item
             }))
         }
         viewModelScope.launch {
@@ -279,19 +286,38 @@ class TvAppViewModel(application: Application, private val savedState: SavedStat
 
     private fun loadDetail(force: Boolean = false) {
         val route = mutableState.value.route
-        if (!force && details[route.key] != null) return
         contentJob?.cancel()
         val ticket = ++revision
+        val cached = details[route.key].takeUnless { force }
+        if (cached != null) {
+            contentJob = viewModelScope.launch {
+                val resumePosition = readDetailResumePosition(cached)
+                if (ticket == revision) mutableState.update { it.copy(detailResumePositionMs = resumePosition) }
+            }
+            return
+        }
         mutableState.update { it.copy(detailLoading = true, detailError = null) }
         contentJob = viewModelScope.launch {
             val requestedCid = preferences.lastPlayedCid(route.bvid, route.aid).takeIf { it > 0 } ?: route.cid
             val result = SharedContentRepository.detail(route.bvid, route.aid, requestedCid)
+            val resumePosition = result.getOrNull()?.let { readDetailResumePosition(it) } ?: 0
             if (ticket != revision) return@launch
             result.fold(onSuccess = { info ->
                 details[route.key] = info
-                mutableState.update { it.copy(detail = info, detailLoading = false) }
+                mutableState.update { it.copy(detail = info, detailLoading = false, detailResumePositionMs = resumePosition) }
             }, onFailure = { error -> mutableState.update { it.copy(detailLoading = false, detailError = error.message ?: "详情加载失败") } })
         }
+    }
+
+    // The same CID progress and completion policy used by SharedPlaybackSession.
+    // Server progress is only known after streams load; unknown progress keeps the label as “播放”.
+    private suspend fun readDetailResumePosition(info: ViewInfo): Long = withContext(Dispatchers.IO) {
+        resolvePlaybackResumePosition(
+            explicitMs = null,
+            localMs = PlaybackProgressManager.getInstance(getApplication()).getCachedPosition(info.bvid, info.cid),
+            serverMs = 0,
+            durationMs = (info.pages.firstOrNull { it.cid == info.cid }?.duration ?: 0) * 1_000L,
+        )
     }
 
     private fun loadTrending() = viewModelScope.launch {

@@ -33,6 +33,7 @@ fun TvVideoGrid(
     onOpen: (VideoItem) -> Unit, onFocused: (String) -> Unit,
     onScroll: (Int, Int) -> Unit, modifier: Modifier = Modifier,
     canLoadMore: Boolean = false, onLoadMore: () -> Unit = {},
+    supportingContent: (@Composable (VideoItem) -> Unit)? = null,
 ) {
     val ids = state.items.map { it.tvId() }
     val restoreIndex = remember(ids) { resolveTvFocusIndex(ids, state.focusedId, state.focusedIndex) }
@@ -75,12 +76,16 @@ fun TvVideoGrid(
             verticalArrangement = Arrangement.spacedBy(TvUiTokens.cardGap), modifier = Modifier.fillMaxSize().testTag("tv-grid")) {
             itemsIndexed(state.items, key = { _, item -> item.tvId() }) { index, item ->
                 val requester = requesters.getValue(item.tvId())
+                val cardSupportingContent: (@Composable () -> Unit)? = if (supportingContent != null) {
+                    { supportingContent(item) }
+                } else null
                 TvVideoCard(video = item, onClick = { onOpen(item) }, modifier = Modifier
                     .focusRequester(if (index == entryIndex) contentFocus else requester)
                     .then(if (index == entryIndex) Modifier.focusRequester(requester) else Modifier)
                     .focusProperties { if (index % columns == 0) left = navigationFocus }
                     .onFocusChanged { if (it.isFocused) onFocused(item.tvId()) }
-                    .testTag("video:${item.tvId()}"))
+                    .testTag("video:${item.tvId()}"),
+                    supportingContent = cardSupportingContent)
             }
         }
     }

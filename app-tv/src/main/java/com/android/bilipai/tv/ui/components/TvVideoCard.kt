@@ -17,6 +17,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.bilipai.tv.ui.TvUiTokens
+import com.android.purebilibili.core.ui.AppSpacingTokens
 import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.data.model.response.VideoItem
 
@@ -29,6 +30,7 @@ internal fun TvVideoCard(
     video: VideoItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    supportingContent: (@Composable () -> Unit)? = null,
 ) {
     TvAppCard(onClick = onClick, modifier = modifier) {
         Box {
@@ -62,28 +64,28 @@ internal fun TvVideoCard(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = TvUiTokens.cardPadding, start = TvUiTokens.cardPadding, end = TvUiTokens.cardPadding),
         )
+        supportingContent?.invoke()
         val stats = buildList {
             if (video.stat.view > 0) add(FormatUtils.formatStat(video.stat.view.toLong()) + "播放")
             if (video.stat.danmaku > 0) add(FormatUtils.formatStat(video.stat.danmaku.toLong()) + "弹幕")
         }.joinToString(" · ")
-        if (stats.isNotBlank()) {
-            Text(
-                text = stats,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.secondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp, start = TvUiTokens.cardPadding, end = TvUiTokens.cardPadding),
-            )
-        }
         Text(
-            text = video.owner.name,
+            text = stats,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.secondary,
+            maxLines = 1,
+            minLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = AppSpacingTokens.ExtraSmall, start = TvUiTokens.cardPadding, end = TvUiTokens.cardPadding),
+        )
+        Text(
+            text = video.owner.name.ifBlank { "未知 UP 主" },
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.secondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(
-                top = 4.dp,
+                top = AppSpacingTokens.ExtraSmall,
                 start = TvUiTokens.cardPadding,
                 end = TvUiTokens.cardPadding,
                 bottom = TvUiTokens.cardPadding,

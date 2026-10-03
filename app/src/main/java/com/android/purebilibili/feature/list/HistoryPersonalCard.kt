@@ -90,12 +90,8 @@ internal fun resolveHistoryKindLabel(business: HistoryBusiness): String = when (
     HistoryBusiness.UNKNOWN -> "未知"
 }
 
-internal fun resolveHistoryProgressLabel(progress: Int, duration: Int): String = when {
-    progress == -1 -> "已看完"
-    duration <= 0 -> "已看"
-    progress <= 0 -> FormatUtils.formatDuration(duration)
-    else -> "${FormatUtils.formatDuration(progress)}/${FormatUtils.formatDuration(duration)}"
-}
+internal fun resolveHistoryProgressLabel(progress: Int, duration: Int): String =
+    com.android.purebilibili.data.model.resolveHistoryProgressLabel(progress, duration)
 
 internal fun canAddHistoryToWatchLater(item: HistoryItem): Boolean =
     item.business == HistoryBusiness.ARCHIVE && item.videoItem.id > 0L

@@ -105,62 +105,66 @@ private class AppSessionCookieJar : okhttp3.CookieJar {
         // 避免启动窗口内的请求被当成匿名请求发出。
         TokenManager.awaitRestore()
 
-        var buvid3 = TokenManager.buvid3Cache
-        if (buvid3.isNullOrEmpty()) {
-            buvid3 = UUID.randomUUID().toString() + "infoc"
-            TokenManager.buvid3Cache = buvid3
-        }
-        if (cookies.none { it.name == "buvid3" }) {
-            cookies.add(
-                okhttp3.Cookie.Builder()
-                    .domain(url.host)
-                    .name("buvid3")
-                    .value(buvid3)
-                    .build()
-            )
-        }
-
-        val biliBiliDomain = if (url.host.endsWith("bilibili.com")) "bilibili.com" else url.host
-        val sessData = TokenManager.sessDataCache
-        if (!sessData.isNullOrEmpty()) {
-            cookies.removeAll { it.name == "SESSDATA" }
-            cookies.add(
-                okhttp3.Cookie.Builder()
-                    .domain(biliBiliDomain)
-                    .name("SESSDATA")
-                    .value(sessData)
-                    .build()
-            )
-        }
-
-        val biliJct = TokenManager.csrfCache
-        if (!biliJct.isNullOrEmpty()) {
-            cookies.removeAll { it.name == "bili_jct" }
-            cookies.add(
-                okhttp3.Cookie.Builder()
-                    .domain(biliBiliDomain)
-                    .name("bili_jct")
-                    .value(biliJct)
-                    .build()
-            )
-        }
-
-        TokenManager.midCache?.takeIf { it > 0L }?.let { mid ->
-            if (cookies.none { it.name == "DedeUserID" }) {
+        // 身份 Cookie 只能发往 bilibili.com 各子域：本 client 也会抓第三方地址
+        // （RSS 订阅源、原文正文等），无条件注入会把登录态泄漏给任意外部域名。
+        val isBilibiliHost = url.host == "bilibili.com" || url.host.endsWith(".bilibili.com")
+        if (isBilibiliHost) {
+            var buvid3 = TokenManager.buvid3Cache
+            if (buvid3.isNullOrEmpty()) {
+                buvid3 = UUID.randomUUID().toString() + "infoc"
+                TokenManager.buvid3Cache = buvid3
+            }
+            if (cookies.none { it.name == "buvid3" }) {
                 cookies.add(
                     okhttp3.Cookie.Builder()
-                        .domain(biliBiliDomain)
-                        .name("DedeUserID")
-                        .value(mid.toString())
+                        .domain(url.host)
+                        .name("buvid3")
+                        .value(buvid3)
                         .build()
                 )
+            }
+
+            val sessData = TokenManager.sessDataCache
+            if (!sessData.isNullOrEmpty()) {
+                cookies.removeAll { it.name == "SESSDATA" }
+                cookies.add(
+                    okhttp3.Cookie.Builder()
+                        .domain("bilibili.com")
+                        .name("SESSDATA")
+                        .value(sessData)
+                        .build()
+                )
+            }
+
+            val biliJct = TokenManager.csrfCache
+            if (!biliJct.isNullOrEmpty()) {
+                cookies.removeAll { it.name == "bili_jct" }
+                cookies.add(
+                    okhttp3.Cookie.Builder()
+                        .domain("bilibili.com")
+                        .name("bili_jct")
+                        .value(biliJct)
+                        .build()
+                )
+            }
+
+            TokenManager.midCache?.takeIf { it > 0L }?.let { mid ->
+                if (cookies.none { it.name == "DedeUserID" }) {
+                    cookies.add(
+                        okhttp3.Cookie.Builder()
+                            .domain("bilibili.com")
+                            .name("DedeUserID")
+                            .value(mid.toString())
+                            .build()
+                    )
+                }
             }
         }
 
         if (url.encodedPath.contains("playurl") || url.encodedPath.contains("pgc/view")) {
             com.android.purebilibili.core.network.CoreDataLog.d(
                 "CookieJar",
-                " ${url.encodedPath} request: domain=$biliBiliDomain, hasSess=${!sessData.isNullOrEmpty()}, hasCsrf=${!biliJct.isNullOrEmpty()}"
+                " ${url.encodedPath} request: host=${url.host}, hasSess=${!TokenManager.sessDataCache.isNullOrEmpty()}"
             )
         }
 
@@ -3030,6 +3034,7 @@ object NetworkModule {
                 return com.android.purebilibili.core.network.policy.selectAppHttpProxies(
                     settings = settings,
                     systemProxies = systemProxies,
+                    host = uri?.host,
                 )
             }
 

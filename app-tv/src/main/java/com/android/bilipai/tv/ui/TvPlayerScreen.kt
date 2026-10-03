@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,6 +34,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -42,9 +47,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.ui.PlayerView
-import androidx.tv.material3.Button
+import com.android.bilipai.tv.ui.components.TvAppButton
+import com.android.bilipai.tv.ui.components.TvPlaybackProgress
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.android.purebilibili.core.ui.AppSpacingTokens
 import com.android.bilipai.tv.TvRoute
 import com.android.purebilibili.core.player.PlaybackStatus
 import com.android.purebilibili.core.player.SharedPlaybackRequest
@@ -60,7 +67,8 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val session = remember { SharedPlaybackSession(context) }
-    val state by session.state.collectAsStateWithLifecycle()
+    val playbackState = session.state.collectAsStateWithLifecycle()
+    val state by playbackState
     var cid by remember { mutableLongStateOf(route.cid) }
     var quality by remember { mutableIntStateOf(defaultQuality) }
     var retry by remember { mutableIntStateOf(0) }
@@ -112,10 +120,16 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
             startPosition = 0; cid = next.cid; playOnLoad = true
         } else controls = true
     }
+    LaunchedEffect(cid, state.canSeek) {
+        if (!state.canSeek && pendingSeek != null) {
+            pendingSeek = null
+            restoreFocus = playFocus
+        }
+    }
     LaunchedEffect(state.status) {
         if (state.status == PlaybackStatus.Failed) { controls = false; pendingSeek = null; dialog = null }
     }
-    LaunchedEffect(controls, pendingSeek != null, dialog, state.status) {
+    LaunchedEffect(controls, pendingSeek != null, dialog, state.status == PlaybackStatus.Failed) {
         if (dialog != null || state.status == PlaybackStatus.Failed) return@LaunchedEffect
         if (controls) {
             if (pendingSeek != null) seekFocus.requestFocus()
@@ -134,7 +148,7 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
     fun back() {
         when (resolveTvPlayerBack(dialog != null, pendingSeek != null, controls)) {
             TvPlayerBackAction.CloseDialog -> dialog = null
-            TvPlayerBackAction.CancelSeek -> pendingSeek = null
+            TvPlayerBackAction.CancelSeek -> { restoreFocus = seekFocus; pendingSeek = null; interact() }
             TvPlayerBackAction.HideControls -> controls = false
             TvPlayerBackAction.LeavePlayer -> leavePlayer()
         }
@@ -157,7 +171,7 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
                     true
                 }
                 KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                    if (dialog != null || state.durationMs <= 0 || controls && !seekFocused && pendingSeek == null) false
+                    if (dialog != null || !state.canSeek || state.durationMs <= 0 || controls && !seekFocused && pendingSeek == null) false
                     else {
                         if (key.action == KeyEvent.ACTION_DOWN) {
                             pendingSeek = tvSeekTarget(pendingSeek ?: state.positionMs,
@@ -171,7 +185,10 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
                     when {
                         dialog != null -> false
                         pendingSeek != null -> {
-                            if (key.action == KeyEvent.ACTION_UP) { pendingSeek?.let(session::seekTo); pendingSeek = null }
+                            if (key.action == KeyEvent.ACTION_UP) {
+                                pendingSeek?.let(session::seekTo)
+                                restoreFocus = seekFocus; pendingSeek = null; interact()
+                            }
                             true
                         }
                         !controls -> { if (key.action == KeyEvent.ACTION_UP) controls = true; true }
@@ -179,7 +196,11 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
                     }
                 }
                 KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> {
-                    if (!controls && dialog == null) { if (key.action == KeyEvent.ACTION_DOWN) controls = true; true } else false
+                    when {
+                        pendingSeek != null && dialog == null -> true
+                        !controls && dialog == null -> { if (key.action == KeyEvent.ACTION_DOWN) controls = true; true }
+                        else -> false
+                    }
                 }
                 else -> false
             }
@@ -203,29 +224,37 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
             Column(Modifier.align(Alignment.Center).background(Color(0xDD10141F)).padding(28.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 Text(state.error ?: "播放失败")
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Button(onClick = { startPosition = state.positionMs.takeIf { state.durationMs > 0 }; retry++ }, modifier = Modifier.focusRequester(retryFocus)) { Text("重试") }
-                    Button(onClick = { startPosition = state.positionMs.takeIf { state.durationMs > 0 }; quality = 32; retry++ }) { Text("以 480P 重试") }
-                    Button(onClick = { leavePlayer() }) { Text("返回详情") }
+                    TvAppButton(onClick = { startPosition = state.positionMs.takeIf { state.durationMs > 0 }; retry++ }, modifier = Modifier.focusRequester(retryFocus)) { Text("重试") }
+                    TvAppButton(onClick = { startPosition = state.positionMs.takeIf { state.durationMs > 0 }; quality = 32; retry++ }) { Text("以 480P 重试") }
+                    TvAppButton(onClick = { leavePlayer() }) { Text("返回详情") }
                 }
             }
         } else if (controls) {
-            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color(0xDC10141F)).padding(32.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Text(state.info?.title ?: route.label, style = MaterialTheme.typography.titleLarge)
-                Button(onClick = { pendingSeek = state.positionMs; interact() }, modifier = Modifier.fillMaxWidth()
-                    .focusRequester(seekFocus).onFocusChanged { seekFocused = it.isFocused }.testTag("tv-seek"),
-                    enabled = state.durationMs > 0) {
-                    Text("${formatTime(pendingSeek ?: state.positionMs)} / ${formatTime(state.durationMs)}" +
-                        if (pendingSeek != null) "   左右调整 · 确认跳转 · 返回取消" else "   选择进度条后左右快进快退")
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Button(onClick = { interact(); if (state.status == PlaybackStatus.Ended) session.replay() else session.togglePlayPause() },
+            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(Color(0xB010141F), Color(0xE610141F), Color(0xF510141F))))
+                .verticalScroll(rememberScrollState()).padding(TvUiTokens.pagePadding),
+                verticalArrangement = Arrangement.spacedBy(AppSpacingTokens.Large)) {
+                Text(state.info?.title ?: route.label, style = MaterialTheme.typography.titleLarge,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                TvPlaybackProgress(
+                    positionMsProvider = { playbackState.value.positionMs },
+                    bufferedPositionMsProvider = { playbackState.value.bufferedPositionMs },
+                    durationMs = state.durationMs,
+                    previewPositionMs = pendingSeek,
+                    canSeek = state.canSeek,
+                    onStartPreview = { pendingSeek = state.positionMs; interact() },
+                    modifier = Modifier.fillMaxWidth().focusRequester(seekFocus)
+                        .onFocusChanged { seekFocused = it.isFocused },
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(AppSpacingTokens.Large),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacingTokens.Small)) {
+                    TvAppButton(onClick = { interact(); if (state.status == PlaybackStatus.Ended) session.replay() else session.togglePlayPause() },
                         modifier = Modifier.focusRequester(playFocus).testTag("tv-play-pause")) { Text(if (state.status == PlaybackStatus.Ended) "重新播放" else if (state.playing) "暂停" else "播放") }
-                    Button(onClick = { interact(); restoreFocus = qualityFocus; dialog = PlayerDialog.Quality }, modifier = Modifier.focusRequester(qualityFocus)) { Text("画质") }
-                    Button(onClick = { interact(); restoreFocus = speedFocus; dialog = PlayerDialog.Speed }, modifier = Modifier.focusRequester(speedFocus)) { Text("倍速") }
-                    if (state.info?.pages.orEmpty().size > 1) Button(onClick = { interact(); restoreFocus = episodesFocus; dialog = PlayerDialog.Episodes }, modifier = Modifier.focusRequester(episodesFocus)) { Text("选集") }
-                    Button(onClick = { controls = false }) { Text("收起") }
-                    Button(onClick = { leavePlayer() }) { Text("返回详情") }
+                    TvAppButton(onClick = { interact(); restoreFocus = qualityFocus; dialog = PlayerDialog.Quality }, modifier = Modifier.focusRequester(qualityFocus)) { Text("画质") }
+                    TvAppButton(onClick = { interact(); restoreFocus = speedFocus; dialog = PlayerDialog.Speed }, modifier = Modifier.focusRequester(speedFocus)) { Text("倍速") }
+                    if (state.info?.pages.orEmpty().size > 1) TvAppButton(onClick = { interact(); restoreFocus = episodesFocus; dialog = PlayerDialog.Episodes }, modifier = Modifier.focusRequester(episodesFocus)) { Text("选集") }
+                    TvAppButton(onClick = { controls = false }) { Text("收起") }
+                    TvAppButton(onClick = { leavePlayer() }) { Text("返回详情") }
                 }
             }
         }
@@ -234,20 +263,15 @@ internal fun TvPlayerRoute(route: TvRoute, defaultQuality: Int, autoContinue: Bo
         PlayerDialog.Quality -> TvChoiceDialog("画质", state.qualities, onDismiss = { dialog = null }, onChoose = {
             latestCheckpoint(state)
             startPosition = state.positionMs; playOnLoad = state.playing; quality = it; dialog = null
-        })
+        }, selectedValue = state.actualQuality)
         PlayerDialog.Speed -> TvChoiceDialog("倍速", listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f).map { it to "${it}x" },
-            onDismiss = { dialog = null }, onChoose = { session.setSpeed(it); dialog = null })
+            onDismiss = { dialog = null }, onChoose = { session.setSpeed(it); dialog = null },
+            selectedValue = session.player.playbackParameters.speed)
         PlayerDialog.Episodes -> TvChoiceDialog("选集", state.info?.pages.orEmpty().map { it.cid to "P${it.page} · ${it.part}" },
             onDismiss = { dialog = null }, onChoose = {
                 latestCheckpoint(state)
                 cid = it; startPosition = null; playOnLoad = true; dialog = null
-            })
+            }, selectedValue = state.info?.cid)
         null -> Unit
     }
-}
-
-private fun formatTime(ms: Long): String {
-    val seconds = ms.coerceAtLeast(0) / 1000
-    return if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60)
-    else "%02d:%02d".format(seconds / 60, seconds % 60)
 }

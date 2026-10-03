@@ -58,6 +58,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.CompositionLocalProvider
@@ -67,6 +68,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -162,6 +164,9 @@ import com.android.purebilibili.feature.home.homeFeedPinchZoom
 import java.time.Instant
 import java.time.ZoneId
 
+/** revision 触发的非手动刷新最小联网间隔；间隔内只重读本地缓存。 */
+private const val MIN_NETWORK_REFRESH_INTERVAL_MS = 8_000L
+
 @Composable
 @OptIn(ExperimentalSharedTransitionApi::class)
 fun SubscriptionFeedPage(
@@ -186,6 +191,7 @@ fun SubscriptionFeedPage(
     var cachedBodies by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var unreadOnly by remember { mutableStateOf(false) }
     var selectedSourceId by remember { mutableStateOf<String?>(null) }
+    var selectedGroup by remember { mutableStateOf<String?>(null) }
     var opened by remember { mutableStateOf<ParsedFeedItem?>(null) }
     var previewImages by remember { mutableStateOf<List<String>>(emptyList()) }
     var previewIndex by remember { mutableIntStateOf(0) }
@@ -250,6 +256,10 @@ fun SubscriptionFeedPage(
         }
     }
     var reloadToken by remember { mutableIntStateOf(0) }
+    var refreshErrors by remember { mutableStateOf<List<String>>(emptyList()) }
+    var refreshProgress by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var lastNetworkFetchAt by remember { mutableLongStateOf(0L) }
+    var lastFetchReloadToken by remember { mutableIntStateOf(-1) }
 
     LaunchedEffect(scrollToTopRequestId) {
         if (scrollToTopRequestId > 0 && !isArticleOpen) listState.animateScrollToTop()
@@ -259,6 +269,11 @@ fun SubscriptionFeedPage(
         try {
             val loadedSources = withContext(Dispatchers.IO) { loadEnabledFeedSources(context) }
             sources = loadedSources
+            val groupNames = loadedSources.map { it.group }.filter { it.isNotBlank() }.distinct()
+            val activeGroup = selectedGroup
+            if (activeGroup != null && activeGroup.isNotEmpty() && activeGroup !in groupNames) {
+                selectedGroup = null
+            }
             if (selectedSourceId != null && loadedSources.none { it.id == selectedSourceId }) {
                 selectedSourceId = null
             }
@@ -267,15 +282,30 @@ fun SubscriptionFeedPage(
             cachedBodies = cache.fullBodies
             val enabledIds = loadedSources.map { it.id }.toSet()
             items = mergeCachedFeedItems(cache.items, emptyList(), enabledIds)
+            // 手动下拉始终联网；revision 触发（如设置里切换开关）在最小间隔内只重读本地缓存，
+            // 避免每次开关订阅都全量请求所有源。
+            val manualRefresh = reloadToken != lastFetchReloadToken
+            val shouldFetchNetwork = loadedSources.isNotEmpty() && (
+                manualRefresh ||
+                    items.isEmpty() ||
+                    System.currentTimeMillis() - lastNetworkFetchAt >= MIN_NETWORK_REFRESH_INTERVAL_MS
+                )
+            lastFetchReloadToken = reloadToken
+            if (!shouldFetchNetwork) return@LaunchedEffect
+            lastNetworkFetchAt = System.currentTimeMillis()
+            refreshProgress = 0 to loadedSources.size
             val snapshot = loadFeedSources(loadedSources, FeedConditionalStore.load(context)) { update ->
+                refreshProgress = update.completedSources to update.totalSources
                 val preserveOrder = listState.firstVisibleItemIndex > 0 ||
                     listState.firstVisibleItemScrollOffset > 0
                 val merged = mergeCachedFeedItems(cache.items, update.items, enabledIds)
                 items = stabilizeFeedOrder(items, merged, preserveOrder)
             }
+            refreshProgress = snapshot.completedSources to snapshot.totalSources
             val merged = mergeCachedFeedItems(cache.items, snapshot.items, enabledIds)
             val preserveOrder = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
             items = stabilizeFeedOrder(items, merged, preserveOrder)
+            refreshErrors = snapshot.errors
             snapshot.errors.forEach { Logger.w("SubscriptionFeed", it) }
             runCatching { FeedReadingStore.saveItems(context, merged) }
                 .onFailure { Logger.w("SubscriptionFeed", "本地缓存保存失败: ${it.message}") }
@@ -292,8 +322,16 @@ fun SubscriptionFeedPage(
         }
     }
 
+    val groupSourceIds = remember(sources, selectedGroup) {
+        if (selectedGroup == null) {
+            emptySet()
+        } else {
+            sources.filter { it.group == selectedGroup }.map { it.id }.toSet()
+        }
+    }
     val visibleItems = items.filter { item ->
         (selectedSourceId == null || item.sourceId == selectedSourceId) &&
+            (selectedGroup == null || item.sourceId in groupSourceIds) &&
             (!unreadOnly || feedItemKey(item) !in readKeys || feedItemKey(item) == opened?.let(::feedItemKey))
     }
     SharedTransitionLayout(modifier = modifier.fillMaxSize()) {
@@ -359,6 +397,11 @@ fun SubscriptionFeedPage(
                         visibleItems = visibleItems,
                         loading = loading,
                         unreadOnly = unreadOnly,
+                        refreshErrors = refreshErrors,
+                        onDismissRefreshErrors = { refreshErrors = emptyList() },
+                        refreshProgress = refreshProgress,
+                        selectedGroup = selectedGroup,
+                        onSelectGroup = { selectedGroup = it },
                         onUnreadOnlyChange = { unreadOnly = it },
                         readKeys = readKeys,
                         selectedSourceId = selectedSourceId,
@@ -427,6 +470,11 @@ private fun SubscriptionFeedGrid(
     visibleItems: List<ParsedFeedItem>,
     loading: Boolean,
     unreadOnly: Boolean,
+    refreshErrors: List<String>,
+    onDismissRefreshErrors: () -> Unit,
+    refreshProgress: Pair<Int, Int>?,
+    selectedGroup: String?,
+    onSelectGroup: (String?) -> Unit,
     onUnreadOnlyChange: (Boolean) -> Unit,
     readKeys: Set<String>,
     selectedSourceId: String?,
@@ -461,26 +509,108 @@ private fun SubscriptionFeedGrid(
         verticalItemSpacing = 8.dp,
     ) {
         item(span = StaggeredGridItemSpan.FullLine) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AppAssistChip(onClick = { onSelectSource(null) }, label = { AppText("全部") })
-                AppAssistChip(
-                    onClick = { onUnreadOnlyChange(!unreadOnly) },
-                    label = { AppText(if (unreadOnly) "✓ 只看未读" else "只看未读") },
-                )
-                sources.forEach { source ->
-                    AppAssistChip(
-                        onClick = { onSelectSource(source.id) },
-                        label = { AppText(source.title) },
-                    )
+            val groupNames = sources.map { it.group }.filter { it.isNotBlank() }.distinct()
+            val hasGroups = groupNames.isNotEmpty()
+            val displayedSources = if (selectedGroup == null) {
+                sources
+            } else {
+                sources.filter { it.group == selectedGroup }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (hasGroups) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        AppAssistChip(
+                            onClick = { onSelectGroup(null) },
+                            label = { AppText(if (selectedGroup == null) "✓ 全部分组" else "全部分组") },
+                        )
+                        groupNames.forEach { group ->
+                            AppAssistChip(
+                                onClick = { onSelectGroup(if (selectedGroup == group) null else group) },
+                                label = {
+                                    AppText(
+                                        if (selectedGroup == group) "✓ $group" else group
+                                    )
+                                },
+                            )
+                        }
+                        if (sources.any { it.group.isBlank() }) {
+                            AppAssistChip(
+                                onClick = { onSelectGroup(if (selectedGroup == "") null else "") },
+                                label = {
+                                    AppText(
+                                        if (selectedGroup == "") "✓ 未分组" else "未分组"
+                                    )
+                                },
+                            )
+                        }
+                    }
                 }
-                AppTextButton(onClick = onRefresh, enabled = !loading) {
-                    AppText(if (loading) "刷新中" else "刷新")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppAssistChip(onClick = { onSelectSource(null) }, label = { AppText("全部") })
+                    AppAssistChip(
+                        onClick = { onUnreadOnlyChange(!unreadOnly) },
+                        label = { AppText(if (unreadOnly) "✓ 只看未读" else "只看未读") },
+                    )
+                    displayedSources.forEach { source ->
+                        AppAssistChip(
+                            onClick = { onSelectSource(source.id) },
+                            label = { AppText(source.title) },
+                        )
+                    }
+                    AppTextButton(onClick = onRefresh, enabled = !loading) {
+                        val progress = refreshProgress
+                        AppText(
+                            when {
+                                !loading -> "刷新"
+                                progress == null || progress.second <= 0 -> "刷新中"
+                                progress.first >= progress.second -> "刷新中 ${progress.second}/${progress.second}"
+                                else -> "刷新中 ${progress.first}/${progress.second}"
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        if (refreshErrors.isNotEmpty()) {
+            item(span = StaggeredGridItemSpan.FullLine, key = "subscription_refresh_errors") {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        AppText(
+                            text = if (refreshErrors.size == 1) {
+                                refreshErrors.first()
+                            } else {
+                                "${refreshErrors.size} 个订阅源刷新失败：${refreshErrors.first()}"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.weight(1f),
+                        )
+                        AppTextButton(onClick = onDismissRefreshErrors) {
+                            AppText("知道了")
+                        }
+                    }
                 }
             }
         }

@@ -31,10 +31,19 @@ internal fun TvAppCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = TvUiTokens.shape(ContainerLevel.Card)
+    val colors = MaterialTheme.colorScheme
     Card(
         onClick = onClick,
         modifier = modifier,
         shape = CardDefaults.shape(shape = shape),
+        colors = CardDefaults.colors(
+            containerColor = colors.surfaceVariant,
+            contentColor = colors.onSurface,
+            focusedContainerColor = colors.surfaceVariant,
+            focusedContentColor = colors.onSurface,
+            pressedContainerColor = colors.surfaceVariant,
+            pressedContentColor = colors.onSurface,
+        ),
         scale = CardDefaults.scale(
             focusedScale = if (LocalTvReduceMotion.current) 1f else TvUiTokens.focusedCardScale
         ),

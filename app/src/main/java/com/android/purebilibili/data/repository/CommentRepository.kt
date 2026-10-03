@@ -658,54 +658,35 @@ object CommentRepository {
             it.rpid > 0 && it.replyControl?.location.isNullOrBlank()
         }
         if (missing.isEmpty()) return data
-        // seek_rpid is already used for exact comment reads. Never substitute REST pn
-        // pages for a sorted gRPC page, or infer a child's location from its author/root.
+        // 楼中楼子回复的 IP 属地只随 x/v2/reply/reply 下发：主列表 seek_rpid 命中的嵌套
+        // 回复不带 location，按 root 分组走二级评论接口补全（属地字段需要登录态）。
         val supplements = mutableListOf<ReplyItem>()
-        withTimeoutOrNull(3_500L) {
-            val keys = getWbiKeysOrNull() ?: return@withTimeoutOrNull
-            currentCoroutineContext().ensureActive()
-            val readMode = resolveCommentReadPlan(
-                hasSession = !com.android.purebilibili.core.store.TokenManager.sessDataCache.isNullOrEmpty()
-            ).primary
-            val apiClient = resolveReadApi(readMode)
-            for (batch in missing.chunked(3)) {
-                val responses = coroutineScope {
-                    batch.filter { item -> supplements.none {
-                        it.rpid == item.rpid && !it.replyControl?.location.isNullOrBlank()
-                    } }.map { item ->
-                        async {
-                            try {
-                                val params = TreeMap<String, String>().apply {
-                                    put("oid", oid.toString())
-                                    put("type", type.toString())
-                                    put("mode", "2")
-                                    put("next", "0")
-                                    put("ps", "20")
-                                    put("plat", "1")
-                                    put("seek_rpid", item.rpid.toString())
-                                }
-                                val response = apiClient.getReplyList(
-                                    WbiUtils.sign(params, keys.first, keys.second)
-                                )
-                                response
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: Exception) {
-                                Logger.w("CommentRepo", "Reply location supplement failed: ${e.message}")
-                                null
-                            }
-                        }
-                    }.awaitAll()
+        withTimeoutOrNull(4_500L) {
+            val childRoots = missing.map { it.root }.filter { it != 0L }.distinct()
+            for (rootId in childRoots) {
+                var pn = 1
+                while (pn <= 3) {
+                    currentCoroutineContext().ensureActive()
+                    val response = try {
+                        api.getReplyReply(oid = oid, type = type, root = rootId, pn = pn, ps = 20)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Logger.w("CommentRepo", "Sub-reply location supplement failed: ${e.message}")
+                        null
+                    } ?: break
+                    if (response.code != 0) break
+                    val pageData = response.data ?: break
+                    supplements += collectReplyLocationCandidates(pageData)
+                    if (missing.all { item -> supplements.any {
+                            it.rpid == item.rpid && !it.replyControl?.location.isNullOrBlank()
+                        } }) {
+                        return@withTimeoutOrNull
+                    }
+                    val total = pageData.page.count
+                    if (pageData.replies.isNullOrEmpty() || pn * 20 >= total) break
+                    pn++
                 }
-                supplements += responses.filterNotNull()
-                    .filter { it.code == 0 }
-                    .mapNotNull { it.data }
-                    .flatMap(::collectReplyLocationCandidates)
-                // Stop optional reads on authentication/rate-limit errors.
-                if (responses.filterNotNull().any { shouldFallbackCommentRead(it.code) }) break
-                if (missing.all { item -> supplements.any {
-                        it.rpid == item.rpid && !it.replyControl?.location.isNullOrBlank()
-                    } }) break
             }
         }
         return mergeCommentReplyLocations(data, supplements)

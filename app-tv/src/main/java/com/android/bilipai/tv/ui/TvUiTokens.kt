@@ -23,6 +23,9 @@ internal object TvUiTokens {
     val minimumCardWidth = 150.dp
     val minimumButtonHeight = 48.dp
     val focusBorderWidth = 2.dp
+    val progressTrackHeight = AppSpacingTokens.ExtraSmall
+    val focusedProgressTrackHeight = AppSpacingTokens.Small
+    val progressThumbSize = AppSpacingTokens.Large
     const val focusedCardScale = 1.04f
 
     fun shape(level: ContainerLevel) = RoundedCornerShape(

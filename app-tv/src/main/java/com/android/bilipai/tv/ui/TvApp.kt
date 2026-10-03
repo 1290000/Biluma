@@ -6,10 +6,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,12 +20,14 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
@@ -38,10 +42,16 @@ import com.android.bilipai.tv.TvRoute
 import com.android.bilipai.tv.TvScreen
 import com.android.bilipai.tv.TvUiState
 import com.android.bilipai.tv.ui.components.TvAppButton
+import com.android.bilipai.tv.ui.components.TvCardWatchProgress
+import com.android.purebilibili.core.ui.AppSpacingTokens
+import com.android.purebilibili.data.model.resolveVideoDisplayProgressState
+import com.android.purebilibili.data.model.resolveWatchLaterDisplayProgressState
+import com.android.purebilibili.data.model.response.VideoItem
 
 @Composable
 fun TvApp(viewModel: TvAppViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val routeStateHolder = rememberSaveableStateHolder()
     LaunchedEffect(viewModel) { viewModel.start() }
     if (state.route.screen == TvScreen.Player) {
         Box(Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {
@@ -54,7 +64,11 @@ fun TvApp(viewModel: TvAppViewModel = viewModel()) {
     var railHasFocus by remember { mutableStateOf(false) }
     var ambientUrl by remember { mutableStateOf<String?>(null) }
 
-    BackHandler(enabled = state.route.screen != TvScreen.Home && state.route.screen != TvScreen.Player) { viewModel.back() }
+    fun backFromContent() {
+        if (state.route.screen == TvScreen.Detail) routeStateHolder.removeState(state.route.key)
+        viewModel.back()
+    }
+    BackHandler(enabled = state.route.screen != TvScreen.Home && state.route.screen != TvScreen.Player) { backFromContent() }
     // 侧栏持有焦点时返回先回到内容（分层返回；后注册的 BackHandler 优先）
     BackHandler(enabled = railHasFocus) { contentFocus.requestFocus() }
 
@@ -63,11 +77,15 @@ fun TvApp(viewModel: TvAppViewModel = viewModel()) {
         Box(Modifier.fillMaxSize()) {
             key(state.route.key) {
                 when (state.route.screen) {
-                    TvScreen.Detail -> TvDetailContent(state, contentFocus, viewModel::play, viewModel::addWatchLater, viewModel::refresh, onBack = { viewModel.back() })
+                    TvScreen.Detail -> routeStateHolder.SaveableStateProvider(state.route.key) {
+                        TvDetailContent(state, contentFocus, viewModel::play, viewModel::addWatchLater, viewModel::refresh,
+                            onBack = { backFromContent() }, modifier = Modifier.fillMaxSize().padding(TvUiTokens.pagePadding))
+                    }
                     TvScreen.Login -> TvLoginContent(state, contentFocus, viewModel::refreshQr, viewModel::signOut)
                     TvScreen.Settings -> TvSettingsContent(state, contentFocus, viewModel::updateQuality,
                         viewModel::toggleAutoContinue, viewModel::toggleDanmaku, viewModel::togglePrivacy, viewModel::clearSearchHistory)
-                    TvScreen.Home -> TvHomeContent(state, navigationFocus, contentFocus, viewModel, onAmbientChange = { ambientUrl = it })
+                    TvScreen.Home -> TvHomeContent(state, navigationFocus, contentFocus, viewModel,
+                        onAmbientChange = { ambientUrl = it }, autoAdvanceEnabled = !railHasFocus)
                     else -> TvCatalogContent(state, contentFocus, navigationFocus, viewModel)
                 }
             }
@@ -79,7 +97,10 @@ fun TvApp(viewModel: TvAppViewModel = viewModel()) {
             contentFocus = contentFocus,
             navigationFocus = navigationFocus,
             onRailFocusChanged = { railHasFocus = it },
-            onNavigate = { screen -> viewModel.navigate(TvRoute(screen), root = true) },
+            onNavigate = { screen ->
+                if (state.route.screen == TvScreen.Detail) routeStateHolder.removeState(state.route.key)
+                viewModel.navigate(TvRoute(screen), root = true)
+            },
             modifier = Modifier.align(Alignment.CenterStart),
         )
     }
@@ -93,34 +114,61 @@ private fun TvHomeContent(
     contentFocus: FocusRequester,
     model: TvAppViewModel,
     onAmbientChange: (String?) -> Unit,
+    autoAdvanceEnabled: Boolean,
 ) {
     if (state.catalog.items.isEmpty()) {
         TvCatalogContent(state, contentFocus, navigationFocus, model)
         return
     }
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        TvHeroCarousel(
-            items = state.catalog.items,
-            navigationFocus = navigationFocus,
-            onPlay = model::playItem,
-            onOpen = model::open,
-            onAmbientChange = onAmbientChange,
-        )
-        state.catalog.error?.let { message ->
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = TvUiTokens.pagePadding)) {
-                Text(message, modifier = Modifier.weight(1f), color = Color(0xFFFFA3B6))
-                TvAppButton(onClick = model::refresh) { Text("重试") }
-            }
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        if (maxHeight < 480.dp || maxWidth < 640.dp || fontScale > 1.3f) {
+            TvCatalogContent(state, contentFocus, navigationFocus, model)
+            return@BoxWithConstraints
         }
-        TvVideoGrid(state.catalog, contentFocus, navigationFocus,
-            model::open, { id -> model.focusItem(id, state.route.key) },
-            { index, offset -> model.saveScroll(index, offset, state.route.key) }, Modifier.weight(1f),
-            canLoadMore = state.catalog.hasMore && !state.catalog.loading, onLoadMore = model::loadMore)
+        val heroHeight = (maxHeight * 0.5f).coerceIn(240.dp, 292.dp)
+        Column(Modifier.fillMaxSize()) {
+            TvHeroCarousel(
+                items = state.catalog.items,
+                navigationFocus = navigationFocus,
+                onPlay = model::playItem,
+                onOpen = model::open,
+                onAmbientChange = onAmbientChange,
+                modifier = Modifier.fillMaxWidth().height(heroHeight),
+                autoAdvanceEnabled = autoAdvanceEnabled,
+            )
+            state.catalog.error?.let { message ->
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = TvUiTokens.pagePadding)) {
+                    Text(message, modifier = Modifier.weight(1f), color = Color(0xFFFFA3B6))
+                    TvAppButton(onClick = model::refresh) { Text("重试") }
+                }
+            }
+            TvVideoGrid(state.catalog, contentFocus, navigationFocus,
+                model::open, { id -> model.focusItem(id, state.route.key) },
+                { index, offset -> model.saveScroll(index, offset, state.route.key) }, Modifier.weight(1f),
+                canLoadMore = state.catalog.hasMore && !state.catalog.loading, onLoadMore = model::loadMore)
+        }
     }
 }
 
 @Composable
 private fun TvCatalogContent(state: TvUiState, contentFocus: FocusRequester, navigationFocus: FocusRequester, model: TvAppViewModel) {
+    val watchProgressContent: (@Composable (VideoItem) -> Unit)? = when (state.route.screen) {
+        TvScreen.History, TvScreen.WatchLater -> { video ->
+            TvCardWatchProgress(
+                state = if (state.route.screen == TvScreen.History) resolveVideoDisplayProgressState(
+                    serverProgressSec = video.progress,
+                    durationSec = video.duration,
+                    viewAt = video.view_at,
+                ) else resolveWatchLaterDisplayProgressState(video),
+                durationSec = video.duration,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = AppSpacingTokens.Small, start = TvUiTokens.cardPadding, end = TvUiTokens.cardPadding),
+            )
+        }
+        else -> null
+    }
     Column(Modifier.fillMaxSize().padding(horizontal = TvUiTokens.pagePadding), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(when (state.route.screen) {
@@ -166,7 +214,8 @@ private fun TvCatalogContent(state: TvUiState, contentFocus: FocusRequester, nav
             state.catalog.items.isNotEmpty() -> key(state.catalog.resetVersion) { TvVideoGrid(state.catalog, if (state.route.screen == TvScreen.Search) remember { FocusRequester() } else contentFocus, navigationFocus,
                 model::open, { id -> model.focusItem(id, state.route.key) },
                 { index, offset -> model.saveScroll(index, offset, state.route.key) }, Modifier.weight(1f),
-                canLoadMore = state.catalog.hasMore && !state.catalog.loading, onLoadMore = model::loadMore) }
+                canLoadMore = state.catalog.hasMore && !state.catalog.loading, onLoadMore = model::loadMore,
+                supportingContent = watchProgressContent) }
             !state.catalog.loading && state.catalog.error == null && state.route.screen != TvScreen.Search -> {
                 FocusButton("暂无内容，刷新试试", model::refresh, remember { FocusRequester() })
             }

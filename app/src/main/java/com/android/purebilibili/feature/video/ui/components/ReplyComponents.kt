@@ -2594,7 +2594,10 @@ internal fun ReplyMemberAvatar(
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(FormatUtils.fixImageUrl(member.avatar))
-                .crossfade(!lightweightMode)
+                //  [防闪烁] crossfade 不能随 lightweightMode 翻转：改请求构造会让
+                //  Coil 视为新请求重新执行，切回评论页瞬间全部头像重载闪一下。
+                //  内存缓存命中本身不播淡入，恒定开启不损失滚动性能。
+                .crossfade(true)
                 .build(),
             contentDescription = null,
             contentScale = ContentScale.Crop,
@@ -2608,7 +2611,7 @@ internal fun ReplyMemberAvatar(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(pendantImageUrl)
-                    .crossfade(!lightweightMode)
+                    .crossfade(true)
                     .build(),
                 contentDescription = "Avatar pendant",
                 contentScale = ContentScale.Fit,
