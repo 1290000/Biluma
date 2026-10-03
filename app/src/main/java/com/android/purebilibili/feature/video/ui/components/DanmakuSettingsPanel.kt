@@ -375,6 +375,9 @@ fun DanmakuSettingsPanel(
 ) {
     val settingsContext = LocalContext.current
     val settingsScopeCoroutine = rememberCoroutineScope()
+    val hotDanmakuEnabled by remember(settingsContext) {
+        SettingsManager.getDanmakuHotBarEnabled(settingsContext)
+    }.collectAsStateWithLifecycle(initialValue = true)
     val expandedHotDanmaku by remember(settingsContext) {
         SettingsManager.getHotDanmakuExpandedMode(settingsContext)
     }.collectAsStateWithLifecycle(initialValue = false)
@@ -915,22 +918,41 @@ indicatorPresentation = AppTabRowIndicatorPresentation.TONAL_PILL,
                                     fullscreenStyle = isFullscreenStyle
                                 )
                                 DanmakuFilterSwitchRow(
-                                    label = "计数弹幕扩展显示",
-                                    checked = expandedHotDanmaku,
+                                    label = "顶部计数弹幕",
+                                    checked = hotDanmakuEnabled,
                                     onCheckedChange = { enabled ->
                                         settingsScopeCoroutine.launch {
-                                            SettingsManager.setHotDanmakuExpandedMode(settingsContext, enabled)
+                                            SettingsManager.setDanmakuHotBarEnabled(settingsContext, enabled)
                                         }
                                     },
                                     colors = panelColors,
                                     fullscreenStyle = isFullscreenStyle,
                                 )
                                 AppText(
-                                    text = "开启后最多显示三条，允许横向滚动和省略长文字；关闭时最多两条，居中完整显示。",
+                                    text = "在顶部正中显示高赞计数弹幕。普通模式预留空间避让；海量模式独立叠加，不改变轨道和行数，顶部可能与普通弹幕重叠。",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = panelColors.supportingColor,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                 )
+                                if (hotDanmakuEnabled) {
+                                    DanmakuFilterSwitchRow(
+                                        label = "计数弹幕扩展显示",
+                                        checked = expandedHotDanmaku,
+                                        onCheckedChange = { enabled ->
+                                            settingsScopeCoroutine.launch {
+                                                SettingsManager.setHotDanmakuExpandedMode(settingsContext, enabled)
+                                            }
+                                        },
+                                        colors = panelColors,
+                                        fullscreenStyle = isFullscreenStyle,
+                                    )
+                                    AppText(
+                                        text = "开启后最多显示三条，允许横向滚动和省略长文字；关闭时最多两条，居中完整显示。",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = panelColors.supportingColor,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    )
+                                }
                                 DanmakuFilterSwitchRow(
                                     label = "海量弹幕模式",
                                     checked = massiveMode,

@@ -719,6 +719,14 @@ fun AppNavigation(
             currentRoute = currentRoute,
             mainHostTabRoute = currentBottomNavItem.route,
         )
+        val useHomeWallpaperDockBackdrop =
+            com.android.purebilibili.feature.home.shouldUseHomeWallpaperDockBackdrop(
+                currentRoute = currentRoute,
+                mainHostTabRoute = currentBottomNavItem.route,
+                transitionSourceRoute = videoCardTransitionClock.sourceRoute,
+                hasStaticWallpaper = globalHomeWallpaperUri.isNotBlank() &&
+                    com.android.purebilibili.feature.home.isStaticHomeWallpaperUri(globalHomeWallpaperUri),
+            )
         val exposeGlobalHomeWallpaperChrome = shouldExposeGlobalHomeWallpaperChrome(
             effectScope = effectiveHomeSettings.homeWallpaperEffectScope,
             hasWallpaperUri = globalHomeWallpaperUri.isNotBlank(),
@@ -729,11 +737,12 @@ fun AppNavigation(
             globalHomeWallpaperUri,
             effectiveHomeSettings.homeWallpaperEffectMode,
             renderGlobalHomeWallpaperBackdrop,
+            useHomeWallpaperDockBackdrop,
             isLightBackground,
             isDataSaverActiveForGlobalWallpaper
         ) {
             resolveHomeWallpaperBackdropAppearance(
-                hasWallpaper = renderGlobalHomeWallpaperBackdrop &&
+                hasWallpaper = (renderGlobalHomeWallpaperBackdrop || useHomeWallpaperDockBackdrop) &&
                     globalHomeWallpaperUri.isNotBlank(),
                 effectMode = effectiveHomeSettings.homeWallpaperEffectMode,
                 isDarkTheme = !isLightBackground,
@@ -1850,7 +1859,13 @@ fun AppNavigation(
         } else {
             null
         }
-        val bottomBarBackdrop = bottomBarBackdropSource?.backdrop
+        // The full navigation capture includes the departing video until it lands.
+        // Keep a wallpaper-only source across Home -> video -> predictive Home return.
+        val homeDockWallpaperSource = if (shouldCaptureBottomBarBackdrop && useHomeWallpaperDockBackdrop) {
+            androidx.compose.runtime.key(globalHomeWallpaperUri) { rememberChromeBackdropSource() }
+        } else null
+        val bottomBarBackdrop = homeDockWallpaperSource?.takeIf { it.isReady }?.backdrop
+            ?: bottomBarBackdropSource?.backdrop
         CompositionLocalProvider(
             com.android.purebilibili.core.ui.LocalAppPopupSurfaceRenderer provides
                 com.android.purebilibili.core.ui.components.BiliPaiPopupSurfaceRenderer,
@@ -2096,6 +2111,7 @@ fun AppNavigation(
                         )
                 ) {
                     DepthSyncedGlobalHomeWallpaperBackdrop(
+                        modifier = homeDockWallpaperSource?.modifier ?: Modifier,
                         wallpaperUri = globalHomeWallpaperUri,
                         appearance = globalHomeWallpaperAppearance,
                         baseColor = backgroundColor,
