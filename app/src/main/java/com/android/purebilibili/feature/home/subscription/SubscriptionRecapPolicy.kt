@@ -70,7 +70,7 @@ fun aggregateSubscriptionVideoRecap(
     items: List<HistoryData>,
     windowStartSec: Long,
 ): SubscriptionVideoRecapStats {
-    val inWindow = items.filter { it.view_at * 1000L >= windowStartMs }
+    val inWindow = items.filter { it.view_at >= windowStartSec }
     if (inWindow.isEmpty()) return SubscriptionVideoRecapStats()
     val durationOf: (HistoryData) -> Long = { item ->
         // progress == -1 表示看完，用完整时长；否则按已看进度计。

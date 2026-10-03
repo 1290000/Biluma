@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
@@ -88,6 +90,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.sample
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
@@ -153,6 +156,8 @@ import com.android.purebilibili.feature.home.resolveHomeCardWallpaperSurfaceMode
 import com.android.purebilibili.feature.home.resolveHomeWallpaperBackdropAppearance
 import com.android.purebilibili.feature.home.resolveHomeWallpaperUri
 import com.android.purebilibili.core.ui.AppShapes
+import top.yukonga.miuix.kmp.blur.Backdrop as MiuixBackdrop
+import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import com.android.purebilibili.core.ui.AdaptivePullToRefreshBox
 import com.android.purebilibili.core.ui.AppSurfaceTokens
@@ -704,7 +709,7 @@ private fun SubscriptionFeedCard(
                 .then(frost.borderModifier())
                 .clickable(onClick = onClick)
         },
-        color = frost.containerColor(),
+        color = frost.containerColor,
         tonalElevation = 0.dp,
     ) {
         Column {
@@ -743,7 +748,7 @@ private fun SubscriptionFeedCard(
 private class SubscriptionCardFrost(
     val useRealtimeFrosted: Boolean,
     val isDarkCardTheme: Boolean,
-    private val backdrop: HomeWallpaperBackdrop?,
+    private val backdrop: MiuixBackdrop?,
     private val shape: androidx.compose.ui.graphics.Shape,
     private val blurRadiusPx: Float,
 ) {
@@ -767,7 +772,7 @@ private class SubscriptionCardFrost(
         )
     }
 
-    fun containerColor(): Color = if (useRealtimeFrosted) {
+    val containerColor: Color = if (useRealtimeFrosted) {
         //  与 VideoCard 实时毛玻璃一致的不透明度，保证标题文字可读。
         AppSurfaceTokens.cardContainer().copy(alpha = if (isDarkCardTheme) 0.44f else 0.36f)
     } else {
@@ -799,6 +804,12 @@ private fun rememberSubscriptionCardFrost(): SubscriptionCardFrost {
         backdrop = backdrop,
         shape = AppShapes.container(ContainerLevel.Card),
         blurRadiusPx = with(LocalDensity.current) { 24.dp.toPx() },
+        containerColor = if (surfaceMode == HomeCardWallpaperSurfaceMode.REALTIME_FROSTED) {
+            //  与 VideoCard 实时毛玻璃一致的不透明度，保证标题文字可读。
+            AppSurfaceTokens.cardContainer().copy(alpha = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) 0.44f else 0.36f)
+        } else {
+            AppSurfaceTokens.cardContainer()
+        },
     )
 }
 
@@ -840,7 +851,7 @@ private fun SubscriptionRecapCard(
             .clip(AppShapes.container(ContainerLevel.Card))
             .then(frost.backdropModifier())
             .then(frost.borderModifier()),
-        color = frost.containerColor(),
+        color = frost.containerColor,
         tonalElevation = 0.dp,
     ) {
         Column(
@@ -866,6 +877,8 @@ private fun SubscriptionRecapCard(
             }
             val emptyRss = rssStats.readCount <= 0
             val emptyVideo = videoUnavailable || videoStats == null || videoStats.videoCount <= 0
+            // 委托属性无法智能转换，取局部快照供下方使用。
+            val currentVideoStats = videoStats
             if (emptyRss && emptyVideo) {
                 AppText(
                     text = "这段时间还没有阅读或观看记录，读两篇文章或看几个视频再回来看看。",
@@ -906,7 +919,7 @@ private fun SubscriptionRecapCard(
                             }
                         }
                     }
-                    if (!emptyVideo && videoStats != null) {
+                    if (!emptyVideo && currentVideoStats != null) {
                         Row(
                             modifier = Modifier.weight(1f),
                             verticalAlignment = Alignment.CenterVertically,
@@ -920,12 +933,12 @@ private fun SubscriptionRecapCard(
                             )
                             Column {
                                 AppText(
-                                    text = "看了 ${videoStats.videoCount} 个视频",
+                                    text = "看了 ${currentVideoStats.videoCount} 个视频",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                 )
                                 AppText(
-                                    text = formatRecapDuration(videoStats.totalDurationSec),
+                                    text = formatRecapDuration(currentVideoStats.totalDurationSec),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -933,7 +946,7 @@ private fun SubscriptionRecapCard(
                         }
                     }
                 }
-                if ((videoStats?.topUps ?: emptyList()).isNotEmpty()) {
+                if (!currentVideoStats.topUps.isEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         AppText(
                             text = "最近爱看",
@@ -944,7 +957,7 @@ private fun SubscriptionRecapCard(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
                         ) {
-                            videoStats?.topUps?.forEach { up ->
+                            currentVideoStats.topUps.forEach { up ->
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(4.dp),
