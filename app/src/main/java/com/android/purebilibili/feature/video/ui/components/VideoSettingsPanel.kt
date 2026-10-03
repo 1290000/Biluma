@@ -372,6 +372,10 @@ fun VideoSettingsPanel(
         .getProgressPeakDanmakuEnabled(context)
         .collectAsStateWithLifecycle(initialValue = false
         )
+    val danmakuHotBarEnabled by com.android.purebilibili.core.store.SettingsManager
+        .getDanmakuHotBarEnabled(context)
+        .collectAsStateWithLifecycle(initialValue = true
+        )
     val timerIcon = rememberAppTimerIcon()
     val refreshIcon = rememberAppRefreshIcon()
     val photoIcon = rememberAppPhotoIcon()
@@ -1410,6 +1414,22 @@ fun VideoSettingsPanel(
                         scope.launch {
                             com.android.purebilibili.core.store.SettingsManager
                                 .setProgressPeakDanmakuEnabled(context, checked)
+                        }
+                    }
+                )
+                SettingsDivider()
+            }
+
+            item {
+                VideoSettingsSwitchRow(
+                    icon = rememberSettingsSemanticIcon(SettingsIconRole.PROGRESS_PEAK_DANMAKU),
+                    title = "高赞弹幕悬浮条",
+                    subtitle = if (danmakuHotBarEnabled) "展示最近 15 秒的高赞弹幕，可点赞或确认后发送同款" else "关闭高赞弹幕悬浮条",
+                    checked = danmakuHotBarEnabled,
+                    onCheckedChange = { checked ->
+                        scope.launch {
+                            com.android.purebilibili.core.store.SettingsManager
+                                .setDanmakuHotBarEnabled(context, checked)
                         }
                     }
                 )

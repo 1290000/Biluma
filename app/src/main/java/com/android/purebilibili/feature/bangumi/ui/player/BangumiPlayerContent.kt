@@ -362,7 +362,10 @@ fun BangumiPlayerContent(
                     },
                     modifier = Modifier.weight(1f),
                     colors = if (isFollowing) {
-                        ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     } else {
                         ButtonDefaults.buttonColors(
                             containerColor = resolveFilledButtonContainerColor(MaterialTheme.colorScheme),

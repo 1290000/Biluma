@@ -78,6 +78,8 @@ import com.android.purebilibili.core.ui.components.AppTextButton
 import com.android.purebilibili.core.ui.resolveAppTvIcon
 import com.android.purebilibili.data.model.response.ViewPoint
 import com.android.purebilibili.feature.video.progress.PbpProgressData
+import com.android.purebilibili.feature.video.ui.overlay.HotDanmakuBar
+import com.android.purebilibili.feature.video.ui.overlay.HOT_DANMAKU_BAR_HEIGHT_DP
 import com.android.purebilibili.feature.video.progress.buildPbpRidgeSamples
 import com.android.purebilibili.danmaku.engine.DanmakuRenderView
 
@@ -2943,6 +2945,9 @@ private fun VideoPlayerSectionContent(
         val danmakuAllowColorful = danmakuSettings.allowColorful
         val danmakuAllowSpecial = danmakuSettings.allowSpecial
         val danmakuHideInteractiveCommands = danmakuSettings.hideInteractiveCommands
+        val danmakuHotBarEnabled by com.android.purebilibili.core.store.SettingsManager
+            .getDanmakuHotBarEnabled(context)
+            .collectAsStateWithLifecycle(initialValue = true)
         val danmakuSmartOcclusion = danmakuSettings.smartOcclusion
         val portraitDanmakuDisplayAreaMode = danmakuSettings.portraitDisplayAreaMode
         val danmakuFullscreenPanelWidthMode by com.android.purebilibili.core.store.SettingsManager
@@ -4503,6 +4508,35 @@ private fun VideoPlayerSectionContent(
                     isFollowing = isFollowed,
                     modifier = Modifier.fillMaxSize()
                 )
+                // 3.1 高赞弹幕悬浮条：当前时间窗内点赞 Top-N，支持一键跟发
+                if (danmakuHotBarEnabled) {
+                    val hotBarLikedDanmakuIds by actions.likedDanmakuIds
+                        .collectAsStateWithLifecycle()
+                    HotDanmakuBar(
+                        getDanmakuList = { danmakuManager.getLoadedDanmakuList() },
+                        onVisibilityChange = { visible ->
+                            danmakuManager.reserveHotDanmakuBarHeight(
+                                if (visible) HOT_DANMAKU_BAR_HEIGHT_DP * density.density else 0f
+                            )
+                        },
+                        player = playerState.player,
+                        likedDanmakuIds = hotBarLikedDanmakuIds,
+                        onLikeDanmaku = actions.onLikeDanmakuToggle,
+                        isSending = isSendingDanmakuComposer,
+                        onSendSame = { message ->
+                            onSendDanmakuComposer(
+                                message,
+                                16777215,
+                                1,
+                                25,
+                                false,
+                            )
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth(),
+                    )
+                }
             }
             }
         }

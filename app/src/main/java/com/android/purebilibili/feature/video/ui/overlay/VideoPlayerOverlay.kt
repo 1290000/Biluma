@@ -1629,7 +1629,7 @@ fun VideoPlayerOverlay(
             ) {
                 AppSurface(
                     onClick = onLockToggle,
-                    color = Color.Black.copy(alpha = 0.6f),
+                    color = Color.Transparent,
                     shape = RoundedCornerShape(overlayVisualPolicy.lockButtonCornerRadiusDp.dp),
                     modifier = Modifier.size(overlayVisualPolicy.lockButtonSizeDp.dp)
                 ) {
@@ -1663,7 +1663,7 @@ fun VideoPlayerOverlay(
             ) {
                 AppSurface(
                     onClick = onCaptureScreenshot,
-                    color = Color.Black.copy(alpha = 0.6f),
+                    color = Color.Transparent,
                     shape = RoundedCornerShape(overlayVisualPolicy.lockButtonCornerRadiusDp.dp),
                     modifier = Modifier.size(overlayVisualPolicy.lockButtonSizeDp.dp)
                 ) {
@@ -1689,7 +1689,7 @@ fun VideoPlayerOverlay(
         if (showInsightHud) {
             AppSurface(
                 onClick = { showInsightDetails = true },
-                color = Color.Black.copy(alpha = 0.68f),
+                color = if (isFullscreen) Color.Transparent else Color.Black.copy(alpha = 0.68f),
                 contentColor = Color.White,
                 shape = AppShapes.container(ContainerLevel.Dialog),
                 modifier = Modifier
@@ -2946,7 +2946,8 @@ fun LandscapeEndDrawer(
                             AppButton(
                                 onClick = onToggleFollow,
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isFollowed) MaterialTheme.colorScheme.onSurface.copy(0.2f) else MaterialTheme.colorScheme.primary
+                                    containerColor = if (isFollowed) MaterialTheme.colorScheme.onSurface.copy(0.2f) else MaterialTheme.colorScheme.primary,
+                                    contentColor = if (isFollowed) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary,
                                 ),
                                 contentPadding = PaddingValues(
                                     horizontal = layoutPolicy.followButtonHorizontalPaddingDp.dp,

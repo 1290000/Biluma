@@ -1551,7 +1551,8 @@ fun PortraitVideoPager(
                 text = danmakuData.text,
                 color = danmakuData.color,
                 mode = danmakuData.mode,
-                fontSize = danmakuData.fontSize
+                fontSize = danmakuData.fontSize,
+                isVipGradualColor = danmakuData.isVipGradualColor,
             )
         }
     }

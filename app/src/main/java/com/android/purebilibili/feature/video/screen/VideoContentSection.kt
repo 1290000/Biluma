@@ -1061,14 +1061,16 @@ internal fun VideoContentSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(tabBarVisibleHeightDp + commentChromeHeight)
+                    // 播放器收起后使用内容页底色，避免模糊采样卡片造成横向色带。
+                    .background(if (isPlayerCollapsed) MaterialTheme.colorScheme.surface else Color.Transparent)
                     .biliPaiProgressiveTopBlur(
                         backdrop = videoContentMiuixBackdrop,
-                        enabled = progressiveCommentHeaderEnabled,
+                        enabled = progressiveCommentHeaderEnabled && !isPlayerCollapsed,
                         surfaceColor = Color.Transparent,
                     )
                     .topSolidProgressiveFade(
                         surfaceColor = MaterialTheme.colorScheme.surface,
-                        enabled = solidProgressiveCommentHeaderEnabled,
+                        enabled = solidProgressiveCommentHeaderEnabled && !isPlayerCollapsed,
                     ),
             )
         }
@@ -1783,17 +1785,17 @@ internal fun LandscapeCommentPanel(
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AppText("评论 $replyCount", style = MaterialTheme.typography.titleMedium)
-                        CommentSortFilterBar(
-                            sortMode = sortMode,
-                            onSortModeChange = onSortModeChange,
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            onSearchClick = { showCommentSearchSheet = true },
+                        AppText(
+                            "评论 $replyCount",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        Spacer(modifier = Modifier.weight(1f))
                         AppTextButton(
                             onClick = onSwitchSide,
                             modifier = Modifier.widthIn(min = 76.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                         ) {
                             AppText(
                                 text = if (isOnLeft) "移至右侧" else "移至左侧",
@@ -1805,6 +1807,7 @@ internal fun LandscapeCommentPanel(
                         AppTextButton(
                             onClick = requestDismiss,
                             modifier = Modifier.widthIn(min = 56.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                         ) {
                             AppText(
                                 text = "关闭",
@@ -1814,6 +1817,14 @@ internal fun LandscapeCommentPanel(
                             )
                         }
                     }
+                    CommentSortFilterBar(
+                        sortMode = sortMode,
+                        onSortModeChange = onSortModeChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
+                        onSearchClick = { showCommentSearchSheet = true },
+                    )
                     AppHorizontalDivider(color = commentAppearance.secondaryTextColor.copy(alpha = 0.18f))
                     if (threadContent != null) {
                         threadContent { images, index, rect, textContent ->
@@ -2136,7 +2147,7 @@ private fun VideoContentTabBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(
-                    if (liquidChromeSpec.useTransparentTabRowBackground) {
+                    if (liquidChromeSpec.useTransparentTabRowBackground && !isPlayerCollapsed) {
                         Modifier
                     } else {
                         Modifier.background(MaterialTheme.colorScheme.surface)
