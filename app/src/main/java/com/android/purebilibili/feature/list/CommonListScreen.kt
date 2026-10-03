@@ -2791,7 +2791,14 @@ private fun CommonListContent(
                 ) { index, video ->
                     AnimatedVideoListItem(modifier = videoListItemModifier(enabled = cardAnimationEnabled), enabled = cardAnimationEnabled) {
                         val historyKey = resolveHistoryItemKey(video)
-                        val historyItem = resolveHistoryItem?.invoke(video)
+                        val historyItem = resolveHistoryItem?.let { resolve ->
+                            resolve(video) ?: HistoryItem(
+                                videoItem = video,
+                                business = HistoryBusiness.UNKNOWN,
+                                cid = video.cid,
+                                progress = video.progress,
+                            )
+                        }
                         val historyCardPresentation = remember(historyItem) {
                             resolveHistoryCardPresentation(historyItem)
                         }

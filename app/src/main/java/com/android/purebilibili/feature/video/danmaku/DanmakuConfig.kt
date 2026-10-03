@@ -32,7 +32,7 @@ class DanmakuConfig {
     // 明确的滚动时长（秒）
     var scrollDurationSeconds = 7.0f
     
-    // 显示区域比例 (0.25, 0.5, 0.75, 1.0)
+    // 显示区域比例 (0.125 至 1.0，每档增加 0.125)
     var displayAreaRatio = 0.5f
 
     // 行高倍率
@@ -136,7 +136,7 @@ class DanmakuConfig {
     }
 
     private fun resolveActiveDisplayBand(defaultArea: Float): DanmakuDisplayBand {
-        val fallback = DanmakuDisplayBand(0f, defaultArea.coerceIn(0.25f, 1f))
+        val fallback = DanmakuDisplayBand(0f, defaultArea.coerceIn(0.125f, 1f))
         if (!smartOcclusionEnabled) return fallback
 
         val requested = DanmakuDisplayBand(
