@@ -20,6 +20,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
@@ -60,6 +61,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.outlined.PersonOutline
+import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,6 +78,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -82,6 +87,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
@@ -189,10 +195,13 @@ fun SubscriptionFeedPage(
     onPinchEnd: (Int) -> Unit = {},
     onArticleOpenChanged: (Boolean) -> Unit = {},
     onOpenPluginSettings: () -> Unit = {},
+    onUpClick: ((Long) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val subscriptionRevision by SubscriptionFeedStore.revision.collectAsStateWithLifecycle()
+    val recapEnabled by SettingsManager.getSubscriptionRecapEnabled(context)
+        .collectAsStateWithLifecycle(initialValue = true)
     var sources by remember { mutableStateOf<List<FeedSource>>(emptyList()) }
     var items by remember { mutableStateOf<List<ParsedFeedItem>>(emptyList()) }
     var readKeys by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -363,7 +372,10 @@ fun SubscriptionFeedPage(
                         val key = feedItemKey(article)
                         readKeys = if (read) readKeys + key else readKeys - key
                         scope.launch {
-                            runCatching { FeedReadingStore.setRead(context, key, read) }
+                            runCatching {
+                                if (read) FeedReadingStore.recordRead(context, key)
+                                else FeedReadingStore.setRead(context, key, false)
+                            }
                                 .onFailure { Logger.w("SubscriptionFeed", "阅读状态保存失败: ${it.message}") }
                         }
                     },
@@ -401,6 +413,8 @@ fun SubscriptionFeedPage(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     SubscriptionFeedGrid(
+                        recapEnabled = recapEnabled,
+                        onUpClick = onUpClick,
                         sources = sources,
                         visibleItems = visibleItems,
                         loading = loading,
@@ -421,7 +435,7 @@ fun SubscriptionFeedPage(
                             val key = feedItemKey(item)
                             readKeys = readKeys + key
                             scope.launch {
-                                runCatching { FeedReadingStore.setRead(context, key, true) }
+                                runCatching { FeedReadingStore.recordRead(context, key) }
                                     .onFailure { Logger.w("SubscriptionFeed", "阅读状态保存失败: ${it.message}") }
                             }
                             scope.launch {
@@ -474,6 +488,8 @@ fun SubscriptionFeedPage(
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun SubscriptionFeedGrid(
+    recapEnabled: Boolean,
+    onUpClick: ((Long) -> Unit)?,
     sources: List<FeedSource>,
     visibleItems: List<ParsedFeedItem>,
     loading: Boolean,
@@ -591,6 +607,15 @@ private fun SubscriptionFeedGrid(
                 }
             }
         }
+        if (recapEnabled) {
+            item(span = StaggeredGridItemSpan.FullLine, key = "subscription_recap") {
+                SubscriptionRecapCard(
+                    sources = sources,
+                    onUpClick = onUpClick,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
         if (refreshErrors.isNotEmpty()) {
             item(span = StaggeredGridItemSpan.FullLine, key = "subscription_refresh_errors") {
                 Surface(
@@ -662,29 +687,8 @@ private fun SubscriptionFeedCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    //  [壁纸毛玻璃] 与首页视频卡片同一套壁纸模糊样式：frostedGlass 开启且壁纸
-    //  backdrop 就绪时，卡片透出实时模糊壁纸并降低容器不透明度。
-    val context = LocalContext.current
-    val backdrop = LocalHomeWallpaperBackdrop.current
-    val frostedGlassEnabled by SettingsManager
-        .getHomeCardFrostedGlassEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = false)
-    val surfaceMode = resolveHomeCardWallpaperSurfaceMode(
-        dynamicTintEnabled = false,
-        frostedGlassEnabled = frostedGlassEnabled,
-        wallpaperVisible = LocalHomeWallpaperBackdropReady.current,
-        wallpaperIsStatic = LocalHomeWallpaperIsStatic.current,
-        backdropReady = LocalHomeWallpaperBackdropReady.current,
-        blurEnabled = true,
-        isDataSaverActive = false,
-        lowBlurBudgetForced = false,
-        sdkInt = Build.VERSION.SDK_INT,
-    )
-    val useRealtimeFrosted =
-        surfaceMode == HomeCardWallpaperSurfaceMode.REALTIME_FROSTED && backdrop != null
-    val cardShape = AppShapes.container(ContainerLevel.Card)
-    val isDarkCardTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val density = LocalDensity.current
+    //  [壁纸毛玻璃] 与首页视频卡片同一套壁纸模糊样式（详见 SubscriptionCardFrost）。
+    val frost = rememberSubscriptionCardFrost()
     AppSurface(
         modifier = with(sharedTransitionScope) {
             Modifier
@@ -696,37 +700,11 @@ private fun SubscriptionFeedCard(
                     clipInOverlayDuringTransition = OverlayClip(AppShapes.container(ContainerLevel.Card)),
                 )
                 .clip(AppShapes.container(ContainerLevel.Card))
-                .then(
-                    if (useRealtimeFrosted) {
-                        val blurRadiusPx = with(density) { 24.dp.toPx() }
-                        Modifier.drawBackdrop(
-                            backdrop = backdrop,
-                            shape = { cardShape },
-                            effects = { blur(blurRadiusPx, blurRadiusPx) },
-                        )
-                    } else {
-                        Modifier
-                    }
-                )
-                .then(
-                    if (useRealtimeFrosted) {
-                        Modifier.border(
-                            width = 0.5.dp,
-                            color = Color.White.copy(alpha = if (isDarkCardTheme) 0.14f else 0.22f),
-                            shape = cardShape,
-                        )
-                    } else {
-                        Modifier
-                    }
-                )
+                .then(frost.backdropModifier())
+                .then(frost.borderModifier())
                 .clickable(onClick = onClick)
         },
-        color = if (useRealtimeFrosted) {
-            //  与 VideoCard 实时毛玻璃一致的不透明度，保证标题文字可读。
-            AppSurfaceTokens.cardContainer().copy(alpha = if (isDarkCardTheme) 0.44f else 0.36f)
-        } else {
-            AppSurfaceTokens.cardContainer()
-        },
+        color = frost.containerColor(),
         tonalElevation = 0.dp,
     ) {
         Column {
@@ -758,6 +736,275 @@ private fun SubscriptionFeedCard(
                 )
             }
         }
+    }
+}
+
+/** 订阅卡片与回顾卡共用的壁纸毛玻璃外观（与首页 VideoCard 实时毛玻璃同参数）。 */
+private class SubscriptionCardFrost(
+    val useRealtimeFrosted: Boolean,
+    val isDarkCardTheme: Boolean,
+    private val backdrop: HomeWallpaperBackdrop?,
+    private val shape: androidx.compose.ui.graphics.Shape,
+    private val blurRadiusPx: Float,
+) {
+    fun backdropModifier(): Modifier = if (!useRealtimeFrosted || backdrop == null) {
+        Modifier
+    } else {
+        Modifier.drawBackdrop(
+            backdrop = backdrop,
+            shape = { shape },
+            effects = { blur(blurRadiusPx, blurRadiusPx) },
+        )
+    }
+
+    fun borderModifier(): Modifier = if (!useRealtimeFrosted) {
+        Modifier
+    } else {
+        Modifier.border(
+            width = 0.5.dp,
+            color = Color.White.copy(alpha = if (isDarkCardTheme) 0.14f else 0.22f),
+            shape = shape,
+        )
+    }
+
+    fun containerColor(): Color = if (useRealtimeFrosted) {
+        //  与 VideoCard 实时毛玻璃一致的不透明度，保证标题文字可读。
+        AppSurfaceTokens.cardContainer().copy(alpha = if (isDarkCardTheme) 0.44f else 0.36f)
+    } else {
+        AppSurfaceTokens.cardContainer()
+    }
+}
+
+@Composable
+private fun rememberSubscriptionCardFrost(): SubscriptionCardFrost {
+    val context = LocalContext.current
+    val backdrop = LocalHomeWallpaperBackdrop.current
+    val frostedGlassEnabled by SettingsManager
+        .getHomeCardFrostedGlassEnabled(context)
+        .collectAsStateWithLifecycle(initialValue = false)
+    val surfaceMode = resolveHomeCardWallpaperSurfaceMode(
+        dynamicTintEnabled = false,
+        frostedGlassEnabled = frostedGlassEnabled,
+        wallpaperVisible = LocalHomeWallpaperBackdropReady.current,
+        wallpaperIsStatic = LocalHomeWallpaperIsStatic.current,
+        backdropReady = LocalHomeWallpaperBackdropReady.current,
+        blurEnabled = true,
+        isDataSaverActive = false,
+        lowBlurBudgetForced = false,
+        sdkInt = Build.VERSION.SDK_INT,
+    )
+    return SubscriptionCardFrost(
+        useRealtimeFrosted = surfaceMode == HomeCardWallpaperSurfaceMode.REALTIME_FROSTED && backdrop != null,
+        isDarkCardTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f,
+        backdrop = backdrop,
+        shape = AppShapes.container(ContainerLevel.Card),
+        blurRadiusPx = with(LocalDensity.current) { 24.dp.toPx() },
+    )
+}
+
+/** 回顾板块：RSS 阅读统计 + 视频观看统计 + 最近爱看的 UP 主，按时间窗切换。 */
+@Composable
+private fun SubscriptionRecapCard(
+    sources: List<FeedSource>,
+    onUpClick: ((Long) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var window by remember { mutableStateOf(SubscriptionRecapWindow.TODAY) }
+    var rssStats by remember { mutableStateOf(SubscriptionRssRecapStats()) }
+    var videoStats by remember { mutableStateOf<SubscriptionVideoRecapStats?>(null) }
+    var videoUnavailable by remember { mutableStateOf(false) }
+
+    LaunchedEffect(window) {
+        val windowStartMs = resolveSubscriptionRecapWindowStart(
+            nowMs = System.currentTimeMillis(),
+            window = window,
+        )
+        rssStats = SubscriptionRecapCache.rssRecap(context, windowStartMs)
+        val loggedIn = runCatching {
+            com.android.purebilibili.data.repository.VideoRepository.isPlaybackLoggedIn()
+        }.getOrDefault(false)
+        if (!loggedIn) {
+            videoUnavailable = true
+            videoStats = null
+        } else {
+            videoStats = runCatching { SubscriptionRecapCache.videoRecap(windowStartMs) }.getOrNull()
+            if (videoStats == null) videoUnavailable = true
+        }
+    }
+
+    val frost = rememberSubscriptionCardFrost()
+    AppSurface(
+        modifier = modifier
+            .clip(AppShapes.container(ContainerLevel.Card))
+            .then(frost.backdropModifier())
+            .then(frost.borderModifier()),
+        color = frost.containerColor(),
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AppText("你的回顾", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.weight(1f))
+                SubscriptionRecapWindow.entries.forEach { entry ->
+                    val selected = entry == window
+                    AppText(
+                        text = entry.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { window = entry }
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    )
+                }
+            }
+            val emptyRss = rssStats.readCount <= 0
+            val emptyVideo = videoUnavailable || videoStats == null || videoStats.videoCount <= 0
+            if (emptyRss && emptyVideo) {
+                AppText(
+                    text = "这段时间还没有阅读或观看记录，读两篇文章或看几个视频再回来看看。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (!emptyRss) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            AppIcon(
+                                Icons.AutoMirrored.Outlined.MenuBook,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp),
+                            )
+                            Column {
+                                AppText(
+                                    text = "已读 ${rssStats.readCount} 篇",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                val sourceTitle = rssStats.topSourceKey
+                                    ?.let { key -> sources.firstOrNull { it.id == key }?.title }
+                                if (!sourceTitle.isNullOrBlank()) {
+                                    AppText(
+                                        text = "最常读：$sourceTitle",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (!emptyVideo && videoStats != null) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            AppIcon(
+                                Icons.Outlined.SmartDisplay,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp),
+                            )
+                            Column {
+                                AppText(
+                                    text = "看了 ${videoStats.videoCount} 个视频",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                AppText(
+                                    text = formatRecapDuration(videoStats.totalDurationSec),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+                if ((videoStats?.topUps ?: emptyList()).isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        AppText(
+                            text = "最近爱看",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        ) {
+                            videoStats?.topUps?.forEach { up ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier
+                                        .width(56.dp)
+                                        .then(
+                                            if (onUpClick != null) {
+                                                Modifier.clickable { onUpClick(up.mid) }
+                                            } else {
+                                                Modifier
+                                            }
+                                        ),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        if (up.face.isNotBlank()) {
+                                            coil3.compose.AsyncImage(
+                                                model = up.face,
+                                                contentDescription = up.name,
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize(),
+                                            )
+                                        } else {
+                                            AppIcon(
+                                                Icons.Outlined.PersonOutline,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(22.dp),
+                                            )
+                                        }
+                                    }
+                                    AppText(
+                                        text = up.name,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatRecapDuration(totalSec: Long): String {
+    val hours = totalSec / 3600
+    val minutes = (totalSec % 3600) / 60
+    return when {
+        hours > 0 -> "约 $hours 小时"
+        minutes > 0 -> "约 $minutes 分钟"
+        totalSec > 0 -> "不足 1 分钟"
+        else -> ""
     }
 }
 
@@ -839,9 +1086,16 @@ private fun SubscriptionArticleScreen(
         .collectAsStateWithLifecycle(initialValue = "")
     val splashWallpaperUri by remember(context) { SettingsManager.getSplashWallpaperUri(context) }
         .collectAsStateWithLifecycle(initialValue = "")
+    val customArticleWallpaperUri by remember(context) {
+        SettingsManager.getSubscriptionArticleWallpaperUri(context)
+    }.collectAsStateWithLifecycle(initialValue = "")
     val wallpaperMode by remember(context) { SettingsManager.getHomeWallpaperEffectMode(context) }
         .collectAsStateWithLifecycle(initialValue = HomeWallpaperEffectMode.SOFT_BLUR)
-    val wallpaperUri = resolveHomeWallpaperUri(configuredWallpaperUri, splashWallpaperUri)
+    //  [独立壁纸] RSS 阅读页可设置专属壁纸；为空时回退首页壁纸链。
+    val wallpaperUri = customArticleWallpaperUri.ifBlank {
+        resolveHomeWallpaperUri(configuredWallpaperUri, splashWallpaperUri)
+    }
+    var wallpaperPickerVisible by remember { mutableStateOf(false) }
     val articleBackground = MaterialTheme.colorScheme.surface
     val dataSaverActive = remember(context) { SettingsManager.isDataSaverActive(context) }
     val wallpaperAppearance = remember(wallpaperEnabled, wallpaperUri, wallpaperMode, articleBackground, dataSaverActive) {
@@ -855,6 +1109,22 @@ private fun SubscriptionArticleScreen(
     }
     var actionsExpanded by remember { mutableStateOf(false) }
     var fontScale by remember { mutableIntStateOf(1) }
+    val articleWallpaperPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        com.android.purebilibili.core.util.PickGalleryVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+            articleScope.launch {
+                SettingsManager.setSubscriptionArticleWallpaperUri(context, uri.toString())
+                SettingsManager.setSubscriptionArticleWallpaperEnabled(context, true)
+            }
+        }
+    }
     // 文章笔记（本地）：按文章链接为键，写笔记/摘录/摘要草稿共用一个编辑器。
     val noteRevision by ArticleNoteStore.revision.collectAsStateWithLifecycle()
     val savedArticleNote = remember(noteRevision, item.link) { ArticleNoteStore.get(context, item.link) }
@@ -894,6 +1164,34 @@ private fun SubscriptionArticleScreen(
     }
     val readingBlocks = blocks
     val onReadingLinkClick: (String) -> Unit = onOpenUrl
+    //  [阅读进展] 记录进度并在重开未读完的文章时自动续读。
+    val articleKey = feedItemKey(item)
+    LaunchedEffect(articleKey) {
+        val savedPercent = runCatching { FeedReadingStore.readProgress(context, articleKey) }.getOrDefault(0)
+        if (savedPercent in 10..95 && readingBlocks.isNotEmpty()) {
+            kotlinx.coroutines.delay(400)
+            articleListState.scrollToItem(
+                index = (readingBlocks.size * savedPercent / 100).coerceIn(0, readingBlocks.size - 1),
+            )
+            android.widget.Toast.makeText(
+                context,
+                "已恢复到上次阅读位置 · ${savedPercent}%",
+                android.widget.Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
+    LaunchedEffect(articleKey, readingBlocks.size) {
+        if (readingBlocks.isEmpty()) return@LaunchedEffect
+        snapshotFlow {
+            val first = articleListState.firstVisibleItemIndex
+            if (first <= 0) 0
+            else ((first + 1) * 100 / readingBlocks.size).coerceIn(0, 100)
+        }
+            .sample(kotlin.time.Duration.milliseconds(1200))
+            .collect { percent ->
+                runCatching { FeedReadingStore.recordProgress(context, articleKey, percent) }
+            }
+    }
     val imageUrls = remember(blocks) {
         blocks.filterIsInstance<FeedBlock.Image>().map { it.url }.distinct()
     }
@@ -974,6 +1272,38 @@ private fun SubscriptionArticleScreen(
                                 actionsExpanded = false
                             },
                         )
+                        AppDropdownMenuItem(
+                            text = {
+                                AppText(
+                                    if (customArticleWallpaperUri.isBlank()) "选择阅读壁纸（当前跟随首页）"
+                                    else "更换阅读壁纸"
+                                )
+                            },
+                            onClick = {
+                                wallpaperPickerVisible = true
+                                actionsExpanded = false
+                            },
+                        )
+                        if (wallpaperPickerVisible) {
+                            articleWallpaperPickerLauncher.launch(
+                                androidx.activity.result.PickVisualMediaRequest(
+                                    androidx.activity.result.contract.ActivityResultContracts
+                                        .PickVisualMedia.ImageOnly
+                                )
+                            )
+                            wallpaperPickerVisible = false
+                        }
+                        if (customArticleWallpaperUri.isNotBlank()) {
+                            AppDropdownMenuItem(
+                                text = { AppText("恢复跟随首页壁纸") },
+                                onClick = {
+                                    articleScope.launch {
+                                        SettingsManager.setSubscriptionArticleWallpaperUri(context, "")
+                                    }
+                                    actionsExpanded = false
+                                },
+                            )
+                        }
                         AppDropdownMenuItem(
                             text = { AppText(if (excerptMode) "退出摘录模式" else "摘录模式（点选段落进笔记）") },
                             onClick = {

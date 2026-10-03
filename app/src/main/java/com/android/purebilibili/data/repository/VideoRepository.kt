@@ -12,6 +12,7 @@ import com.android.purebilibili.core.store.TokenManager
 import com.android.purebilibili.core.util.NetworkUtils
 import com.android.purebilibili.data.model.response.*
 import com.android.purebilibili.feature.video.progress.PbpProgressData
+import com.android.purebilibili.feature.video.progress.buildDanmakuDensityValues
 import com.android.purebilibili.feature.video.progress.parsePbpProgressData
 import com.android.purebilibili.feature.video.subtitle.SubtitleCue
 import com.android.purebilibili.feature.video.subtitle.normalizeBilibiliSubtitleUrl
@@ -2199,6 +2200,49 @@ object VideoRepository {
                 aid = aid.takeIf { it > 0L }
             )
             Result.success(parsePbpProgressData(body.string()))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 本地弹幕密度曲线：拉取全部分段弹幕，按秒桶计数并归一化。
+     * 官方 pbp 接口（bvc.bilivideo.com/pbp/data）已 404，此为兜底数据源，
+     * 输出结构与 pbp 对齐（秒桶计数，由渲染层归一化），渲染层无需感知差异。
+     */
+    suspend fun getDanmakuDensityProgressData(
+        cid: Long,
+        durationSeconds: Long,
+    ): Result<PbpProgressData> = withContext(Dispatchers.IO) {
+        try {
+            if (cid <= 0L || durationSeconds <= 0L) {
+                return@withContext Result.failure(
+                    IllegalArgumentException("弹幕密度曲线参数无效: cid=$cid duration=${durationSeconds}s")
+                )
+            }
+            val stepSeconds = (durationSeconds / 240).coerceIn(2L, 10L).toInt()
+            val segments = DanmakuRepository.getDanmakuSegments(
+                cid = cid,
+                durationMs = durationSeconds * 1000L
+            )
+            if (segments.isEmpty()) {
+                return@withContext Result.failure(IllegalStateException("弹幕分段为空"))
+            }
+            val parsed = com.android.purebilibili.danmaku.parser.DanmakuParser.parseProtobuf(segments)
+            if (parsed.serverDisabled) {
+                return@withContext Result.failure(IllegalStateException("UP主已关闭该视频弹幕"))
+            }
+            val values = buildDanmakuDensityValues(
+                positionsMs = parsed.standardList.map { it.showAtTime },
+                durationSeconds = durationSeconds,
+                stepSeconds = stepSeconds
+            )
+            if (values.all { it == 0f }) {
+                return@withContext Result.failure(IllegalStateException("该视频弹幕密度为零"))
+            }
+            Result.success(PbpProgressData(stepSeconds = stepSeconds, values = values))
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

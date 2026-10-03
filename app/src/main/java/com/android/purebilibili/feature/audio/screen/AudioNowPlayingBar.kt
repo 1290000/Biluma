@@ -443,7 +443,6 @@ internal fun AudioNowPlayingBar(
         AudioNowPlayingBarContentRow(
             mergeProgress = dockMergeProgress,
             searchProgress = iconOnlyProgress,
-            dockHosted = dockHosted,
             cover = {
                 AsyncImage(
                     model = state.coverUrl,
@@ -633,14 +632,14 @@ private fun Modifier.audioNowPlayingSkipGesture(
 private fun AudioNowPlayingBarContentRow(
     mergeProgress: () -> Float,
     searchProgress: () -> Float,
-    dockHosted: Boolean,
     cover: @Composable () -> Unit,
     title: @Composable () -> Unit,
     play: @Composable () -> Unit,
     queue: @Composable () -> Unit,
     close: @Composable () -> Unit,
 ) {
-    val height = if (dockHosted) 56.dp else 64.dp
+    // 统一 64dp：与底栏导航行同高，percent=50 共享胶囊的圆角随之严格一致。
+    val height = 64.dp
     Layout(
         modifier = Modifier
             .fillMaxWidth()

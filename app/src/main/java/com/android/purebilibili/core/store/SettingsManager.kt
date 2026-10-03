@@ -5832,6 +5832,32 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         }
     }
 
+    // --- RSS 阅读独立壁纸与回顾板块 ---
+    private val KEY_SUBSCRIPTION_ARTICLE_WALLPAPER_URI =
+        stringPreferencesKey("subscription_article_wallpaper_uri")
+    private val KEY_SUBSCRIPTION_RECAP_ENABLED =
+        booleanPreferencesKey("subscription_recap_enabled")
+
+    /** 阅读页独立壁纸 URI；空表示跟随首页壁纸。 */
+    fun getSubscriptionArticleWallpaperUri(context: Context): Flow<String> = context.settingsDataStore.data
+        .map { preferences -> preferences[KEY_SUBSCRIPTION_ARTICLE_WALLPAPER_URI] ?: "" }
+
+    suspend fun setSubscriptionArticleWallpaperUri(context: Context, uri: String) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_SUBSCRIPTION_ARTICLE_WALLPAPER_URI] = uri
+        }
+    }
+
+    /** 订阅页回顾板块开关，默认开启。 */
+    fun getSubscriptionRecapEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
+        .map { preferences -> preferences[KEY_SUBSCRIPTION_RECAP_ENABLED] ?: true }
+
+    suspend fun setSubscriptionRecapEnabled(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_SUBSCRIPTION_RECAP_ENABLED] = enabled
+        }
+    }
+
     fun getSubscriptionArticleFontScale(context: Context): Flow<Int> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SUBSCRIPTION_ARTICLE_FONT_SCALE] ?: 1 }
 

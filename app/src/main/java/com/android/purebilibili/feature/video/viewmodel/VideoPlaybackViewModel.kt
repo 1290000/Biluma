@@ -1677,6 +1677,9 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     val viewPoints = _viewPoints.asStateFlow()
     private val _pbpProgressData = MutableStateFlow<PbpProgressData?>(null)
     val pbpProgressData = _pbpProgressData.asStateFlow()
+    /** 本地弹幕密度兜底的进行中任务与已构建 cid 记录。 */
+    private var densityFallbackJob: Job? = null
+    private var densityFallbackLoadedCid: Long = 0L
 
     private val _interactiveChoicePanel = MutableStateFlow(InteractiveChoicePanelUiState())
     val interactiveChoicePanel = _interactiveChoicePanel.asStateFlow()
@@ -5649,6 +5652,54 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     }
     
     //  [新增] 异步加载播放器额外信息 (章节/看点 + BGM + 互动剧情图)
+    /**
+     * 官方 pbp 热度接口失效（404/空数据）时的兜底：用全部分段弹幕本地聚合密度曲线。
+     * 仅在进度条热度曲线开关开启时执行；同一 cid 只构建一次。
+     */
+    private fun loadDanmakuDensityFallback(
+        bvid: String,
+        cid: Long,
+        requestToken: Long,
+        loadRequestToken: Long,
+        currentBvid: String?,
+        currentCid: Long,
+    ) {
+        if (densityFallbackLoadedCid == cid) return
+        val state = _uiState.value as? VideoPlaybackUiState.Success ?: return
+        if (state.info.bvid != bvid || state.info.cid != cid) return
+        val durationSeconds = state.info.pages.firstOrNull { it.cid == cid }?.duration
+            ?: state.info.pages.maxOfOrNull { it.duration } ?: 0L
+        if (durationSeconds <= 0L) return
+        densityFallbackJob?.cancel()
+        densityFallbackJob = viewModelScope.launch {
+            val appContextRef = appContext ?: getApplication<Application>()
+            val enabled = SettingsManager.getProgressPeakDanmakuEnabled(appContextRef).first()
+            if (!enabled) return@launch
+            VideoRepository.getDanmakuDensityProgressData(cid = cid, durationSeconds = durationSeconds)
+                .onSuccess { localData ->
+                    if (shouldApplyPlayerInfoResult(
+                            activeRequestToken = loadRequestToken,
+                            resultRequestToken = requestToken,
+                            expectedBvid = bvid,
+                            expectedCid = cid,
+                            currentBvid = currentBvid,
+                            currentCid = currentCid
+                        )
+                    ) {
+                        densityFallbackLoadedCid = cid
+                        _pbpProgressData.value = localData
+                        Logger.d(
+                            "PlayerVM",
+                            "📈 Loaded local danmaku density: step=${localData.stepSeconds}s points=${localData.values.size}"
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    Logger.d("PlayerVM", "📈 Local danmaku density failed: ${error.message}")
+                }
+        }
+    }
+
     private fun loadPlayerInfo(
         bvid: String,
         cid: Long,
@@ -5661,6 +5712,8 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         )
         playerInfoJob?.cancel()
         _pbpProgressData.value = null
+        densityFallbackJob?.cancel()
+        densityFallbackLoadedCid = 0L
         playerInfoJob = viewModelScope.launch {
             try {
                 val result = VideoRepository.getPlayerInfo(bvid, cid)
@@ -5709,12 +5762,30 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                                 expectedCid = cid,
                                 currentBvid = currentBvid,
                                 currentCid = currentCid
-                            )
+                            ) && pbpData.values.isNotEmpty()
                         ) {
                             _pbpProgressData.value = pbpData
                             Logger.d(
                                 "PlayerVM",
                                 "📈 Loaded PBP progress: step=${pbpData.stepSeconds}s points=${pbpData.values.size}"
+                            )
+                        } else if (shouldApplyPlayerInfoResult(
+                                activeRequestToken = currentLoadRequestToken,
+                                resultRequestToken = requestToken,
+                                expectedBvid = bvid,
+                                expectedCid = cid,
+                                currentBvid = currentBvid,
+                                currentCid = currentCid
+                            )
+                        ) {
+                            // 官方 pbp 接口已 404 / 返回空数据：回落到本地弹幕密度聚合
+                            loadDanmakuDensityFallback(
+                                bvid = bvid,
+                                cid = cid,
+                                requestToken = requestToken,
+                                loadRequestToken = currentLoadRequestToken,
+                                currentBvid = currentBvid,
+                                currentCid = currentCid
                             )
                         }
                     }.onFailure { e ->
@@ -5728,8 +5799,18 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                             )
                         ) {
                             _pbpProgressData.value = null
+                            Logger.d("PlayerVM", "📈 PBP unavailable (${e.message}), falling back to local danmaku density")
+                            loadDanmakuDensityFallback(
+                                bvid = bvid,
+                                cid = cid,
+                                requestToken = requestToken,
+                                loadRequestToken = currentLoadRequestToken,
+                                currentBvid = currentBvid,
+                                currentCid = currentCid
+                            )
+                        } else {
+                            Logger.d("PlayerVM", "📈 Failed to load PBP progress: ${e.message}")
                         }
-                        Logger.d("PlayerVM", "📈 Failed to load PBP progress: ${e.message}")
                     }
 
                     // 2. 处理 BGM 信息

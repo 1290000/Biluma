@@ -244,6 +244,7 @@ fun HomeScreen(
     onVideoClick: (HomeVideoClickRequest) -> Unit,
     onAvatarClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onUserSpaceClick: ((Long) -> Unit)? = null,
     onLogout: (() -> Unit)? = null,
     onAccountSwitchClick: (() -> Unit)? = null,
     onSettingsClick: () -> Unit,
@@ -2096,6 +2097,7 @@ fun HomeScreen(
                                         end = AppSpacingTokens.Large,
                                     ),
                                     onOpenPluginSettings = onPluginsClick,
+                                    onUpClick = onUserSpaceClick,
                                     articleContentPadding = PaddingValues(
                                         top = statusBarHeight + AppSpacingTokens.Small,
                                         bottom = homeListBottomPadding,

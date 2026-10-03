@@ -41,6 +41,7 @@ import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.ContainerLevel
 import com.android.purebilibili.core.ui.components.AppIcon
+import com.android.purebilibili.core.ui.components.AnimatedCountText
 import com.android.purebilibili.core.ui.components.AppIconButton
 import com.android.purebilibili.core.ui.components.AppOutlinedTextField
 import com.android.purebilibili.core.ui.components.AppSurface
@@ -554,8 +555,8 @@ private fun DanmakuPoolItemRow(
                 val totalLikes = item.likeCount + if (isLiked) 1 else 0
                 if (totalLikes > 0) {
                     Spacer(modifier = Modifier.width(4.dp))
-                    AppText(
-                        text = totalLikes.toString(),
+                    AnimatedCountText(
+                        count = totalLikes,
                         style = MaterialTheme.typography.labelSmall,
                         color = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                     )

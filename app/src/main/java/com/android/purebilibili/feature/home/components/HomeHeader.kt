@@ -29,6 +29,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -2689,10 +2690,15 @@ fun HomeHeader(
                                 isScrollInProgressProvider = { topChromeMotionPolicy.isScrolling },
                             ) { liquidChromeActive ->
                                 if (liquidChromeActive) {
+                                    val searchPillInteractionSource = remember { MutableInteractionSource() }
+                                    val searchPillPressed by searchPillInteractionSource.collectIsPressedAsState()
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .clickable(role = Role.Button) {
+                                            .clickable(
+                                                interactionSource = searchPillInteractionSource,
+                                                role = Role.Button,
+                                            ) {
                                                 haptic(HapticType.LIGHT)
                                                 onSearchClick()
                                             }
@@ -2705,6 +2711,7 @@ fun HomeHeader(
                                             textFontSize = MaterialTheme.typography.bodyLarge.fontSize,
                                             iconTextGap = resolveHomeTopSearchIconTextGap(topChromePolicy),
                                             modifier = Modifier.fillMaxWidth(),
+                                            pressed = searchPillPressed,
                                         )
                                     }
                                 } else {

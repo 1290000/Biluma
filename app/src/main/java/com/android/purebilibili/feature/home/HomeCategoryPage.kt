@@ -1272,9 +1272,10 @@ private fun OldContentDivider(onClick: () -> Unit) {
             .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
+        // 半透明主色容器：让模糊壁纸背景透出，与毛玻璃卡片的观感一致。
+        color = resolveOldContentDividerContainerColor(MaterialTheme.colorScheme),
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        tonalElevation = 1.dp,
+        tonalElevation = 0.dp,
     ) {
         Column(
             modifier = Modifier
