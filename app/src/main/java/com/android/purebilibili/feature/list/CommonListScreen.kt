@@ -2789,7 +2789,11 @@ private fun CommonListContent(
                         if (item.isCollectionResource) GridItemSpan(columns) else GridItemSpan(1)
                     }
                 ) { index, video ->
-                    AnimatedVideoListItem(modifier = videoListItemModifier(enabled = cardAnimationEnabled), enabled = cardAnimationEnabled) {
+                    AnimatedVideoListItem(
+                        modifier = videoListItemModifier(enabled = cardAnimationEnabled),
+                        enabled = cardAnimationEnabled,
+                        useLookaheadBounds = onHistoryLongDelete == null || onHistoryDissolveComplete == null,
+                    ) {
                         val historyKey = resolveHistoryItemKey(video)
                         val historyItem = resolveHistoryItem?.let { resolve ->
                             resolve(video) ?: HistoryItem(
