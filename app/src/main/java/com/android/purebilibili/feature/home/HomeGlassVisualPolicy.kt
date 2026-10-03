@@ -31,17 +31,6 @@ internal fun resolveGlobalHomeWallpaperRoute(
     return normalized
 }
 
-/** Keep the dock's wallpaper source alive while Home is behind a video destination. */
-internal fun shouldUseHomeWallpaperDockBackdrop(
-    currentRoute: String?,
-    mainHostTabRoute: String?,
-    transitionSourceRoute: String?,
-    hasStaticWallpaper: Boolean,
-): Boolean = hasStaticWallpaper && (
-    resolveGlobalHomeWallpaperRoute(currentRoute, mainHostTabRoute) == HOME_WALLPAPER_HOME_ROUTE_BASE ||
-        normalizeHomeWallpaperRoute(transitionSourceRoute) == HOME_WALLPAPER_HOME_ROUTE_BASE
-    )
-
 /**
  * App 根层全局壁纸：GLOBAL 时只为私信聊天页绘制。
  * 首页由 [HomeScreen] 自绘；其它页面保持不接入壁纸。

@@ -15,16 +15,6 @@ import kotlin.test.assertTrue
 class HomeGlassVisualPolicyTest {
 
     @Test
-    fun homeDockWallpaperSourceStaysAvailableBehindVideoAndAfterLanding() {
-        assertTrue(shouldUseHomeWallpaperDockBackdrop("video/BV1", "home", "home", true))
-        assertTrue(shouldUseHomeWallpaperDockBackdrop("main_host", "home", null, true))
-        assertTrue(shouldUseHomeWallpaperDockBackdrop("video/BV1", "home", "home?category=all", true))
-        assertFalse(shouldUseHomeWallpaperDockBackdrop("video/BV1", "home", "history", true))
-        assertFalse(shouldUseHomeWallpaperDockBackdrop("main_host", "dynamic", null, true))
-        assertFalse(shouldUseHomeWallpaperDockBackdrop("main_host", "home", null, false))
-    }
-
-    @Test
     fun prefersLightStructuralTintWhenGlassAndBlurAreEnabled() {
         val style = resolveHomeGlassChromeStyle(
             glassEnabled = true,
