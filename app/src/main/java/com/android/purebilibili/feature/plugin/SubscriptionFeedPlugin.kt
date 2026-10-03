@@ -352,8 +352,8 @@ private fun SubscriptionFeedSettings(modifier: Modifier = Modifier) {
             }
         }
     }
-    if (editingGroupFeed != null) {
-        val feed = editingGroupFeed.orEmpty()
+    // editingGroupFeed 是委托属性，智能转换不可用；orEmpty() 也不适用于对象类型。
+    editingGroupFeed?.let { feed ->
         var groupInput by remember(feed.id) { mutableStateOf(feed.group) }
         AppAlertDialog(
             onDismissRequest = { editingGroupFeed = null },
