@@ -18,7 +18,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -136,10 +138,16 @@ import com.android.purebilibili.core.ui.LocalBottomBarContentPadding
 import com.android.purebilibili.core.ui.LocalBottomBarVisible
 import com.android.purebilibili.core.ui.LocalSetBottomBarVisible
 import com.android.purebilibili.core.ui.LocalGlobalWallpaperBackdropVisible
+import com.android.purebilibili.feature.home.HomeCardWallpaperSurfaceMode
 import com.android.purebilibili.feature.home.HomeWallpaperBackdrop
+import com.android.purebilibili.feature.home.LocalHomeWallpaperBackdrop
+import com.android.purebilibili.feature.home.LocalHomeWallpaperBackdropReady
+import com.android.purebilibili.feature.home.LocalHomeWallpaperIsStatic
+import com.android.purebilibili.feature.home.resolveHomeCardWallpaperSurfaceMode
 import com.android.purebilibili.feature.home.resolveHomeWallpaperBackdropAppearance
 import com.android.purebilibili.feature.home.resolveHomeWallpaperUri
 import com.android.purebilibili.core.ui.AppShapes
+import top.yukonga.miuix.kmp.blur.drawBackdrop
 import com.android.purebilibili.core.ui.AdaptivePullToRefreshBox
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.AppTopBar
@@ -654,6 +662,29 @@ private fun SubscriptionFeedCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
+    //  [壁纸毛玻璃] 与首页视频卡片同一套壁纸模糊样式：frostedGlass 开启且壁纸
+    //  backdrop 就绪时，卡片透出实时模糊壁纸并降低容器不透明度。
+    val context = LocalContext.current
+    val backdrop = LocalHomeWallpaperBackdrop.current
+    val frostedGlassEnabled by SettingsManager
+        .getHomeCardFrostedGlassEnabled(context)
+        .collectAsStateWithLifecycle(initialValue = false)
+    val surfaceMode = resolveHomeCardWallpaperSurfaceMode(
+        dynamicTintEnabled = false,
+        frostedGlassEnabled = frostedGlassEnabled,
+        wallpaperVisible = LocalHomeWallpaperBackdropReady.current,
+        wallpaperIsStatic = LocalHomeWallpaperIsStatic.current,
+        backdropReady = LocalHomeWallpaperBackdropReady.current,
+        blurEnabled = true,
+        isDataSaverActive = false,
+        lowBlurBudgetForced = false,
+        sdkInt = Build.VERSION.SDK_INT,
+    )
+    val useRealtimeFrosted =
+        surfaceMode == HomeCardWallpaperSurfaceMode.REALTIME_FROSTED && backdrop != null
+    val cardShape = AppShapes.container(ContainerLevel.Card)
+    val isDarkCardTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val density = LocalDensity.current
     AppSurface(
         modifier = with(sharedTransitionScope) {
             Modifier
@@ -665,9 +696,37 @@ private fun SubscriptionFeedCard(
                     clipInOverlayDuringTransition = OverlayClip(AppShapes.container(ContainerLevel.Card)),
                 )
                 .clip(AppShapes.container(ContainerLevel.Card))
+                .then(
+                    if (useRealtimeFrosted) {
+                        val blurRadiusPx = with(density) { 24.dp.toPx() }
+                        Modifier.drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { cardShape },
+                            effects = { blur(blurRadiusPx, blurRadiusPx) },
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .then(
+                    if (useRealtimeFrosted) {
+                        Modifier.border(
+                            width = 0.5.dp,
+                            color = Color.White.copy(alpha = if (isDarkCardTheme) 0.14f else 0.22f),
+                            shape = cardShape,
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
                 .clickable(onClick = onClick)
         },
-        color = AppSurfaceTokens.cardContainer(),
+        color = if (useRealtimeFrosted) {
+            //  与 VideoCard 实时毛玻璃一致的不透明度，保证标题文字可读。
+            AppSurfaceTokens.cardContainer().copy(alpha = if (isDarkCardTheme) 0.44f else 0.36f)
+        } else {
+            AppSurfaceTokens.cardContainer()
+        },
         tonalElevation = 0.dp,
     ) {
         Column {
