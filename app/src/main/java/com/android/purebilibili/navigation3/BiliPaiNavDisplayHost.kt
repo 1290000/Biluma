@@ -110,6 +110,7 @@ internal class BiliPaiProgrammaticBackDispatcher {
 @Composable
 internal fun BiliPaiNavDisplayHost(
     backStack: SnapshotStateList<BiliPaiNavKey>,
+    activeMainHostRoute: String? = null,
     cardTransitionEnabled: Boolean = true,
     videoTransitionRealtimeBlurEnabled: Boolean = false,
     isLightBackground: Boolean = false,
