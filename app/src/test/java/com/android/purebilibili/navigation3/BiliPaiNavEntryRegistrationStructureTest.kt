@@ -23,7 +23,7 @@ class BiliPaiNavEntryRegistrationStructureTest {
             .map { it.groupValues[1] }
             .toSet()
 
-        val registeredKeys = Regex("""entry<BiliPaiNavKey\.([A-Za-z]+)>""")
+        val registeredKeys = Regex("""(?:entry|settingsEntry)<BiliPaiNavKey\.([A-Za-z]+)>""")
             .findAll(providerSource)
             .map { it.groupValues[1] }
             .toSet()

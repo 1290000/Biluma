@@ -56,6 +56,9 @@ internal fun SettingsHomeSearchEntry(
     AppSearchEntry(
         onClick = onClick,
         placeholder = placeholder,
+        // This entry can be precomposed in an inactive pager page or rebuilt on rotation.
+        // Focus restoration must never navigate; activation remains an explicit click.
+        openOnFocus = false,
         modifier = modifier
             .padding(horizontal = visualSpec.screenHorizontalPadding),
     )

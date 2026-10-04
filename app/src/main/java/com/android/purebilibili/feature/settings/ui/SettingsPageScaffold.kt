@@ -44,6 +44,7 @@ import com.android.purebilibili.core.ui.blur.shouldAllowRenderEffectBackedHazeEf
 import com.android.purebilibili.core.ui.blur.unifiedBlur
 import com.android.purebilibili.core.ui.performance.isLowBlurBudgetForced
 import com.android.purebilibili.core.ui.AppScaffold
+import com.android.purebilibili.feature.settings.screen.LocalSettingsDetailPaneRoot
 import com.android.purebilibili.core.ui.AppTopBar
 import com.android.purebilibili.core.ui.AppTopBarStyle
 import com.android.purebilibili.core.ui.AppSurfaceTokens
@@ -149,6 +150,7 @@ internal fun SettingsPageScaffold(
         bottomContentPadding,
         LocalBottomBarContentPadding.current,
     )
+    val showBackButton = !LocalSettingsDetailPaneRoot.current
     val appThemeConfig = LocalAppThemeConfig.current
     val headerBlurEnabled = topBarBlurEnabled ?: appThemeConfig.headerBlurEnabled
     val lowBlurBudget = isLowBlurBudgetForced()
@@ -215,7 +217,7 @@ internal fun SettingsPageScaffold(
                                 )
                         } else Modifier,
                         navigationIcon = {
-                            AppIconButton(onClick = onBack) {
+                            if (showBackButton) AppIconButton(onClick = onBack) {
                                 AppIcon(
                                     imageVector = rememberAppBackIcon(),
                                     contentDescription = backContentDescription,

@@ -47,9 +47,6 @@ import com.android.purebilibili.feature.home.components.BiliPaiImmersiveTopBar
 import com.android.purebilibili.feature.home.components.shouldUseBiliPaiProgressiveTopBlur
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import com.android.purebilibili.core.util.AppFoldPosture
-import com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo
-import com.android.purebilibili.core.util.LocalWindowSizeClass
 import com.android.purebilibili.feature.settings.SettingsHomeSearchEntry
 import com.android.purebilibili.feature.settings.SettingsRootCategory
 import com.android.purebilibili.feature.settings.canonicalSettingsRootCategory
@@ -58,259 +55,155 @@ import com.android.purebilibili.feature.settings.resolveSettingsRootCategoryOrde
 import com.android.purebilibili.feature.settings.resolveSettingsSiblingIconTints
 import com.android.purebilibili.feature.settings.resolveSettingsTabletLayoutPolicy
 import com.android.purebilibili.feature.settings.resolveSettingsVisualSpec
-import com.android.purebilibili.feature.settings.shouldRenderSettingsTabletDetailPane
-import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
-import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
-import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldPaneScope
-import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldValue
-import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
 
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun SettingsTabletShell(
+internal fun SettingsCategoryListPane(
     selectedCategory: SettingsRootCategory?,
     onCategoryClick: (SettingsRootCategory) -> Unit,
     onBack: () -> Unit,
     onSearchOpen: () -> Unit,
     modifier: Modifier = Modifier,
-    isSearchActive: Boolean = false,
-    rightPane: @Composable () -> Unit,
 ) {
     val configuration = LocalConfiguration.current
     val layoutPolicy = remember(configuration.screenWidthDp) {
-        resolveSettingsTabletLayoutPolicy(widthDp = configuration.screenWidthDp)
+        resolveSettingsTabletLayoutPolicy(configuration.screenWidthDp)
     }
     val categories = remember { resolveSettingsRootCategoryOrder() }
-    val isDetailActive = shouldRenderSettingsTabletDetailPane(
-        selectedCategory = selectedCategory,
-        isSearchActive = isSearchActive,
-    )
-    val categoryIconTints = remember(categories.size) {
-        resolveSettingsSiblingIconTints(categories.size)
-    }
-    val useThreePaneLayout =
-        LocalWindowSizeClass.current.shouldUseThreePaneLayout && selectedCategory != null
-    val emptyDetailPane: @Composable () -> Unit = {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppSurfaceTokens.groupedListContainer())
-                .padding(layoutPolicy.detailPanePaddingDp.dp),
-            contentAlignment = Alignment.Center,
+    val categoryIconTints = remember(categories.size) { resolveSettingsSiblingIconTints(categories.size) }
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(AppSurfaceTokens.groupedListContainer()),
+    ) {
+        val config = LocalAppThemeConfig.current
+        val progressive = shouldUseBiliPaiProgressiveTopBlur(
+            enabled = config.progressiveTopBlurEnabled && !config.headerBlurEnabled,
+            hasBackdrop = true,
+        ) && !isLowBlurBudgetForced()
+        val fadeActive = config.progressiveTopFadeEnabled && !config.headerBlurEnabled
+        val tabletChromeBackdrop = if (progressive) rememberLayerBackdrop() else null
+        val tabletHazeState = if (
+            config.headerBlurEnabled && !progressive &&
+                shouldAllowRenderEffectBackedHazeEffect(Build.VERSION.SDK_INT)
+        ) rememberRecoverableHazeState() else null
+        val tabletHazeReady = tabletHazeState?.let { recoverableBlurEnabled(it) } == true
+        BiliPaiImmersiveTopBar(
+            backdrop = tabletChromeBackdrop,
+            enabled = progressive,
+            headerBlurActive = tabletHazeReady,
+            surfaceColor = AppSurfaceTokens.groupedListContainer(),
+            fadeEnabled = fadeActive,
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                AppText(
-                    text = "选择设置分类",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                AppText(
-                    text = "从左侧选择一个分类以查看和修改设置",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            AppTopBar(
+                title = stringResource(R.string.settings_title),
+                modifier = if (tabletHazeReady) {
+                    Modifier
+                        .unifiedBlur(
+                            hazeState = requireNotNull(tabletHazeState),
+                            surfaceType = BlurSurfaceType.HEADER,
+                        )
+                        .background(
+                            AppSurfaceTokens.groupedListContainer()
+                                .copy(alpha = AppSurfaceTokens.FrostedScrimAlpha)
+                        )
+                } else Modifier,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (progressive || fadeActive || tabletHazeReady) {
+                        androidx.compose.ui.graphics.Color.Transparent
+                    } else {
+                        AppSurfaceTokens.groupedListContainer()
+                    },
+                    scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
+                navigationIcon = {
+                    AppIconButton(onClick = onBack) {
+                        AppIcon(
+                            imageVector = rememberAppBackIcon(),
+                            contentDescription = stringResource(R.string.common_back),
+                        )
+                    }
+                },
+            )
         }
-    }
-    val detailPane: @Composable ThreePaneScaffoldPaneScope.() -> Unit = {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppSurfaceTokens.groupedListContainer())
-                .padding(horizontal = layoutPolicy.detailPanePaddingDp.dp),
-        ) {
-            rightPane()
-        }
-    }
-    val windowAdaptiveInfo = currentWindowAdaptiveInfoV2()
-    val directive = calculatePaneScaffoldDirective(windowAdaptiveInfo)
-    // 铰链/窄窗口导致只能单分区时退化为按导航态单栏切换；正常平板态永远双栏可见。
-    // Tabletop 姿态下官方 directive 不会减少水平分区，需按旧策略显式退回单栏避免跨铰链布局。
-    val singlePaneOnly = directive.maxHorizontalPartitions <= 1 ||
-        LocalAppWindowAdaptiveInfo.current.posture == AppFoldPosture.Tabletop
-    val listPaneContent: @Composable ThreePaneScaffoldPaneScope.() -> Unit = {
         Column(
             modifier = Modifier
-                .preferredWidth(layoutPolicy.primaryRatio)
-                .fillMaxHeight()
-                .background(AppSurfaceTokens.groupedListContainer()),
+            .weight(1f)
+            .then(
+                    if (tabletChromeBackdrop != null) {
+                        Modifier.layerBackdrop(tabletChromeBackdrop)
+                    } else {
+                        Modifier
+                    }
+                )
+                .then(if (tabletHazeReady) Modifier.hazeSourceCompat(requireNotNull(tabletHazeState)) else Modifier)
+                .padding(horizontal = layoutPolicy.masterPanePaddingDp.dp),
         ) {
-                val config = LocalAppThemeConfig.current
-                val progressive = shouldUseBiliPaiProgressiveTopBlur(
-                    enabled = config.progressiveTopBlurEnabled && !config.headerBlurEnabled,
-                    hasBackdrop = true,
-                ) && !isLowBlurBudgetForced()
-                val fadeActive = config.progressiveTopFadeEnabled && !config.headerBlurEnabled
-                val tabletChromeBackdrop = if (progressive) rememberLayerBackdrop() else null
-                val tabletHazeState = if (
-                    config.headerBlurEnabled && !progressive &&
-                        shouldAllowRenderEffectBackedHazeEffect(Build.VERSION.SDK_INT)
-                ) rememberRecoverableHazeState() else null
-                val tabletHazeReady = tabletHazeState?.let { recoverableBlurEnabled(it) } == true
-                BiliPaiImmersiveTopBar(
-                    backdrop = tabletChromeBackdrop,
-                    enabled = progressive,
-                    headerBlurActive = tabletHazeReady,
-                    surfaceColor = AppSurfaceTokens.groupedListContainer(),
-                    fadeEnabled = fadeActive,
-                ) {
-                    AppTopBar(
-                        title = stringResource(R.string.settings_title),
-                        modifier = if (tabletHazeReady) {
-                            Modifier
-                                .unifiedBlur(
-                                    hazeState = requireNotNull(tabletHazeState),
-                                    surfaceType = BlurSurfaceType.HEADER,
-                                )
-                                .background(
-                                    AppSurfaceTokens.groupedListContainer()
-                                        .copy(alpha = AppSurfaceTokens.FrostedScrimAlpha)
-                                )
-                        } else Modifier,
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = if (progressive || fadeActive || tabletHazeReady) {
-                                androidx.compose.ui.graphics.Color.Transparent
-                            } else {
-                                AppSurfaceTokens.groupedListContainer()
-                            },
-                            scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        ),
-                        navigationIcon = {
-                            AppIconButton(onClick = onBack) {
-                                AppIcon(
-                                    imageVector = rememberAppBackIcon(),
-                                    contentDescription = stringResource(R.string.common_back),
+            SettingsHomeSearchEntry(onClick = onSearchOpen)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(top = 8.dp),
+            ) {
+                itemsIndexed(categories) { index, category ->
+                    val visual = rememberSettingsEntryVisual(category.searchTarget)
+                    val effectiveIconTint = rememberAdaptivePreferenceIconContainerColor(
+                        categoryIconTints[index]
+                    )
+                    val iconContentColor = rememberAdaptivePreferenceIconContentColor(effectiveIconTint)
+                    val selected = selectedCategory?.let(::canonicalSettingsRootCategory) == category
+                    AppNavigationDrawerItem(
+                        label = {
+                            Column {
+                                AppText(category.title, fontWeight = FontWeight.Medium)
+                                AppText(
+                                    text = category.subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
                                 )
                             }
                         },
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                    .weight(1f)
-                    .then(
-                            if (tabletChromeBackdrop != null) {
-                                Modifier.layerBackdrop(tabletChromeBackdrop)
-                            } else {
-                                Modifier
+                        selected = selected,
+                        onClick = {
+                            onCategoryClick(category)
+                        },
+                        icon = {
+                            Box(
+                                modifier = Modifier
+                                    .size(resolveSettingsVisualSpec().categoryIconBubbleSize)
+                                    .clip(AppShapes.container(ContainerLevel.Field))
+                                    .background(effectiveIconTint),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (visual.icon != null) {
+                                    AppIcon(
+                                        imageVector = visual.icon,
+                                        contentDescription = null,
+                                        tint = iconContentColor,
+                                        modifier = Modifier.size(visual.iconSizeDp.dp),
+                                    )
+                                }
                             }
-                        )
-                        .then(if (tabletHazeReady) Modifier.hazeSourceCompat(requireNotNull(tabletHazeState)) else Modifier)
-                        .padding(horizontal = layoutPolicy.masterPanePaddingDp.dp),
-                ) {
-                    SettingsHomeSearchEntry(onClick = onSearchOpen)
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(top = 8.dp),
-                    ) {
-                        itemsIndexed(categories) { index, category ->
-                            val visual = rememberSettingsEntryVisual(category.searchTarget)
-                            val effectiveIconTint = rememberAdaptivePreferenceIconContainerColor(
-                                categoryIconTints[index]
-                            )
-                            val iconContentColor = rememberAdaptivePreferenceIconContentColor(effectiveIconTint)
-                            val selected = selectedCategory?.let(::canonicalSettingsRootCategory) == category
-                            AppNavigationDrawerItem(
-                                label = {
-                                    Column {
-                                        AppText(category.title, fontWeight = FontWeight.Medium)
-                                        AppText(
-                                            text = category.subtitle,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 2,
-                                        )
-                                    }
-                                },
-                                selected = selected,
-                                onClick = {
-                                    if (!selected) {
-                                        onCategoryClick(category)
-                                    }
-                                },
-                                icon = {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(resolveSettingsVisualSpec().categoryIconBubbleSize)
-                                            .clip(AppShapes.container(ContainerLevel.Field))
-                                            .background(effectiveIconTint),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        if (visual.icon != null) {
-                                            AppIcon(
-                                                imageVector = visual.icon,
-                                                contentDescription = null,
-                                                tint = iconContentColor,
-                                                modifier = Modifier.size(visual.iconSizeDp.dp),
-                                            )
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }
-    val infoPaneContent: @Composable ThreePaneScaffoldPaneScope.() -> Unit = {
-        Column(
-            modifier = Modifier
-                .preferredWidth(0.35f)
-                .fillMaxSize()
-                .background(AppSurfaceTokens.groupedListContainer())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+    }
+}
+
+@Composable
+internal fun SettingsEmptyDetailPane(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.fillMaxSize().background(AppSurfaceTokens.groupedListContainer()).padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppText("选择设置分类", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             AppText(
-                text = selectedCategory?.title ?: stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-            AppText(
-                text = selectedCategory?.subtitle ?: "选择左侧分类以查看设置",
+                "从左侧选择一个分类以查看和修改设置",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
-    val detailSlotContent: @Composable ThreePaneScaffoldPaneScope.() -> Unit = {
-        if (!isDetailActive) emptyDetailPane() else detailPane()
-    }
-    // 官方脚手架的槽位映射：list=listPane，detail=primary 槽，extra=tertiary 槽。
-    // 三栏（超宽 + 已选分类）时 detail 槽放分类信息列，extra 槽放设置正文。
-    val scaffoldValue = when {
-        singlePaneOnly && isDetailActive -> ThreePaneScaffoldValue(
-            primary = PaneAdaptedValue.Expanded,
-            secondary = PaneAdaptedValue.Hidden,
-            tertiary = PaneAdaptedValue.Hidden,
-        )
-        singlePaneOnly -> ThreePaneScaffoldValue(
-            primary = PaneAdaptedValue.Hidden,
-            secondary = PaneAdaptedValue.Expanded,
-            tertiary = PaneAdaptedValue.Hidden,
-        )
-        useThreePaneLayout && !isSearchActive -> ThreePaneScaffoldValue(
-            primary = PaneAdaptedValue.Expanded,
-            secondary = PaneAdaptedValue.Expanded,
-            tertiary = PaneAdaptedValue.Expanded,
-        )
-        else -> ThreePaneScaffoldValue(
-            primary = PaneAdaptedValue.Expanded,
-            secondary = PaneAdaptedValue.Expanded,
-            tertiary = PaneAdaptedValue.Hidden,
-        )
-    }
-    ListDetailPaneScaffold(
-        modifier = modifier.fillMaxSize(),
-        directive = directive,
-        value = scaffoldValue,
-        listPane = listPaneContent,
-        detailPane = if (useThreePaneLayout && !isSearchActive) infoPaneContent else detailSlotContent,
-        extraPane = if (useThreePaneLayout && !isSearchActive) detailPane else null,
-    )
 }

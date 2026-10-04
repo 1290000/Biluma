@@ -88,6 +88,22 @@ internal fun pushOrReplaceSettingsCategoryNavKey(
     return base + key
 }
 
+/** 侧栏选择分类时，直达页和分类页共用同层替换，保留设置根作为返回目标。 */
+internal fun selectSettingsPaneNavKey(
+    currentStack: List<BiliPaiNavKey>,
+    key: BiliPaiNavKey,
+): List<BiliPaiNavKey> {
+    val base = currentStack.ifEmpty { listOf(BiliPaiNavKey.MainHost) }
+    if (base.last() == key) return base
+    var trimmed = base
+    while (trimmed.size > 1) {
+        val top = trimmed.last()
+        if (top == BiliPaiNavKey.Settings || !isSettingsSubtreeRoute(top.routeBase)) break
+        trimmed = trimmed.dropLast(1)
+    }
+    return pushBiliPaiNavKey(trimmed, key)
+}
+
 internal fun popBiliPaiNavKey(
     currentStack: List<BiliPaiNavKey>
 ): List<BiliPaiNavKey> {
