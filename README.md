@@ -1,3 +1,25 @@
+# 羽哩 · Biluma
+
+羽哩（Biluma）是基于 [BiliPai](https://github.com/jay3-yy/BiliPai) 独立维护的衍生项目，计划精简设置和非必要功能，并逐步调整界面与交互。本项目不是 BiliPai 原作者的官方发行版。
+
+- 项目仓库：[1290000/Biluma](https://github.com/1290000/Biluma)
+- 问题反馈：[Biluma Issues](https://github.com/1290000/Biluma/issues)
+- 版本发布：[Biluma Releases](https://github.com/1290000/Biluma/releases)（目前尚无独立发行版）
+- English: [README_EN.md](README_EN.md)
+
+## 开发起点与当前状态
+
+- 基于上游正式标签 [`v0.2.8`](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.8)，起点提交为 [`edb3d596d381464f02feba646eadc3f023911a75`](https://github.com/jay3-yy/BiliPai/commit/edb3d596d381464f02feba646eadc3f023911a75)。
+- 保留该提交及其全部祖先历史，后续改版在本仓库的 `main` 分支维护。
+- 当前仅建立独立仓库并补充项目说明；应用名称、图标、安装包名、更新来源和功能仍为上游实现，尚未完成 Biluma 品牌迁移。
+- 保留上游 [GPLv3 许可证](LICENSE)及[第三方声明](THIRD_PARTY_NOTICES.md)，感谢 BiliPai 原作者与所有贡献者。
+
+## 上游文档快照
+
+以下保留导入时的 BiliPai 文档，供开发参考。其中的版本徽章、截图、下载渠道和社区链接属于上游，不代表 Biluma 的发布状态；部分文档标注的版本可能早于本项目的实际起点 `v0.2.8`。
+
+---
+
 <div align="center">
 
 <img src="docs/images/233娘.jpeg" height="96" alt="BiliPai" />

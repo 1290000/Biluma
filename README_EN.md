@@ -1,3 +1,25 @@
+# Biluma · 羽哩
+
+Biluma is an independently maintained derivative of [BiliPai](https://github.com/jay3-yy/BiliPai). It aims to simplify settings and non-essential features while gradually refining the interface and interactions. This is not an official BiliPai release.
+
+- Repository: [1290000/Biluma](https://github.com/1290000/Biluma)
+- Bug reports: [Biluma Issues](https://github.com/1290000/Biluma/issues)
+- Releases: [Biluma Releases](https://github.com/1290000/Biluma/releases) (no independent release yet)
+- 简体中文：[README.md](README.md)
+
+## Starting point and current status
+
+- Based on upstream release [`v0.2.8`](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.8), at commit [`edb3d596d381464f02feba646eadc3f023911a75`](https://github.com/jay3-yy/BiliPai/commit/edb3d596d381464f02feba646eadc3f023911a75).
+- The baseline commit and its complete ancestor history are preserved. Biluma development continues on this repository's `main` branch.
+- Only the independent repository and project introduction have been established. The app name, icons, application ID, update sources, and features remain unchanged from upstream; Biluma branding has not been applied to the app yet.
+- The upstream [GPLv3 license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md) are preserved. Thanks to the BiliPai authors and contributors.
+
+## Upstream documentation snapshot
+
+The original BiliPai documentation is retained below for development reference. Its version badges, screenshots, download channels, and community links refer to upstream, not Biluma releases. Some documentation may list a version older than this project's actual `v0.2.8` baseline.
+
+---
+
 # BiliPai <img src="docs/images/233娘.jpeg" height="80" align="center">
 
 <p align="center">
