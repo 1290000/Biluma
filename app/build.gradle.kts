@@ -389,6 +389,10 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:$material3Version") // [新增] 窗口大小类
     implementation("androidx.compose.material3.adaptive:adaptive:$material3AdaptiveVersion")
     implementation("androidx.compose.material3.adaptive:adaptive-layout:$material3AdaptiveVersion")
+    implementation("androidx.compose.material3.adaptive:adaptive-navigation3:$material3AdaptiveVersion")
+    implementation("androidx.navigation3:navigation3-runtime:1.2.0")
+    implementation("androidx.navigation3:navigation3-ui:1.2.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:$lifecycleVersion")
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
     implementation(libs.miuix.blur)

@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.foundation.shape.CircleShape
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import com.android.purebilibili.core.ui.AppSpacingTokens
@@ -118,6 +120,18 @@ private val CHAT_MESSAGE_LIST_BOTTOM_PADDING = CHAT_INPUT_DOCK_HEIGHT +
     CHAT_INPUT_VERTICAL_PADDING +
     CHAT_INPUT_VERTICAL_PADDING +
     AppSpacingTokens.Small
+
+// 小横条停靠在底部时的默认占位高度（横条高度 + 外边距），用于让输入框避开它
+@Composable
+private fun resolveChatMiniPlayerBottomAvoidance(): Dp {
+    val miniPlayerManager = com.android.purebilibili.feature.video.player.MiniPlayerManager.getInstanceOrNull()
+        ?: return AppSpacingTokens.None
+    if (!miniPlayerManager.isMiniMode) return AppSpacingTokens.None
+    val policy = com.android.purebilibili.feature.video.ui.overlay.resolveMiniPlayerOverlayLayoutPolicy(
+        widthDp = LocalConfiguration.current.screenWidthDp
+    )
+    return (policy.miniPlayerHeightDp + policy.outerPaddingDp).dp + AppSpacingTokens.Small
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -188,6 +202,7 @@ fun ChatScreen(
     } else {
         null
     }
+    val miniPlayerBottomAvoidance = resolveChatMiniPlayerBottomAvoidance()
     
     ChatWallpaperHost(
         wallpaperBackdrop = chatWallpaperBackdrop,
@@ -290,7 +305,8 @@ fun ChatScreen(
                                     start = 16.dp,
                                     top = paddingValues.calculateTopPadding() + 8.dp,
                                     end = 16.dp,
-                                    bottom = CHAT_MESSAGE_LIST_BOTTOM_PADDING,
+                                    bottom = CHAT_MESSAGE_LIST_BOTTOM_PADDING +
+                                        miniPlayerBottomAvoidance,
                                 ),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -356,7 +372,9 @@ fun ChatScreen(
                 }
 
                 ChatInputBar(
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = miniPlayerBottomAvoidance),
                     text = inputText,
                     onTextChange = { inputText = it },
                     onSend = {
@@ -643,6 +661,8 @@ fun ChatInputBar(
                 keyboardOptions = keyboardOptions,
                 keyboardActions = keyboardActions,
                 shape = dockShape,
+                miuixCornerRadius = CHAT_INPUT_DOCK_HEIGHT / 2,
+                miuixContainerColor = Color.Transparent,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = fieldTextColor),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = fieldColor,

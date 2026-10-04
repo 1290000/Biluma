@@ -777,7 +777,7 @@ fun PortraitVideoPager(
         }
     }
 
-    DisposableEffect(exoPlayer) {
+    DisposableEffect(danmakuManager, exoPlayer) {
         danmakuManager.attachPlayer(exoPlayer)
         onDispose { danmakuManager.detachPlayer(exoPlayer) }
     }
@@ -1520,7 +1520,7 @@ fun PortraitVideoPager(
             }
     }
 
-    LaunchedEffect(currentPlayingCid, currentPlayingAid, danmakuEnabled, danmakuSettingsLoaded, exoPlayer) {
+    LaunchedEffect(danmakuManager, currentPlayingCid, currentPlayingAid, danmakuEnabled, danmakuSettingsLoaded, exoPlayer) {
         if (shouldLoadPortraitDanmaku(danmakuSettingsLoaded, currentPlayingCid, danmakuEnabled)) {
             danmakuManager.updateSettings(
                 settings = danmakuSettings,
@@ -2002,13 +2002,25 @@ private fun VideoPageItem(
 
     DisposableEffect(
         lifecycleOwner,
+        danmakuManager,
         exoPlayer,
         playerViewRef,
         isCurrentPage,
         isPlayerReadyForThisVideo
     ) {
+        var hasObservedHostPause = false
+        var recoveryJob: kotlinx.coroutines.Job? = null
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE) {
+                hasObservedHostPause = true
+                recoveryJob?.cancel()
+                return@LifecycleEventObserver
+            }
             if (event != androidx.lifecycle.Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+            // Registering a new observer immediately delivers the current lifecycle state.
+            // Surface/page changes are handled above and must not trigger foreground recovery.
+            if (!hasObservedHostPause) return@LifecycleEventObserver
+            hasObservedHostPause = false
             val view = playerViewRef
             if (
                 !shouldRecoverPortraitPagerSurfaceOnResume(
@@ -2023,7 +2035,8 @@ private fun VideoPageItem(
             view?.let { playerView ->
                 rebindPlayerSurfaceIfNeeded(playerView = playerView, player = exoPlayer)
             }
-            scope.launch {
+            recoveryJob?.cancel()
+            recoveryJob = scope.launch {
                 delay(FOREGROUND_SURFACE_RECOVERY_DELAY_MS)
                 val retryView = playerViewRef ?: return@launch
                 if (
@@ -2049,12 +2062,14 @@ private fun VideoPageItem(
                 danmakuManager.recoverAfterForeground(
                     positionMs = exoPlayer.currentPosition.coerceAtLeast(0L),
                     playWhenReady = exoPlayer.playWhenReady,
-                    playbackState = exoPlayer.playbackState
+                    playbackState = exoPlayer.playbackState,
+                    preserveTimeline = true
                 )
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            recoveryJob?.cancel()
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
@@ -3869,26 +3884,28 @@ private fun PortraitDanmakuOverlay(
     resizeMode: Int,
     modifier: Modifier = Modifier
 ) {
-    AndroidView(
-        factory = { ctx ->
-            DanmakuRenderView(ctx).apply {
-                setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                // 弹幕层必须 passive，否则会吞掉竖屏全屏的全部触控。
-                configureAsPassiveDanmakuOverlay()
-                danmakuManager.attachView(this)
-            }
-        },
-        update = { view ->
-            view.configureAsPassiveDanmakuOverlay()
-            val viewportTag = "$videoWidth:$videoHeight:$resizeMode:${view.width}x${view.height}"
-            if (view.width > 0 && view.height > 0 && view.tag != viewportTag) {
-                view.tag = viewportTag
-                danmakuManager.attachView(view)
+    key(danmakuManager) {
+        AndroidView(
+            factory = { ctx ->
+                DanmakuRenderView(ctx).apply {
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    // 弹幕层必须 passive，否则会吞掉竖屏全屏的全部触控。
+                    configureAsPassiveDanmakuOverlay()
+                    danmakuManager.attachView(this)
                 }
-        },
-        onRelease = { view -> danmakuManager.detachView(view) },
-        modifier = modifier
-    )
+            },
+            update = { view ->
+                view.configureAsPassiveDanmakuOverlay()
+                val viewportTag = "$videoWidth:$videoHeight:$resizeMode:${view.width}x${view.height}"
+                if (view.width > 0 && view.height > 0 && view.tag != viewportTag) {
+                    view.tag = viewportTag
+                    danmakuManager.attachView(view)
+                }
+            },
+            onRelease = { view -> danmakuManager.detachView(view) },
+            modifier = modifier
+        )
+    }
 }
 
 internal fun resolvePortraitPagerRepeatMode(): Int = Player.REPEAT_MODE_OFF

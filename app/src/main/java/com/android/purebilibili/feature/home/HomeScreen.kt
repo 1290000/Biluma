@@ -2246,8 +2246,7 @@ fun HomeScreen(
                              indicator = {
                                 when (pullRefreshIndicatorStyle) {
                                     AppPullRefreshIndicatorStyle.MATERIAL_DEFAULT -> {
-                                        // Official M3 expressive ContainedLoadingIndicator
-                                        // (dynamic color) for Android Native Material 3.
+                                        // Native MD3 pull-to-refresh indicator.
                                         AppPullRefreshLoadingIndicator(
                                             modifier = Modifier
                                                 .align(Alignment.TopCenter)
@@ -2404,9 +2403,15 @@ fun HomeScreen(
                                  val categoryError = categoryState.error
                                  if (categoryError != null && categoryState.videos.isEmpty()) {
                                  // Error State per page
-                                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                 Box(
+                                     Modifier
+                                         .fillMaxSize()
+                                         .padding(top = listTopPadding, bottom = homeListBottomPadding),
+                                     contentAlignment = Alignment.Center
+                                 ) {
                                      ModernErrorState(
                                          message = categoryError,
+                                         isVisible = pagerState.currentPage == page,
                                          onRetry = { viewModel.refresh() }
                                      )
                                  }

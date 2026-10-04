@@ -1475,6 +1475,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_SPLASH_RANDOM_POOL_URIS = stringPreferencesKey("splash_random_pool_uris")
     private val KEY_SPLASH_ENABLED = booleanPreferencesKey("splash_enabled")
     private val KEY_SPLASH_RANDOM_ENABLED = booleanPreferencesKey("splash_random_enabled")
+    private val KEY_STARTUP_ANIMATION_STYLE = stringPreferencesKey("startup_animation_style")
     private val KEY_SPLASH_ICON_ANIMATION_ENABLED = booleanPreferencesKey("splash_icon_animation_enabled")
     private val KEY_SPLASH_ALIGNMENT_MOBILE = floatPreferencesKey("splash_alignment_mobile")
     private val KEY_SPLASH_ALIGNMENT_TABLET = floatPreferencesKey("splash_alignment_tablet")
@@ -1484,6 +1485,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private const val SPLASH_PREFS_KEY_RANDOM_POOL_URIS = "random_pool_uris"
     private const val SPLASH_PREFS_KEY_ENABLED = "enabled"
     private const val SPLASH_PREFS_KEY_RANDOM_ENABLED = "random_enabled"
+    private const val SPLASH_PREFS_KEY_ANIMATION_STYLE = "animation_style"
     private const val SPLASH_PREFS_KEY_ICON_ANIMATION_ENABLED = "icon_animation_enabled"
     private const val SPLASH_PREFS_KEY_ALIGNMENT_MOBILE = "alignment_mobile"
     private const val SPLASH_PREFS_KEY_ALIGNMENT_TABLET = "alignment_tablet"
@@ -3681,6 +3683,23 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     fun getSplashRandomEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SPLASH_RANDOM_ENABLED] ?: false }
+
+    fun getStartupAnimationStyle(context: Context): Flow<StartupAnimationStyle> =
+        context.settingsDataStore.data.map { StartupAnimationStyle.fromValue(it[KEY_STARTUP_ANIMATION_STYLE]) }
+
+    fun getStartupAnimationStyleSync(context: Context): StartupAnimationStyle =
+        StartupAnimationStyle.fromValue(
+            context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
+                .getString(SPLASH_PREFS_KEY_ANIMATION_STYLE, null)
+        )
+
+    suspend fun setStartupAnimationStyle(context: Context, value: StartupAnimationStyle) {
+        editSettingsAndCommitPrefs(
+            context, SPLASH_PREFS,
+            editSettings = { this[KEY_STARTUP_ANIMATION_STYLE] = value.value },
+            editPrefs = { putString(SPLASH_PREFS_KEY_ANIMATION_STYLE, value.value) },
+        )
+    }
 
     fun getSplashIconAnimationEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SPLASH_ICON_ANIMATION_ENABLED] ?: true }

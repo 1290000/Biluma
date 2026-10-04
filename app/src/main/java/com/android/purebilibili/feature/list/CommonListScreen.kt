@@ -1303,6 +1303,7 @@ fun CommonListScreen(
                                         refreshToken = state.items,
                                         active = isCurrentPage && !state.isLoading,
                                         onUpClick = onUpClick,
+                                        snapshotCache = historyViewModel?.recapSnapshots,
                                         modifier = Modifier.fillMaxWidth(),
                                     )
                                 }
@@ -2638,7 +2639,7 @@ private fun CommonListContent(
         .padding(top = if (scrollUnderHeader) AppSpacingTokens.None else fixedHeaderInset)
     val emptyViewportModifier = Modifier
         .fillMaxSize()
-        .padding(top = fixedHeaderInset)
+        .padding(top = fixedHeaderInset, bottom = padding.calculateBottomPadding())
     if (isLoading && items.isEmpty()) {
         val historySkeletonBlockColor = if (isPersonalList) {
             com.android.purebilibili.core.ui.skeleton.rememberContentSkeletonBlockColor(
@@ -2698,17 +2699,16 @@ private fun CommonListContent(
             Column(
                 modifier = emptyViewportModifier
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = gridOuterPaddingDp.dp)
-                    .padding(bottom = padding.calculateBottomPadding()),
+                    .padding(horizontal = gridOuterPaddingDp.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 headerContent()
-                AppText("暂无数据", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                com.android.purebilibili.core.ui.EmptyState(message = "暂无数据", enableEasterEgg = false)
             }
         } else {
             Box(modifier = emptyViewportModifier, contentAlignment = Alignment.Center) {
-                AppText("暂无数据", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                com.android.purebilibili.core.ui.EmptyState(message = "暂无数据", enableEasterEgg = false)
             }
         }
     } else {
@@ -2741,7 +2741,11 @@ private fun CommonListContent(
 
         if (filteredItems.isEmpty() && searchQuery.isNotEmpty()) {
              Box(emptyViewportModifier, contentAlignment = Alignment.Center) {
-                AppText("没有找到相关视频", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                com.android.purebilibili.core.ui.EmptyState(
+                    message = "没有找到相关视频",
+                    animation = com.android.purebilibili.core.ui.MaidAnimation.SEARCH_EMPTY,
+                    enableEasterEgg = false
+                )
              }
         } else {
             // 自动加载更多
@@ -3130,8 +3134,13 @@ private fun FavoriteSubscribedFolderList(
 ) {
     if (folders.isEmpty()) {
         val message = if (searchQuery.isNotBlank()) "没有找到相关追更" else "暂无追更合集"
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            AppText(text = message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+            com.android.purebilibili.core.ui.EmptyState(
+                message = message,
+                animation = if (searchQuery.isNotBlank()) com.android.purebilibili.core.ui.MaidAnimation.SEARCH_EMPTY
+                    else com.android.purebilibili.core.ui.MaidAnimation.EMPTY,
+                enableEasterEgg = false
+            )
         }
         return
     }

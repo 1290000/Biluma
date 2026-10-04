@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -750,35 +751,53 @@ internal fun HomeCategoryPageContent(
                             contentType = "home_video_row",
                             span = StaggeredGridItemSpan.FullLine,
                         ) {
-                            val rowHeightPx = remember(rowKey) { mutableIntStateOf(0) }
-                            Row(
-                                modifier = videoListItemModifier(enabled = cardAnimationEnabled && !cardReflowActive)
-                                    .fillMaxWidth(),
-                                horizontalArrangement = horizontalArrangement,
-                                verticalAlignment = Alignment.Top,
-                            ) {
-                                rowIndices.forEach { index ->
-                                    key(videoGridKeys[index]) {
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .heightIn(min = with(LocalDensity.current) { rowHeightPx.intValue.toDp() })
-                                                .onSizeChanged { size ->
-                                                    if (size.height > rowHeightPx.intValue) {
-                                                        rowHeightPx.intValue = size.height
+                            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                                // The same videos can survive rotation or sidebar resizing. Their
+                                // previous row height is valid only for the same measured width.
+                                val rowDensity = LocalDensity.current
+                                val rowHeightPx = remember(
+                                    rowKey, constraints.maxWidth, rowDensity.density,
+                                    rowDensity.fontScale, cardLayout,
+                                ) { mutableIntStateOf(0) }
+                                Row(
+                                    modifier = videoListItemModifier(enabled = cardAnimationEnabled && !cardReflowActive)
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = horizontalArrangement,
+                                    verticalAlignment = Alignment.Top,
+                                ) {
+                                    rowIndices.forEach { index ->
+                                        key(videoGridKeys[index]) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .layout { measurable, incoming ->
+                                                        val minimumHeight = rowHeightPx.intValue.coerceIn(
+                                                            incoming.minHeight, incoming.maxHeight,
+                                                        )
+                                                        val placeable = measurable.measure(
+                                                            incoming.copy(minHeight = minimumHeight),
+                                                        )
+                                                        layout(placeable.width, placeable.height) {
+                                                            placeable.placeRelative(0, 0)
+                                                        }
                                                     }
-                                                },
-                                        ) {
-                                            renderVideoCard(
-                                                index,
-                                                visibleGridVideos[index],
-                                                Modifier.fillMaxWidth().fillMaxHeight(),
-                                            )
+                                                    .onSizeChanged { size ->
+                                                        if (size.height > rowHeightPx.intValue) {
+                                                            rowHeightPx.intValue = size.height
+                                                        }
+                                                    },
+                                            ) {
+                                                renderVideoCard(
+                                                    index,
+                                                    visibleGridVideos[index],
+                                                    Modifier.fillMaxWidth().fillMaxHeight(),
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                                repeat(gridColumns - rowIndices.count()) {
-                                    Spacer(modifier = Modifier.weight(1f))
+                                    repeat(gridColumns - rowIndices.count()) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
                                 }
                             }
                         }

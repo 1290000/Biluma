@@ -174,6 +174,7 @@ class LikedVideosViewModelFactory(
 
 // --- 历史记录 ViewModel (支持游标分页加载) ---
 class HistoryViewModel(application: Application) : BaseListViewModel(application, "历史记录") {
+    internal val recapSnapshots = mutableMapOf<PersonalRecapWindow, HistoryRecapSnapshot>()
     private var historySearchQuery: String = ""
     private var historySearchPage: Int = 1
     private var historySearchGeneration: Long = 0L
