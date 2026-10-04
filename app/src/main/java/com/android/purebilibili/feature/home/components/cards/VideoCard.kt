@@ -1931,7 +1931,6 @@ internal fun ElegantVideoCard(
             AppDropdownMenu(
                 expanded = showDismissMenu,
                 onDismissRequest = { showDismissMenu = false },
-                offset = DpOffset.Zero
             ) {
                 // 稍后再看
                 if (onWatchLater != null) {

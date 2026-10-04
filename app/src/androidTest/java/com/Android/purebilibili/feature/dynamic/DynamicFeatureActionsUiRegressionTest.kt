@@ -1,6 +1,7 @@
 package com.Android.purebilibili.feature.dynamic
 
 import androidx.compose.material3.MaterialTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -13,8 +14,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import coil3.ImageLoader
-import com.android.purebilibili.core.ui.AppThemeConfig
-import com.android.purebilibili.core.ui.ProvideAppThemeConfig
 import com.android.purebilibili.data.model.response.CoursesMajor
 import com.android.purebilibili.data.model.response.DynamicAuthorModule
 import com.android.purebilibili.data.model.response.DynamicAdditional
@@ -131,7 +130,7 @@ class DynamicFeatureActionsUiRegressionTest {
         composeTestRule.setContent {
             val context = LocalContext.current
             val imageLoader = remember(context) { ImageLoader.Builder(context).build() }
-            ProvideAppThemeConfig(AppThemeConfig(nativeMiuixPopupsEnabled = false)) {
+            MiuixTheme {
                 MaterialTheme {
                     DynamicCardV2(
                         item = item,
@@ -178,7 +177,7 @@ class DynamicFeatureActionsUiRegressionTest {
         composeTestRule.setContent {
             val context = LocalContext.current
             val imageLoader = remember(context) { ImageLoader.Builder(context).build() }
-            ProvideAppThemeConfig(AppThemeConfig(nativeMiuixPopupsEnabled = false)) {
+            MiuixTheme {
                 MaterialTheme {
                     DynamicCardV2(
                         item = item,

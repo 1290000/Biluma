@@ -11,8 +11,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.purebilibili.core.ui.AppThemeConfig
-import com.android.purebilibili.core.ui.ProvideAppThemeConfig
 import com.android.purebilibili.core.ui.components.AppText
 import com.android.purebilibili.core.ui.components.AppWindowAction
 import com.android.purebilibili.core.ui.components.AppWindowActionMenu
@@ -29,31 +27,20 @@ class AppWindowActionMenuUiRegressionTest {
 
     @Test
     fun nativeMenu_switchesLayoutOnce_andReopensWithUpdatedAction() {
-        verifyLayoutSwitch(nativeMenu = true)
-    }
-
-    @Test
-    fun materialMenu_switchesLayoutOnce_andReopensWithUpdatedAction() {
-        verifyLayoutSwitch(nativeMenu = false)
-    }
-
-    private fun verifyLayoutSwitch(nativeMenu: Boolean) {
         var clicks = 0
         composeTestRule.setContent {
-            ProvideAppThemeConfig(AppThemeConfig(nativeMiuixPopupsEnabled = nativeMenu)) {
-                MiuixTheme {
-                    MaterialTheme {
-                        var singleColumn by remember { mutableStateOf(false) }
-                        AppWindowActionMenu(
-                            groups = listOf(listOf(AppWindowAction(
-                                label = if (singleColumn) "切换为双列" else "切换为单列",
-                                onClick = {
-                                    clicks++
-                                    singleColumn = !singleColumn
-                                },
-                            ))),
-                        ) { AppText("更多") }
-                    }
+            MiuixTheme {
+                MaterialTheme {
+                    var singleColumn by remember { mutableStateOf(false) }
+                    AppWindowActionMenu(
+                        groups = listOf(listOf(AppWindowAction(
+                            label = if (singleColumn) "切换为双列" else "切换为单列",
+                            onClick = {
+                                clicks++
+                                singleColumn = !singleColumn
+                            },
+                        ))),
+                    ) { AppText("更多") }
                 }
             }
         }

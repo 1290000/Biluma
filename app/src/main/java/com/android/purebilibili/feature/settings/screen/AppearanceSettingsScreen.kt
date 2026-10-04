@@ -260,18 +260,9 @@ fun AppearanceSettingsContent(
         .firstOrNull { option -> option.value == selectedScreenDisplayModeId }
         ?.label
         ?: "自动（系统）"
-    val singleChoicePresentation by SettingsManager
-        .getSingleChoicePresentation(context)
-        .collectAsStateWithLifecycle(AppSingleChoicePresentation.WINDOW_POPUP)
     val pinchToChangeGridColumnsEnabled by SettingsManager
         .getPinchToChangeGridColumnsEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true)
-    val singleChoicePresentationOptions = remember {
-        listOf(
-            AppSegmentOption(AppSingleChoicePresentation.WINDOW_POPUP, "跟随选项弹出"),
-            AppSegmentOption(AppSingleChoicePresentation.CENTERED_DIALOG, "居中弹窗"),
-        )
-    }
     val listState = rememberLazyListState()
     val focusRequest by SettingsSearchFocusController.request.collectAsStateWithLifecycle()
     // Animation Trigger
@@ -670,23 +661,6 @@ fun AppearanceSettingsContent(
                             onSelectionChange = { style ->
                                 viewModel.setAppIconStyle(style)
                             }
-                        )
-
-                        AppPreferenceDivider()
-
-                        SettingsSingleChoicePreference(
-                            title = "选项弹窗样式",
-                            subtitle = "从条目旁展开，或居中弹出",
-                            options = singleChoicePresentationOptions,
-                            selectedValue = singleChoicePresentation,
-                            onSelectionChange = { presentation ->
-                                scope.launch {
-                                    SettingsManager.setSingleChoicePresentation(
-                                        context = context,
-                                        presentation = presentation,
-                                    )
-                                }
-                            },
                         )
                     }
                 }

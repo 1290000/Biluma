@@ -121,7 +121,6 @@ import com.android.purebilibili.core.ui.AppWindowSystemUiController
 import com.android.purebilibili.core.ui.ProvideAppThemeConfig
 import com.android.purebilibili.core.ui.components.AppCard
 import com.android.purebilibili.core.ui.components.AppCardShape
-import com.android.purebilibili.core.ui.components.LocalAppSingleChoicePresentation
 import com.android.purebilibili.core.ui.blur.BlurIntensity
 import com.android.purebilibili.core.ui.blur.ProvideUnifiedBlurIntensity
 import com.android.purebilibili.core.ui.performance.ProvideRuntimeVisualGuard
@@ -1396,9 +1395,6 @@ open class MainActivity : AppCompatActivity() {
             val runtimeVisualGuardEnabled by SettingsManager
                 .getRuntimeVisualGuardEnabled(context)
                 .collectAsStateWithLifecycle(initialValue = true)
-            val nativeMiuixPopupsEnabled by com.android.purebilibili.core.store.player.PlayerSettingsStore
-                .getNativeMiuixPlayerPopups(context)
-                .collectAsStateWithLifecycle(initialValue = true)
             val liquidGlassEnabled by SettingsManager.getAndroidNativeLiquidGlassEnabled(context)
                 .collectAsStateWithLifecycle(initialValue = true)
             val appThemeConfig = remember(
@@ -1412,7 +1408,6 @@ open class MainActivity : AppCompatActivity() {
                 globalTextTapCopyEnabled,
                 uiEntranceAnimationEnabled,
                 runtimeVisualGuardEnabled,
-                nativeMiuixPopupsEnabled,
             ) {
                 AppThemeConfig(
                     liquidGlassEnabled = liquidGlassEnabled,
@@ -1425,7 +1420,6 @@ open class MainActivity : AppCompatActivity() {
                     globalTextTapCopyEnabled = globalTextTapCopyEnabled,
                     uiEntranceAnimationEnabled = uiEntranceAnimationEnabled,
                     runtimeVisualGuardEnabled = runtimeVisualGuardEnabled,
-                    nativeMiuixPopupsEnabled = nativeMiuixPopupsEnabled,
                 )
             }
             
@@ -1544,8 +1538,6 @@ open class MainActivity : AppCompatActivity() {
                                 adaptiveInfo = appWindowAdaptiveInfo
                             ),
                         LocalDisplayMetricsSnapshot provides displayMetricsSnapshot,
-                        LocalAppSingleChoicePresentation provides
-                            appThemeSettings.singleChoicePresentation,
                     ) {
                     val isPipRenderingActive =
                         isInPipMode || miniPlayerManager.shouldKeepPlaybackForPipTransition()

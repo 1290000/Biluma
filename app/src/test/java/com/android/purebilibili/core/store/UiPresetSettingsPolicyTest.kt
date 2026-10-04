@@ -1,5 +1,9 @@
 package com.android.purebilibili.core.store
 
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.preferencesOf
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.android.purebilibili.core.theme.UiPreset
 import com.android.purebilibili.core.theme.AppUiStyle
 import com.android.purebilibili.core.theme.AndroidNativeVariant
@@ -88,6 +92,28 @@ class UiPresetSettingsPolicyTest {
         // 迁移后旧键不再分享，避免导入时重新生成旧键。
         assertFalse("ui_preset" in appearanceKeys)
         assertFalse("android_native_variant_v1" in appearanceKeys)
+    }
+
+    @Test
+    fun retiredPopupSettings_areNotShared() {
+        val keys = SettingsManager.getShareableSettingsEntryDefinitions()
+            .mapTo(mutableSetOf()) { it.storageKey }
+
+        assertFalse("single_choice_presentation" in keys)
+        assertFalse("native_miuix_player_popups" in keys)
+    }
+
+    @Test
+    fun retiredPopupPreferences_doNotChangeAppThemeSettings() {
+        val legacyPreferences = preferencesOf(
+            stringPreferencesKey("single_choice_presentation") to "centered_dialog",
+            booleanPreferencesKey("native_miuix_player_popups") to false,
+        )
+
+        assertEquals(
+            SettingsManager.mapAppThemeSettingsFromPreferences(emptyPreferences()),
+            SettingsManager.mapAppThemeSettingsFromPreferences(legacyPreferences),
+        )
     }
 
     @Test

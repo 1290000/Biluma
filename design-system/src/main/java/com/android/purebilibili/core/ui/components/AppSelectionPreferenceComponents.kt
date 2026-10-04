@@ -7,20 +7,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -32,17 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppPopupSurface
 import com.android.purebilibili.core.ui.AppPopupSurfaceType
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.ContainerLevel
-import com.android.purebilibili.core.ui.LocalAppPopupSurfaceRenderer
-import com.android.purebilibili.core.ui.LocalAppThemeConfig
 import com.android.purebilibili.core.ui.appContentDialogWidth
 import com.android.purebilibili.core.ui.resolveAppContentDialogLayoutPolicy
 import com.android.purebilibili.core.ui.resolveAppContentDialogProperties
@@ -51,20 +42,6 @@ import com.android.purebilibili.core.theme.LocalAppUiStyle
 import kotlin.math.round
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
-
-enum class AppSingleChoicePresentation(val storageValue: String) {
-    WINDOW_POPUP("window_popup"),
-    CENTERED_DIALOG("centered_dialog");
-
-    companion object {
-        fun fromStorageValue(value: String?): AppSingleChoicePresentation =
-            entries.firstOrNull { it.storageValue == value } ?: WINDOW_POPUP
-    }
-}
-
-val LocalAppSingleChoicePresentation = compositionLocalOf {
-    AppSingleChoicePresentation.WINDOW_POPUP
-}
 
 @Immutable
 data class AppChoiceOption<T>(
@@ -84,12 +61,8 @@ fun <T> AppSingleChoicePreference(
     subtitle: String? = null,
     enabled: Boolean = true,
     iconTint: Color = MaterialTheme.colorScheme.primary,
-    dialogTitle: String = title,
-    presentation: AppSingleChoicePresentation = LocalAppSingleChoicePresentation.current,
 ) {
-    if (presentation == AppSingleChoicePresentation.WINDOW_POPUP &&
-        LocalAppUiStyle.current == AppUiStyle.MIUIX
-    ) {
+    if (LocalAppUiStyle.current == AppUiStyle.MIUIX) {
         val selectedIndex = options.indexOfFirst { it.value == selectedValue }.coerceAtLeast(0)
         val dropdownItems = remember(options) {
             options.map { option ->
@@ -129,13 +102,8 @@ fun <T> AppSingleChoicePreference(
         return
     }
 
-    // MD3 预设或居中弹窗模式：统一样式渲染条目，保证列表间距与弹出样式无关。
-    // 「跟随选项弹出」时点击条目在锚点处展开 MD3 DropdownMenu。
-
-    var dialogVisible by rememberSaveable { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
     val selectedLabel = options.firstOrNull { it.value == selectedValue }?.label
-    val useWindowMenu = presentation == AppSingleChoicePresentation.WINDOW_POPUP
 
     Box(modifier = modifier.alpha(if (enabled) 1f else 0.6f)) {
         AppPreference(
@@ -143,154 +111,54 @@ fun <T> AppSingleChoicePreference(
             title = title,
             subtitle = subtitle,
             value = selectedLabel,
-            onClick = when {
-                !enabled -> null
-                useWindowMenu -> ({ menuExpanded = true })
-                else -> ({ dialogVisible = true })
-            },
+            onClick = if (enabled) ({ menuExpanded = true }) else null,
             iconTint = iconTint,
             showChevron = enabled,
-            // 跟随弹出的菜单锚定在行尾部（值区域）：点击的是行尾的当前值，
-            // 菜单在其下方展开，符合 M3「菜单锚定触发元素」的规范。
-            trailingContent = if (useWindowMenu) {
-                {
-                    AppDropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                    ) {
-                        options.forEach { option ->
-                            val selected = option.value == selectedValue
-                            AppDropdownMenuItem(
-                                text = {
-                                    Column {
-                                        AppText(
-                                            text = option.label,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                        )
-                                        option.description?.let { description ->
-                                            AppText(
-                                                text = description,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        }
-                                    }
-                                },
-                                leadingIcon = if (selected) {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
-                                } else {
-                                    null
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    if (shouldDispatchAppChoiceSelection(selectedValue, option.value)) {
-                                        onValueChange(option.value)
-                                    }
-                                },
-                            )
-                        }
-                    }
-                }
-            } else {
-                null
-            },
-        )
-    }
-
-    if (dialogVisible) {
-        AppSingleChoiceDialog(
-            title = dialogTitle,
-            selectedValue = selectedValue,
-            options = options,
-            onValueSelected = { value ->
-                if (shouldDispatchAppChoiceSelection(selectedValue, value)) {
-                    onValueChange(value)
-                }
-                dialogVisible = false
-            },
-            onDismissRequest = { dialogVisible = false },
-        )
-    }
-}
-
-@Composable
-fun <T> AppSingleChoiceDialog(
-    title: String,
-    selectedValue: T,
-    options: List<AppChoiceOption<T>>,
-    onValueSelected: (T) -> Unit,
-    onDismissRequest: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val configuration = LocalConfiguration.current
-    val maxDialogHeight = (configuration.screenHeightDp * 0.8f).dp
-    val layoutPolicy = remember { resolveAppContentDialogLayoutPolicy(maxWidthDp = 420) }
-    // Dialog 使用独立平台窗口；在进入窗口子组合前固定应用主题色，避免其默认色
-    // 在“系统深色 + 应用手动浅色”时从窗口配置重新跟随系统。
-    val dialogContentColor = MaterialTheme.colorScheme.onSurface
-    val dialogSecondaryContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-    Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = resolveAppContentDialogProperties(
-            usePlatformDefaultWidth = layoutPolicy.usePlatformDefaultWidth,
-        ),
-    ) {
-        AppPopupSurface(
-            type = AppPopupSurfaceType.DIALOG,
-            modifier = modifier
-                .appContentDialogWidth(policy = layoutPolicy, wrapHeight = false)
-                .heightIn(max = maxDialogHeight),
-            shape = AppShapes.container(ContainerLevel.Dialog),
-            // 层级用更高一档容器色表达，不用 tonalElevation：elevation 会把
-            // surfaceTint 混进容器色，自定义亮种子下弹窗会被染成过饱和色。
-            containerColor = AppSurfaceTokens.surfaceContainerHigh(),
-        ) {
-            Column(modifier = Modifier.padding(vertical = 12.dp)) {
-                AppText(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = dialogContentColor,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                )
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
+            trailingContent = {
+                AppDropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
                 ) {
                     options.forEach { option ->
                         val selected = option.value == selectedValue
-                        AppSingleChoiceRow(
-                            selected = selected,
-                            onClick = { onValueSelected(option.value) },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                AppText(
-                                    text = option.label,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = dialogContentColor,
-                                )
-                                option.description?.let { description ->
-                                    Spacer(modifier = Modifier.height(2.dp))
+                        AppDropdownMenuItem(
+                            text = {
+                                Column {
                                     AppText(
-                                        text = description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = dialogSecondaryContentColor,
+                                        text = option.label,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                    option.description?.let { description ->
+                                        AppText(
+                                            text = description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            },
+                            leadingIcon = if (selected) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
-                            }
-                        }
+                            } else {
+                                null
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                if (shouldDispatchAppChoiceSelection(selectedValue, option.value)) {
+                                    onValueChange(option.value)
+                                }
+                            },
+                        )
                     }
                 }
-            }
-        }
+            },
+        )
     }
 }
 
@@ -395,7 +263,6 @@ fun AppSliderDialog(
                 ),
             ),
             shape = AppShapes.container(ContainerLevel.Dialog),
-            // 与 AppSingleChoiceDialog 一致：容器色表达层级，不用 tonalElevation tint。
             containerColor = AppSurfaceTokens.surfaceContainerHigh(),
         ) {
             Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {

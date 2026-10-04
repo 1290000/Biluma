@@ -14,7 +14,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.android.purebilibili.core.ui.AppIconStyle
 import com.android.purebilibili.core.ui.AppListItemStyle
-import com.android.purebilibili.core.ui.components.AppSingleChoicePresentation
 import com.android.purebilibili.core.ui.resolveAppIconStylePreference
 import com.android.purebilibili.core.ui.resolveAppListItemStylePreference
 import com.android.purebilibili.core.ui.blur.BlurIntensity
@@ -733,8 +732,6 @@ data class AppThemeSettings(
         AppScreenshotCaptureMode.FULL_WINDOW,
     val appIconStyle: AppIconStyle = AppIconStyle.AUTO,
     val appListItemStyle: AppListItemStyle = AppListItemStyle.AUTO,
-    val singleChoicePresentation: AppSingleChoicePresentation =
-        AppSingleChoicePresentation.WINDOW_POPUP,
 )
 
 data class ThemeModeRoleOverrides(
@@ -1374,8 +1371,6 @@ object SettingsManager {
     private val KEY_THEME_DARK_CONTROL_ACCENT = stringPreferencesKey("theme_dark_control_accent")
     private val KEY_THEME_COLOR_STYLE = stringPreferencesKey("theme_color_style")
     private val KEY_THEME_COLOR_SPEC = stringPreferencesKey("theme_color_spec")
-    private val KEY_SINGLE_CHOICE_PRESENTATION =
-        stringPreferencesKey("single_choice_presentation")
     private val KEY_BG_PLAY = booleanPreferencesKey("bg_play")
     //  [新增] 触感反馈 (默认开启)
     private val KEY_HAPTIC_FEEDBACK_ENABLED = booleanPreferencesKey("haptic_feedback_enabled")
@@ -2311,9 +2306,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 preferences[KEY_APP_SCREENSHOT_CAPTURE_MODE]
                     ?: AppScreenshotCaptureMode.FULL_WINDOW.value
             ),
-            singleChoicePresentation = AppSingleChoicePresentation.fromStorageValue(
-                preferences[KEY_SINGLE_CHOICE_PRESENTATION]
-            ),
             appIconStyle = resolveAppIconStylePreference(preferences[KEY_APP_ICON_STYLE]),
             appListItemStyle = resolveAppListItemStylePreference(preferences[KEY_APP_LIST_ITEM_STYLE])
         )
@@ -2408,15 +2400,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         )
     }
 
-    suspend fun setSingleChoicePresentation(
-        context: Context,
-        presentation: AppSingleChoicePresentation,
-    ) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_SINGLE_CHOICE_PRESENTATION] = presentation.storageValue
-        }
-    }
-
     fun getAppLanguageSync(context: Context): AppLanguage {
         val rawValue = context.getSharedPreferences("theme_cache", Context.MODE_PRIVATE)
             .getInt("app_language", AppLanguage.FOLLOW_SYSTEM.value)
@@ -2431,13 +2414,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     fun getAppListItemStyle(context: Context): Flow<AppListItemStyle> =
         context.settingsDataStore.data.map { preferences ->
             resolveAppListItemStylePreference(preferences[KEY_APP_LIST_ITEM_STYLE])
-        }
-
-    fun getSingleChoicePresentation(context: Context): Flow<AppSingleChoicePresentation> =
-        context.settingsDataStore.data.map { preferences ->
-            AppSingleChoicePresentation.fromStorageValue(
-                preferences[KEY_SINGLE_CHOICE_PRESENTATION]
-            )
         }
 
     suspend fun setDarkThemeStyle(context: Context, style: DarkThemeStyle) {
@@ -8088,10 +8064,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             StringShareablePreferenceDefinition(KEY_THEME_DARK_CONTROL_ACCENT, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_THEME_COLOR_STYLE, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_THEME_COLOR_SPEC, SettingsShareSection.APPEARANCE),
-            StringShareablePreferenceDefinition(
-                KEY_SINGLE_CHOICE_PRESENTATION,
-                SettingsShareSection.APPEARANCE,
-            ),
             IntShareablePreferenceDefinition(KEY_THEME_COLOR_INDEX, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_APP_ICON, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_APP_ICON_APPEARANCE, SettingsShareSection.APPEARANCE),

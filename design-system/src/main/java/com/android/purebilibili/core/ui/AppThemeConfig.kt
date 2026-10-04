@@ -26,7 +26,6 @@ data class AppThemeConfig(
     val globalTextTapCopyEnabled: Boolean = false,
     val uiEntranceAnimationEnabled: Boolean = true,
     val runtimeVisualGuardEnabled: Boolean = true,
-    val nativeMiuixPopupsEnabled: Boolean = true,
     // Matches the persisted default; each application host supplies the observed preference.
     val liquidGlassEnabled: Boolean = false,
 )

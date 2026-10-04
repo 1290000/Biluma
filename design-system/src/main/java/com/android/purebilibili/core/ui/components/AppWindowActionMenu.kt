@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.android.purebilibili.core.ui.LocalAppThemeConfig
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
@@ -51,74 +50,6 @@ fun AppWindowActionMenu(
     onExpandedChange: ((Boolean) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    if (!LocalAppThemeConfig.current.nativeMiuixPopupsEnabled) {
-        var expanded by remember { mutableStateOf(false) }
-        var parentActions by remember { mutableStateOf(emptyList<AppWindowAction>()) }
-        val visibleGroups = parentActions.lastOrNull()?.let { listOf(it.children) }
-            ?: groups.filter { it.isNotEmpty() }
-        Box(modifier = modifier) {
-            AppIconButton(
-                onClick = {
-                    parentActions = emptyList()
-                    expanded = true
-                    onExpandedChange?.invoke(true)
-                },
-                enabled = enabled,
-            ) { content() }
-            AppDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = {
-                    parentActions = emptyList()
-                    expanded = false
-                    onExpandedChange?.invoke(false)
-                },
-            ) {
-                if (parentActions.isNotEmpty()) {
-                    AppDropdownMenuItem(
-                        text = { AppText("返回") },
-                        onClick = { parentActions = parentActions.dropLast(1) },
-                        modifier = Modifier.heightIn(min = 48.dp),
-                    )
-                }
-                visibleGroups.forEachIndexed { groupIndex, actions ->
-                    if (groupIndex > 0) {
-                        AppHorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
-                    }
-                    actions.forEach { action ->
-                        AppDropdownMenuItem(
-                            text = { AppText(action.label) },
-                            leadingIcon = action.icon?.let { icon ->
-                                {
-                                    if (action.iconTint == null) {
-                                        AppIcon(icon, contentDescription = null)
-                                    } else {
-                                        AppIcon(icon, contentDescription = null, tint = action.iconTint)
-                                    }
-                                }
-                            },
-                            trailingIcon = when {
-                                action.children.isNotEmpty() -> { { AppText("›") } }
-                                action.selected -> { { AppText("✓") } }
-                                else -> null
-                            },
-                            enabled = action.enabled,
-                            onClick = {
-                                if (action.children.isNotEmpty()) {
-                                    parentActions = parentActions + action
-                                } else {
-                                    expanded = false
-                                    onExpandedChange?.invoke(false)
-                                    action.onClick?.invoke()
-                                }
-                            },
-                        )
-                    }
-                }
-            }
-        }
-        return
-    }
-
     // Own action dispatch here: the dependency's grouped window dropdown does not open
     // DropdownItem.children. Keep native rows/appearance, but explicitly handle each click.
     var expanded by remember { mutableStateOf(false) }

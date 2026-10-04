@@ -4,7 +4,7 @@ An independently maintained third-party Bilibili Android client based on [BiliPa
 
 [简体中文](README.md) · [Repository](https://github.com/1290000/Biluma) · [Issues](https://github.com/1290000/Biluma/issues) · [Releases](https://github.com/1290000/Biluma/releases)
 
-> **This project is in early development and has no independent Biluma release yet.** The feature-reduction list has not been decided, so this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
+> **This project is in early development and has no independent Biluma release yet.** Nine initial UI and settings reductions have been approved and are being implemented in batches; this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
 
 ## Project identity
 
@@ -28,12 +28,30 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
-| Feature and settings reduction | Not started; decisions to retain, fix behavior, remove, or redesign features are pending |
+| Feature and settings reduction | Items 3 and 5 are implemented in the first popup batch; seven items remain pending, as listed below |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
 
 Changes have only received static checks and an update API connectivity check. Regression test code has been added, but tests, compilation, installation, and on-device verification have not been performed. Configuration and command examples do not establish that a build succeeds.
+
+## UI simplification progress
+
+This round is being implemented in batches on `feat/ui-simplification`. Approved targets and source implementation status are separate; neither implies a release or successful runtime verification.
+
+| Item | Fixed target | Source status |
+| --- | --- | --- |
+| 1. UI preset | Miuix only; remove MD3-specific UI | Pending; style selection and adapters still remain |
+| 2. Liquid glass | Enabled; retain non-glass UI and compatibility/performance fallbacks | Pending |
+| 3. Single-choice presentation | Anchored popup | Implemented; centered single-choice dialog, setting, and preference access removed |
+| 4. Splash icon mask animation | Disabled | Pending |
+| 5. Native Miuix popups | Enabled | Implemented; switch and its disabled alternatives removed; Miuix dialogs no longer fall back to Material through this switch |
+| 6. Video tag size | Smallest | Pending |
+| 7. Compact player controls | Enabled | Pending |
+| 8. Floating bottom bar | Enabled | Pending |
+| 9. Navigation icon cross-scale | Enabled | Pending |
+
+The two retired options are no longer read, written, or exported; their keys are skipped when importing old backups. Confirmation/input dialogs, slider dialogs, and hinge-safe layouts are outside this batch's removal scope. MD3 style adapters will be addressed in item 1.
 
 ## Downloads and feedback
 

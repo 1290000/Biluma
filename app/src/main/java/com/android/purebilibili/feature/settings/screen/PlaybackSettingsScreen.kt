@@ -198,8 +198,6 @@ fun PlaybackSettingsContent(
         .getDefaultPlaybackSpeed(context).collectAsStateWithLifecycle(initialValue = 1.0f)
     val rememberLastPlaybackSpeed by com.android.purebilibili.core.store.SettingsManager
         .getRememberLastPlaybackSpeed(context).collectAsStateWithLifecycle(initialValue = false)
-    val nativeMiuixPlayerPopups by PlayerSettingsStore
-        .getNativeMiuixPlayerPopups(context).collectAsStateWithLifecycle(initialValue = true)
     val longPressSpeedHintHidden by SettingsManager
         .getLongPressSpeedHintHidden(context)
         .collectAsStateWithLifecycle(
@@ -318,20 +316,7 @@ fun PlaybackSettingsContent(
                         else -> "未知"
                     }
                     AppPreferenceGroup {
-		                        AppSwitchPreference(
-	                            icon = rememberSettingsSemanticIcon(SettingsIconRole.NATIVE_MIUIX_DIALOG),
-                            title = "使用原生 Miuix 弹窗",
-                            subtitle = "用于播放器、动态、用户空间等页面；关闭后使用 Material 3 弹窗",
-                            checked = nativeMiuixPlayerPopups,
-                            onCheckedChange = { enabled ->
-                                scope.launch {
-                                    PlayerSettingsStore.setNativeMiuixPlayerPopups(context, enabled)
-                                }
-                            },
-                            iconTint = com.android.purebilibili.core.theme.iOSBlue,
-                        )
-                        AppPreferenceDivider()
-		                        AppSwitchPreference(
+                        AppSwitchPreference(
                             icon = rememberSettingsSemanticIcon(SettingsIconRole.HARDWARE_DECODER),
                             title = "启用硬件解码",
                             subtitle = "推荐保持开启；只有遇到绿屏或无法播放时再尝试关闭，关闭后更耗电",

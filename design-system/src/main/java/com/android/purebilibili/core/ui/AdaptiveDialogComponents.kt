@@ -42,15 +42,10 @@ enum class AppAlertDialogRenderer {
 
 fun resolveAppAlertDialogRenderer(
     uiStyle: AppUiStyle,
-    nativeMiuixPopupsEnabled: Boolean = true,
 ): AppAlertDialogRenderer = when (uiStyle) {
     // 设置等页对话框常在 AdaptiveScaffold 外层组合；窗口 Dialog 不依赖
     // Miuix Scaffold 的 DialogStates host，点击后状态与弹窗保持一致。
-    AppUiStyle.MIUIX -> if (nativeMiuixPopupsEnabled) {
-        AppAlertDialogRenderer.LOCAL_DIALOG
-    } else {
-        AppAlertDialogRenderer.MATERIAL_ALERT
-    }
+    AppUiStyle.MIUIX -> AppAlertDialogRenderer.LOCAL_DIALOG
     AppUiStyle.MATERIAL3 -> AppAlertDialogRenderer.MATERIAL_ALERT
 }
 
@@ -86,10 +81,8 @@ internal fun AdaptiveAlertDialog(
     contentLayout: AppContentDialogLayoutPolicy = resolveAppCompactContentDialogLayoutPolicy(),
 ) {
     val uiStyle = LocalAppUiStyle.current
-    val themeConfig = LocalAppThemeConfig.current
     val renderer = resolveAppAlertDialogRenderer(
         uiStyle = uiStyle,
-        nativeMiuixPopupsEnabled = themeConfig.nativeMiuixPopupsEnabled,
     )
     // 半开折叠屏：弹窗整体收进铰链安全侧，避免横跨折缝。
     val hingeSafeRegions = LocalHingeSafeOverlayRegions.current.dialog

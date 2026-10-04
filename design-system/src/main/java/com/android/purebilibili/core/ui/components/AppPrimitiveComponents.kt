@@ -44,9 +44,7 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ChipColors
 import androidx.compose.material3.ChipElevation
 import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import com.android.purebilibili.core.ui.LocalAppThemeConfig
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.window.WindowListPopup
 import androidx.compose.material3.FilterChip
@@ -105,9 +103,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
 import top.yukonga.miuix.kmp.basic.TextField as MiuixTextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults as MiuixTextFieldDefaults
 import top.yukonga.miuix.kmp.basic.Button as MiuixButton
@@ -760,46 +756,15 @@ fun AppDropdownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    offset: DpOffset = DpOffset.Zero,
-    scrollState: ScrollState = rememberScrollState(),
-    properties: PopupProperties = PopupProperties(focusable = true),
-    shape: androidx.compose.ui.graphics.Shape? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    if (LocalAppThemeConfig.current.nativeMiuixPopupsEnabled) {
-        WindowListPopup(
-            show = expanded,
-            popupModifier = modifier,
-            onDismissRequest = onDismissRequest,
-        ) {
-            ListPopupColumn {
-                Column(content = content)
-            }
-        }
-    } else {
-        val resolvedShape = shape ?: com.android.purebilibili.core.ui.AppShapes.container(
-            com.android.purebilibili.core.ui.ContainerLevel.Card
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = onDismissRequest,
-            modifier = modifier,
-            offset = offset,
-            scrollState = scrollState,
-            properties = properties,
-            shape = resolvedShape,
-            containerColor = Color.Transparent,
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
-        ) {
-            com.android.purebilibili.core.ui.AppPopupSurface(
-                type = com.android.purebilibili.core.ui.AppPopupSurfaceType.MENU,
-                shape = resolvedShape,
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ) {
-                Column(content = content)
-            }
+    WindowListPopup(
+        show = expanded,
+        popupModifier = modifier,
+        onDismissRequest = onDismissRequest,
+    ) {
+        ListPopupColumn {
+            Column(content = content)
         }
     }
 }
