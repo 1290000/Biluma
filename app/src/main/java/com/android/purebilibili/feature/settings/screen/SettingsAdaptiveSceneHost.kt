@@ -3,7 +3,6 @@ package com.android.purebilibili.feature.settings.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
@@ -14,12 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.util.AppFoldPosture
@@ -56,8 +51,12 @@ internal fun SettingsAdaptiveSceneHost(
     )
     val persistentPanes = directive.maxHorizontalPartitions > 1
     val detailStack = resolveSettingsDetailStack(segment)
+    // The full settings segment drives one NavDisplay: Settings is the list pane root and
+    // every deeper key is a detail-pane entry. Collapsing to [Settings, detailRoot] and
+    // delegating deeper levels to a nested NavDisplay breaks single-pane pushes, because
+    // the outer back stack never changes and the nested display misses the update.
+    val sceneStack = segment.ifEmpty { listOf(BiliPaiNavKey.Settings) }
     val detailRoot = detailStack.firstOrNull()
-    val sceneStack = listOfNotNull(BiliPaiNavKey.Settings, detailRoot)
     val strategy = rememberListDetailSceneStrategy<BiliPaiNavKey>(
         shouldHandleSinglePaneLayout = true,
         backNavigationBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange,
@@ -92,29 +91,12 @@ internal fun SettingsAdaptiveSceneHost(
                             }
                         }
                     } else {
-                        // Nested routes own a NavDisplay inside the detail pane. Its default
-                        // predictive transition is clipped to this pane, leaving the list stable.
-                        NavDisplay(
-                            backStack = detailStack.ifEmpty { listOf(sceneKey) },
-                            modifier = Modifier.fillMaxSize().clipToBounds().padding(
-                                horizontal = if (persistentPanes) layout.detailPanePaddingDp.dp else 0.dp,
-                            ),
-                            onBack = onPopDestination,
-                            entryDecorators = listOf(
-                                rememberSaveableStateHolderNavEntryDecorator(),
-                                rememberViewModelStoreNavEntryDecorator(),
-                            ),
-                            entryProvider = { detailKey ->
-                                NavEntry(key = detailKey) {
-                                    CompositionLocalProvider(
-                                        LocalSettingsSceneContent provides true,
-                                        LocalSettingsDetailPaneRoot provides (persistentPanes && detailKey == sceneKey),
-                                    ) {
-                                        content(detailKey)
-                                    }
-                                }
-                            },
-                        )
+                        CompositionLocalProvider(
+                            LocalSettingsSceneContent provides true,
+                            LocalSettingsDetailPaneRoot provides (persistentPanes && detailRoot == sceneKey),
+                        ) {
+                            content(sceneKey)
+                        }
                     }
                 }
             },
