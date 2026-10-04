@@ -156,6 +156,7 @@ internal fun BiliPaiNavDisplayHost(
             "predictive_style=$predictiveBackAnimationStyle reduced_motion=$reduceMotion",
     )
     val stackSnapshot = backStack.toList()
+    val settingsPersistentPanes = settingsHasPersistentPanes()
     val currentKey = stackSnapshot.lastOrNull()
     val latestOnBack by rememberUpdatedState(onBack)
     val latestPrepareReturn by rememberUpdatedState(onPrepareVideoCardSharedReturn)
@@ -764,7 +765,7 @@ internal fun BiliPaiNavDisplayHost(
             biliPaiNavEntries(
                 swipeBackDirection = swipeBackDirection,
                 settingsBackStack = stackSnapshot,
-                settingsPersistentPanes = settingsHasPersistentPanes(),
+                settingsPersistentPanes = settingsPersistentPanes,
                 activeMainHostRoute = activeMainHostRoute,
                 predictiveBackExcludedTransition = predictiveBackExcludedTransition,
                 videoCardTransition = videoCardTransition,
