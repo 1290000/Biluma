@@ -465,6 +465,31 @@ class ReplyComponentsPolicyTest {
     }
 
     @Test
+    fun `unsupported shopping schema falls back to web url`() {
+        assertEquals(
+            "https://item.taobao.com/item.htm?id=123",
+            resolveReplyContentUrlNavigationUrl(
+                rawToken = "https://b23.tv/shop",
+                url = ReplyContentUrl(
+                    url = "https://item.taobao.com/item.htm?id=123",
+                    appUrlSchema = "taobao://item.taobao.com/item.htm?id=123"
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `unsupported shopping schema falls back to original short link`() {
+        assertEquals(
+            "https://e.tb.cn/h.demo",
+            resolveReplyContentUrlNavigationUrl(
+                rawToken = "https://e.tb.cn/h.demo",
+                url = ReplyContentUrl(appUrlSchema = "bilibili://unhandled-shopping")
+            )
+        )
+    }
+
+    @Test
     fun `resolveReplyContentUrlNavigationUrl prefers dynamic web url over misleading video schema`() {
         val url = ReplyContentUrl(
             title = "动态",

@@ -129,6 +129,7 @@ private const val COMMENT_INLINE_UP_BADGE_ID = "comment_inline_up_badge"
 private const val COMMENT_INLINE_VERIFY_PERSONAL_BADGE_ID = "comment_inline_verify_personal_badge"
 private const val COMMENT_INLINE_VERIFY_ORGANIZATION_BADGE_ID = "comment_inline_verify_organization_badge"
 internal const val COMMENT_INLINE_TOP_BADGE_ID = "comment_inline_top_badge"
+private const val COMMENT_INLINE_CHARGED_BADGE_ID = "comment_inline_charged_badge"
 internal const val COMMENT_URL_TAG = "URL"
 internal const val COMMENT_TIMESTAMP_TAG = "TIMESTAMP"
 internal const val COMMENT_USER_TAG = "USER"
@@ -678,6 +679,15 @@ internal fun resolveReplyContentUrlNavigationUrl(
     // 动态/图文链接的 app_url_schema 偶尔会被服务端下发成 bilibili://video/{动态ID}。
     // 先保留可解析为动态的 Web URL，避免把动态 ID 当视频 aid 打开。
     listOf(url.url, rawToken).firstOrNull(::isReplyDynamicNavigationUrl)?.let { return it }
+    // 商业富链接可能提供宿主不支持的 app schema；不能让它覆盖可用的网页地址。
+    val appSchema = url.appUrlSchema.trim()
+    if (appSchema.isNotEmpty() &&
+        com.android.purebilibili.core.util.BilibiliNavigationTargetParser.parse(appSchema) != null
+    ) return appSchema
+    listOf(url.url, rawToken, appSchema).firstOrNull { candidate ->
+        val scheme = runCatching { java.net.URI(candidate.trim()).scheme }.getOrNull()
+        scheme.equals("https", ignoreCase = true) || scheme.equals("http", ignoreCase = true)
+    }?.let { return it.trim() }
     return listOf(
         url.appUrlSchema,
         url.url,
@@ -1294,13 +1304,23 @@ fun ReplyItemView(
     }
     val showTopBadge = shouldShowReplyTopBadge(item = item, isPinned = isPinned)
     val layoutPolicy = remember { resolveReplyItemLayoutPolicy() }
-    val contentPrefix = remember(showTopBadge) {
-        if (!showTopBadge) {
+    // 充电专属评论：优先取服务端 charged_desc，兜底识别 cardLabels 中的“充电”标签
+    val chargedLabel = remember(item.replyControl, item.cardLabels) {
+        resolveChargedReplyLabel(item)
+    }
+    val contentPrefix = remember(showTopBadge, chargedLabel) {
+        if (!showTopBadge && chargedLabel == null) {
             null
         } else {
             buildAnnotatedString {
-                appendInlineContent(COMMENT_INLINE_TOP_BADGE_ID, "TOP")
-                append(" ")
+                if (showTopBadge) {
+                    appendInlineContent(COMMENT_INLINE_TOP_BADGE_ID, "TOP")
+                    append(" ")
+                }
+                if (chargedLabel != null) {
+                    appendInlineContent(COMMENT_INLINE_CHARGED_BADGE_ID, chargedLabel)
+                    append(" ")
+                }
             }
         }
     }
@@ -2156,17 +2176,20 @@ private fun ReplyVideoReferenceText(
     }
     val upBadgeInlineContent = rememberInlineUpBadgeContent()
     val topBadgeInlineContent = rememberInlineTopBadgeContent()
+    val chargedBadgeInlineContent = rememberInlineChargedBadgeContent()
     val personalVerifyInlineContent = rememberInlineOfficialVerifyBadgeContent(OfficialVerifyBadgeTone.PERSONAL)
     val organizationVerifyInlineContent = rememberInlineOfficialVerifyBadgeContent(OfficialVerifyBadgeTone.ORGANIZATION)
     val inlineContent = remember(
         upBadgeInlineContent,
         topBadgeInlineContent,
+        chargedBadgeInlineContent,
         personalVerifyInlineContent,
         organizationVerifyInlineContent
     ) {
         mapOf(
             COMMENT_INLINE_UP_BADGE_ID to upBadgeInlineContent,
             COMMENT_INLINE_TOP_BADGE_ID to topBadgeInlineContent,
+            COMMENT_INLINE_CHARGED_BADGE_ID to chargedBadgeInlineContent,
             COMMENT_INLINE_VERIFY_PERSONAL_BADGE_ID to personalVerifyInlineContent,
             COMMENT_INLINE_VERIFY_ORGANIZATION_BADGE_ID to organizationVerifyInlineContent
         )
@@ -2299,6 +2322,7 @@ fun RichCommentText(
 
     val upBadgeInlineContent = rememberInlineUpBadgeContent()
     val topBadgeInlineContent = rememberInlineTopBadgeContent()
+    val chargedBadgeInlineContent = rememberInlineChargedBadgeContent()
     val personalVerifyInlineContent = rememberInlineOfficialVerifyBadgeContent(OfficialVerifyBadgeTone.PERSONAL)
     val organizationVerifyInlineContent = rememberInlineOfficialVerifyBadgeContent(OfficialVerifyBadgeTone.ORGANIZATION)
     val inlineContent = remember(
@@ -2309,6 +2333,7 @@ fun RichCommentText(
         urlColor,
         upBadgeInlineContent,
         topBadgeInlineContent,
+        chargedBadgeInlineContent,
         personalVerifyInlineContent,
         organizationVerifyInlineContent
     ) {
@@ -2356,6 +2381,7 @@ fun RichCommentText(
             }
             put(COMMENT_INLINE_UP_BADGE_ID, upBadgeInlineContent)
             put(COMMENT_INLINE_TOP_BADGE_ID, topBadgeInlineContent)
+            put(COMMENT_INLINE_CHARGED_BADGE_ID, chargedBadgeInlineContent)
             put(COMMENT_INLINE_VERIFY_PERSONAL_BADGE_ID, personalVerifyInlineContent)
             put(COMMENT_INLINE_VERIFY_ORGANIZATION_BADGE_ID, organizationVerifyInlineContent)
         }
@@ -2950,6 +2976,70 @@ fun TopTag(modifier: Modifier = Modifier) {
             tapToCopyEnabled = false,
         )
     }
+}
+
+// 充电评论徽标（仿官方样式）：浅橙底、橙色文字、闪电前缀
+@Composable
+fun ChargedReplyTag(text: String, modifier: Modifier = Modifier) {
+    val labelStyle = MaterialTheme.typography.labelSmall
+    val chargedColor = Color(0xFFF09337)
+    val opticalOffset = with(androidx.compose.ui.platform.LocalDensity.current) {
+        (labelStyle.fontSize * -0.08f).toDp()
+    }
+    Box(
+        modifier = modifier
+            .clip(AppShapes.container(ContainerLevel.Tag))
+            .background(chargedColor.copy(alpha = 0.14f))
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        AppText(
+            text = "⚡$text",
+            modifier = Modifier.offset(y = opticalOffset),
+            style = labelStyle.copy(
+                lineHeight = labelStyle.fontSize,
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both,
+                ),
+            ),
+            color = chargedColor,
+            maxLines = 1,
+            tapToCopyEnabled = false,
+        )
+    }
+}
+
+@Composable
+private fun rememberInlineChargedBadgeContent(): InlineTextContent {
+    return remember {
+        InlineTextContent(
+            Placeholder(
+                width = 3.2.em,
+                height = 1.15.em,
+                placeholderVerticalAlign = PlaceholderVerticalAlign.Center
+            )
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                ChargedReplyTag(text = "充电评论")
+            }
+        }
+    }
+}
+
+// 充电评论识别：reply_control.charged_desc 非空，或 cardLabels 中出现“充电”标签
+internal fun resolveChargedReplyLabel(item: ReplyItem): String? {
+    val desc = item.replyControl?.chargedDesc?.takeIf { it.isNotBlank() }
+    if (desc != null) return desc
+    val label = item.cardLabels
+        ?.firstOrNull { it.textContent.contains("充电") }
+        ?.textContent
+        ?.takeIf { it.isNotBlank() }
+    return label
 }
 
 private const val COMMENT_PICTURE_MAX_RETRIES = 3
