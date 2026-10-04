@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -254,7 +253,7 @@ private fun InteractionButton(
             modifier = Modifier
                 .size(layoutPolicy.iconBackingSizeDp.dp)
                 .background(
-                    color = Color.Black.copy(alpha = layoutPolicy.iconBackingAlpha),
+                    color = Color.White,
                     shape = CircleShape
                 )
                 .padding(layoutPolicy.iconBackingInnerPaddingDp.dp),
@@ -291,7 +290,7 @@ private fun InteractionButton(
             AppIcon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isActive) activeColor else Color.White,
+                tint = if (isActive) activeColor else Color.Black,
                 modifier = Modifier.size(layoutPolicy.iconSizeDp.dp)
             )
         }
@@ -301,12 +300,7 @@ private fun InteractionButton(
             color = Color.White,
             fontSize = layoutPolicy.labelFontSp.sp,
             fontWeight = FontWeight.Medium,
-            style = MaterialTheme.typography.labelSmall.copy(
-                shadow = Shadow(
-                    color = Color.Black.copy(alpha = 0.5f),
-                    blurRadius = 8f
-                )
-            )
+            style = MaterialTheme.typography.labelSmall
         )
     }
 }
