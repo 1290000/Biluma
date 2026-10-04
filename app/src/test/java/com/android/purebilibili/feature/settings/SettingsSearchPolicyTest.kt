@@ -154,11 +154,10 @@ class SettingsSearchPolicyTest {
     }
 
     @Test
-    fun queryByAndroidNativeLiquidGlass_focusesAppearanceThemeSection() {
-        val result = resolveSettingsSearchResults("安卓原生液态玻璃").firstOrNull()
+    fun queryByRetiredAndroidNativeLiquidGlassSwitch_returnsNoEntry() {
+        val results = resolveSettingsSearchResults("安卓原生液态玻璃")
 
-        assertEquals(SettingsSearchTarget.APPEARANCE, result?.target)
-        assertEquals(SettingsSearchFocusIds.APPEARANCE_THEME, result?.focusId)
+        assertTrue(results.none { it.title == "安卓液态玻璃" })
     }
 
     @Test

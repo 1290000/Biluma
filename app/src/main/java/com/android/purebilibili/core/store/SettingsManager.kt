@@ -645,7 +645,7 @@ data class HomeSettings(
         BottomBarSearchAutoExpandMode.EXPAND_AT_HOME_TOP,
     val bottomBarSearchLayoutMode: BottomBarSearchLayoutMode =
         BottomBarSearchLayoutMode.FULL_DOCK,
-    val androidNativeLiquidGlassEnabled: Boolean = false,
+    val androidNativeLiquidGlassEnabled: Boolean = true,
     val liquidGlassStyle: LiquidGlassStyle = LiquidGlassStyle.CLASSIC, // [New]
     val liquidGlassMode: LiquidGlassMode = LiquidGlassMode.BALANCED,
     val liquidGlassStrength: Float = 0.52f,
@@ -1779,9 +1779,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 preferences[KEY_BOTTOM_BAR_SEARCH_LAYOUT_MODE]
                     ?: BottomBarSearchLayoutMode.FULL_DOCK.value
             ),
-            androidNativeLiquidGlassEnabled =
-                preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED]
-                    ?: false,
+            // 旧开关键仅保留存储兼容，Biluma 运行时始终启用液态玻璃。
+            androidNativeLiquidGlassEnabled = true,
             liquidGlassStyle = legacyLiquidGlassStyle,
             liquidGlassMode = liquidGlassMode,
             liquidGlassStrength = liquidGlassStrength,
@@ -4333,19 +4332,15 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     fun getAndroidNativeLiquidGlassEnabled(context: Context): Flow<Boolean> =
         context.settingsDataStore.data
-            .map { preferences ->
-                preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED]
-                    ?: true
-            }
+            .map { true }
 
-    suspend fun setAndroidNativeLiquidGlassEnabled(context: Context, value: Boolean) {
+    suspend fun setAndroidNativeLiquidGlassEnabled(context: Context, @Suppress("UNUSED_PARAMETER") value: Boolean) {
         context.settingsDataStore.edit { preferences ->
-            preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED] = value
-            if (value) {
-                preferences[KEY_BOTTOM_BAR_BLUR_ENABLED] = false
-                preferences[KEY_HEADER_BLUR_ENABLED] = false
-                preferences[KEY_HOME_HEADER_BLUR_MODE] = HomeHeaderBlurMode.ALWAYS_OFF.value
-            }
+            // 保留旧调用边界，但不允许旧引导或外部调用关闭液态玻璃。
+            preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED] = true
+            preferences[KEY_BOTTOM_BAR_BLUR_ENABLED] = false
+            preferences[KEY_HEADER_BLUR_ENABLED] = false
+            preferences[KEY_HOME_HEADER_BLUR_MODE] = HomeHeaderBlurMode.ALWAYS_OFF.value
         }
     }
 
@@ -8082,10 +8077,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             ),
             BooleanShareablePreferenceDefinition(KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_BOTTOM_BAR_SEARCH_LAYOUT_MODE, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(
-                KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED,
-                SettingsShareSection.APPEARANCE
-            ),
             BooleanShareablePreferenceDefinition(KEY_LIQUID_GLASS_ENABLED, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_LIQUID_GLASS_STYLE, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_LIQUID_GLASS_MODE, SettingsShareSection.APPEARANCE),
@@ -8388,7 +8379,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     private val liquidGlassShareableStorageKeys: Set<String> by lazy {
         setOf(
-            KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED.name,
             KEY_LIQUID_GLASS_ENABLED.name,
             KEY_TOP_BAR_LIQUID_GLASS_ENABLED.name,
             KEY_HOME_SEARCH_LIQUID_GLASS_ENABLED.name,
@@ -8451,9 +8441,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             contentDistortion = preferences[KEY_LIQUID_GLASS_CONTENT_DISTORTION],
         )
         return linkedMapOf(
-            KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED.name to JsonPrimitive(
-                preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED] ?: true
-            ),
             KEY_LIQUID_GLASS_ENABLED.name to JsonPrimitive(bottomBarEnabled),
             KEY_TOP_BAR_LIQUID_GLASS_ENABLED.name to JsonPrimitive(topBarEnabled),
             KEY_HOME_SEARCH_LIQUID_GLASS_ENABLED.name to JsonPrimitive(homeSearchEnabled),

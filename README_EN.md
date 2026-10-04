@@ -42,7 +42,7 @@ This round is being implemented in batches on `feat/ui-simplification`. Approved
 | Item | Fixed target | Source status |
 | --- | --- | --- |
 | 1. UI preset | Miuix only; remove MD3-specific UI | Implemented; removed the user-facing preset entry and related resources, fixed runtime selection to Miuix, and retained Material 3 infrastructure for compatibility and fallback |
-| 2. Liquid glass | Enabled; retain non-glass UI and compatibility/performance fallbacks | Pending |
+| 2. Liquid glass | Enabled; retain non-glass UI and compatibility/performance fallbacks | Implemented; removed the global switch, search entry, and old-backup share entry; runtime is fixed on, with non-glass fallback on unsupported devices |
 | 3. Single-choice presentation | Anchored popup | Implemented; centered single-choice dialog, setting, and preference access removed |
 | 4. Splash icon mask animation | Disabled | Pending |
 | 5. Native Miuix popups | Enabled | Implemented; switch and its disabled alternatives removed; Miuix dialogs no longer fall back to Material through this switch |
@@ -51,7 +51,7 @@ This round is being implemented in batches on `feat/ui-simplification`. Approved
 | 8. Floating bottom bar | Enabled | Pending |
 | 9. Navigation icon cross-scale | Enabled | Pending |
 
-The retired theme preset and two popup options no longer have user-facing entries. Legacy theme keys remain in migration/import compatibility code, but runtime selection is fixed to Miuix. Confirmation/input dialogs, slider dialogs, and hinge-safe layouts are outside this batch's removal scope; Material 3 infrastructure is also retained for shared components and non-glass fallbacks.
+The retired theme preset, liquid-glass master switch, and two popup options no longer have user-facing entries. Legacy theme and liquid-glass keys remain only at necessary migration compatibility boundaries, while runtime selection is fixed to Miuix with liquid glass enabled. Confirmation/input dialogs, slider dialogs, and hinge-safe layouts are outside this batch's removal scope; Material 3 infrastructure and unsupported-device non-glass fallbacks are also retained.
 
 ## Downloads and feedback
 

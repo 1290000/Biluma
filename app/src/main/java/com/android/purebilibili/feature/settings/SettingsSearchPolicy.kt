@@ -517,25 +517,6 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         focusId = SettingsSearchFocusIds.APPEARANCE_THEME
     ),
     SettingsSearchEntry(
-        target = SettingsSearchTarget.APPEARANCE,
-        title = "安卓液态玻璃",
-        subtitle = "统一应用到首页顶部标签栏、搜索框、底部导航栏和评论区底栏",
-        section = settingsDestinationCopy(SettingsSearchTarget.APPEARANCE).title,
-        aliases = listOf(
-            "安卓原生液态玻璃",
-            "全局液态玻璃",
-            "评论区液态玻璃",
-            "Android Native 液态玻璃",
-            "顶部标签栏液态玻璃",
-            "顶部 Dock 液态玻璃",
-            "顶部dock栏液态玻璃",
-            "首页搜索框液态玻璃",
-            "底部导航栏液态玻璃",
-            "底栏液态玻璃",
-        ),
-        focusId = SettingsSearchFocusIds.APPEARANCE_THEME
-    ),
-    SettingsSearchEntry(
         target = SettingsSearchTarget.HOME_FEED,
         title = "卡片毛玻璃",
         subtitle = "独立控制视频卡片信息区的壁纸模糊",

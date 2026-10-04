@@ -133,7 +133,7 @@ class UiPresetSettingsPolicyTest {
         val keys = SettingsManager.getLiquidGlassShareableSettingsEntryDefinitions()
             .mapTo(mutableSetOf()) { it.storageKey }
 
-        assertTrue("android_native_liquid_glass_enabled" in keys)
+        assertFalse("android_native_liquid_glass_enabled" in keys)
         assertTrue("top_bar_liquid_glass_enabled" in keys)
         assertTrue("home_search_liquid_glass_enabled" in keys)
         assertTrue("bottom_bar_liquid_glass_enabled" in keys)

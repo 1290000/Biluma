@@ -1125,16 +1125,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun toggleAndroidNativeLiquidGlass(enabled: Boolean) {
-        viewModelScope.launch {
-            SettingsManager.setAndroidNativeLiquidGlassEnabled(context, enabled)
-            if (enabled) {
-                SettingsManager.setBottomBarBlurEnabled(context, false)
-                SettingsManager.setHeaderBlurEnabled(context, false)
-            }
-        }
-    }
-
     fun setLiquidGlassStyle(style: com.android.purebilibili.core.store.LiquidGlassStyle) {
         viewModelScope.launch {
             SettingsManager.setLiquidGlassStyle(context, style)

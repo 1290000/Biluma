@@ -69,7 +69,6 @@ import com.android.purebilibili.core.ui.adaptive.resolveDeviceUiProfile
 import com.android.purebilibili.core.ui.adaptive.resolveEffectiveMotionTier
 import com.android.purebilibili.core.ui.blur.BlurIntensity
 import com.android.purebilibili.core.ui.blur.resolveHomeChromeLiquidGlassEnabled
-import com.android.purebilibili.core.ui.blur.shouldAllowHomeChromeLiquidGlass
 import com.android.purebilibili.core.ui.performance.SYSTEM_AUTO_DISPLAY_MODE_ID
 import com.android.purebilibili.core.ui.performance.applyPreferredDisplayMode
 import com.android.purebilibili.core.ui.performance.displayModePreferenceLabel
@@ -486,11 +485,6 @@ fun AppearanceSettingsContent(
     val showProfileEditButton by SettingsManager
         .getShowProfileEditButton(context)
         .collectAsStateWithLifecycle(initialValue = false)
-    val isLiquidGlassAvailable = shouldAllowHomeChromeLiquidGlass(Build.VERSION.SDK_INT)
-    val effectiveLiquidGlassEnabled = resolveHomeChromeLiquidGlassEnabled(
-        userEnabled = state.androidNativeLiquidGlassEnabled,
-        sdkInt = Build.VERSION.SDK_INT,
-    )
     val showThemeColorPicker = shouldShowMd3CustomColorControls(state.md3ColorSource)
     var showMd3ColorPickerDialog by remember { mutableStateOf(false) }
     var roleColorTarget by remember { mutableStateOf<ThemeRoleColorTarget?>(null) }
@@ -568,23 +562,6 @@ fun AppearanceSettingsContent(
                                         activity?.applyPreferredDisplayMode(modeId)
                                     }
                                 },
-                            )
-                        }
-
-                        Column {
-                            AppPreferenceDivider()
-                            AppSwitchPreference(
-                                icon = rememberSettingsSemanticIcon(SettingsIconRole.ANDROID_LIQUID_GLASS),
-                                title = "安卓液态玻璃",
-                                subtitle = if (isLiquidGlassAvailable) {
-                                    "开启后，首页顶部标签栏、搜索框、底部导航栏和评论区底栏统一使用液态玻璃"
-                                } else {
-                                    "当前 Android 版本暂不支持液态玻璃效果"
-                                },
-                                checked = effectiveLiquidGlassEnabled,
-                                onCheckedChange = { viewModel.toggleAndroidNativeLiquidGlass(it) },
-                                enabled = isLiquidGlassAvailable,
-                                iconTint = iOSBlue
                             )
                         }
 

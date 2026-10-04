@@ -14,7 +14,6 @@ class OnboardingSettingsGuidePolicyTest {
         val preset = resolveOnboardingSettingsGuidePreset(OnboardingSettingsProfile.RECOMMENDED)
 
         assertTrue(preset.bottomBarFloating)
-        assertTrue(preset.androidNativeLiquidGlassEnabled)
         assertTrue(preset.bottomBarLiquidGlassEnabled)
         assertEquals(SettingsManager.TopTabLabelMode.TEXT_ONLY, preset.topTabLabelMode)
         assertEquals(
@@ -24,6 +23,7 @@ class OnboardingSettingsGuidePolicyTest {
         assertEquals(preset.topTabOrderIds.toSet(), preset.topTabVisibleIds)
         assertEquals(5, preset.topTabVisibleIds.size)
         assertTrue(OnboardingSettingsProfile.RECOMMENDED.subtitle.contains("五个"))
+        assertTrue(OnboardingSettingsProfile.RECOMMENDED.subtitle.contains("Miuix"))
         assertEquals(HomeTopLayoutOrder.SEARCH_THEN_TABS, preset.homeTopLayoutOrder)
     }
 
