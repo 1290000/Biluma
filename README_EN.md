@@ -12,7 +12,8 @@ Biluma is an independently maintained derivative of [BiliPai](https://github.com
 - Based on upstream release [`v0.2.8`](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.8), at commit [`edb3d596d381464f02feba646eadc3f023911a75`](https://github.com/jay3-yy/BiliPai/commit/edb3d596d381464f02feba646eadc3f023911a75).
 - The baseline commit and its complete ancestor history are preserved. Biluma development continues on this repository's `main` branch.
 - The release launcher name is configured as `Biluma` with application ID `com.biluma.app`; the test variant uses `Biluma Dev` and `com.biluma.app.dev`. The source namespace is unchanged.
-- Icons, APK filenames, update sources, and other UI branding still come from upstream, and feature simplification has not started. Launcher identity configuration has been checked statically, but has not been compiled or installation-tested.
+- Update checks, download entry points, the project homepage, and issue reporting now point to Biluma. When no suitable release exists, the app shows an informational message without opening an update or empty changelog dialog, and never falls back to BiliPai downloads. The About page retains upstream attribution and contributors.
+- Icons, APK filenames, and some UI branding still come from upstream, and feature simplification has not started. Changes have only been checked statically, not compiled or installation-tested. GitHub Actions remains disabled pending an independent release workflow.
 - The upstream [GPLv3 license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md) are preserved. Thanks to the BiliPai authors and contributors.
 
 ## Upstream documentation snapshot

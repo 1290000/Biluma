@@ -12,7 +12,8 @@
 - 基于上游正式标签 [`v0.2.8`](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.8)，起点提交为 [`edb3d596d381464f02feba646eadc3f023911a75`](https://github.com/jay3-yy/BiliPai/commit/edb3d596d381464f02feba646eadc3f023911a75)。
 - 保留该提交及其全部祖先历史，后续改版在本仓库的 `main` 分支维护。
 - 已配置正式版桌面名称 `Biluma`、安装包名 `com.biluma.app`；测试版使用 `Biluma Dev` 和 `com.biluma.app.dev`，源码命名空间保持不变。
-- 图标、APK 文件命名、更新来源和其他界面文案仍沿用上游，功能精简尚未开始；桌面身份配置已做静态检查，尚未编译或进行安装验证。
+- 更新检查、下载入口、项目主页和问题反馈已独立指向 Biluma；暂无可用发行版时仅显示提示，不弹出更新或空白更新日志，也不回退到 BiliPai 下载。关于页面保留上游来源与贡献者。
+- 图标、APK 文件命名和部分界面文案仍沿用上游，功能精简尚未开始。当前改动仅做静态检查，尚未编译或进行安装验证；GitHub Actions 暂时关闭，待独立发布流程确定后再启用。
 - 保留上游 [GPLv3 许可证](LICENSE)及[第三方声明](THIRD_PARTY_NOTICES.md)，感谢 BiliPai 原作者与所有贡献者。
 
 ## 上游文档快照

@@ -35,7 +35,7 @@ enum class SettingsSearchTarget {
     TIPS,
     OPEN_LINKS,
     DONATE,
-    TELEGRAM,
+    FEEDBACK,
     TWITTER,
     DISCLAIMER
 }
@@ -488,11 +488,11 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         aliases = listOf("打赏", "赞助", "支持")
     ),
     SettingsSearchEntry(
-        target = SettingsSearchTarget.TELEGRAM,
-        title = settingsDestinationCopy(SettingsSearchTarget.TELEGRAM).title,
-        subtitle = settingsDestinationCopy(SettingsSearchTarget.TELEGRAM).summary,
-        section = "关注作者",
-        aliases = listOf("telegram", "tg", "频道", "交流群", "bilipai666", "bilipai888")
+        target = SettingsSearchTarget.FEEDBACK,
+        title = settingsDestinationCopy(SettingsSearchTarget.FEEDBACK).title,
+        subtitle = settingsDestinationCopy(SettingsSearchTarget.FEEDBACK).summary,
+        section = "关于",
+        aliases = listOf("反馈", "问题", "bug", "issue", "issues", "biluma", "羽哩")
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.TWITTER,

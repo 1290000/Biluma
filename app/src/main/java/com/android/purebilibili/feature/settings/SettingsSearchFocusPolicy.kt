@@ -183,7 +183,7 @@ internal fun resolveSettingsSceneDetailFocus(
     SettingsSearchTarget.TIPS,
     SettingsSearchTarget.OPEN_LINKS,
     SettingsSearchTarget.DONATE,
-    SettingsSearchTarget.TELEGRAM,
+    SettingsSearchTarget.FEEDBACK,
     SettingsSearchTarget.TWITTER,
     SettingsSearchTarget.DISCLAIMER -> null
 }

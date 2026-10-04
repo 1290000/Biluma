@@ -8,6 +8,20 @@ import kotlin.test.assertTrue
 class AppUpdateUiPolicyTest {
 
     @Test
+    fun unavailableReleaseNeverOpensAnUpdateOrChangelogDialog() {
+        listOf(false, true).forEach { requestNotes ->
+            assertEquals(
+                AppUpdateDialogMode.NONE,
+                resolveAppUpdateDialogMode(
+                    isUpdateAvailable = false,
+                    shouldOpenReleaseNotes = requestNotes,
+                    hasAvailableRelease = false
+                )
+            )
+        }
+    }
+
+    @Test
     fun checkUpdate_withoutNewVersion_orReleaseNotesRequest_showsNoDialog() {
         assertEquals(
             AppUpdateDialogMode.NONE,

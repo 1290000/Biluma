@@ -118,7 +118,7 @@ internal fun settingsDestinationCopy(target: SettingsSearchTarget): SettingsDest
     )
     SettingsSearchTarget.OPEN_SOURCE_HOME -> SettingsDestinationCopy(
         title = "开源主页",
-        summary = "GitHub",
+        summary = "1290000/Biluma · GitHub",
     )
     SettingsSearchTarget.CHECK_UPDATE -> SettingsDestinationCopy(
         title = "检查更新",
@@ -141,19 +141,19 @@ internal fun settingsDestinationCopy(target: SettingsSearchTarget): SettingsDest
         summary = "设置应用链接支持",
     )
     SettingsSearchTarget.DONATE -> SettingsDestinationCopy(
-        title = "打赏作者",
-        summary = "自愿支持项目后续持续开发和维护",
+        title = "支持 BiliPai 原作者",
+        summary = "自愿支持 BiliPai 上游项目开发和维护",
     )
-    SettingsSearchTarget.TELEGRAM -> SettingsDestinationCopy(
-        title = "Telegram 频道 / 交流群",
-        summary = "@bilipai666 · @bilipai888",
+    SettingsSearchTarget.FEEDBACK -> SettingsDestinationCopy(
+        title = "问题反馈",
+        summary = "Biluma GitHub Issues · 请附日志与截图",
     )
     SettingsSearchTarget.TWITTER -> SettingsDestinationCopy(
-        title = "Twitter / X",
+        title = "BiliPai 原作者 Twitter / X",
         summary = "@YangY_0x00",
     )
     SettingsSearchTarget.DISCLAIMER -> SettingsDestinationCopy(
         title = "发布渠道声明",
-        summary = "GitHub · Telegram 频道与群组",
+        summary = "Biluma GitHub · 版本发布与问题反馈",
     )
 }

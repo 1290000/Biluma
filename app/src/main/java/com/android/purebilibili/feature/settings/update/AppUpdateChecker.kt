@@ -81,7 +81,8 @@ data class AppUpdateCheckResult(
     val message: String,
     val releaseIsImmutable: Boolean = false,
     val buildMetadata: AppReleaseBuildMetadata? = null,
-    val verificationMetadata: AppReleaseVerificationMetadata? = null
+    val verificationMetadata: AppReleaseVerificationMetadata? = null,
+    val hasAvailableRelease: Boolean = true
 )
 
 internal data class AppUpdateReleaseCandidate(
@@ -96,7 +97,6 @@ internal data class AppUpdateReleaseCandidate(
 )
 
 object AppUpdateChecker {
-    private const val RELEASES_API = "https://api.github.com/repos/jay3-yy/BiliPai/releases"
     private const val CONNECT_TIMEOUT_MS = 6000
     private const val READ_TIMEOUT_MS = 8000
     private val releaseJson = Json { ignoreUnknownKeys = true }
@@ -106,15 +106,33 @@ object AppUpdateChecker {
         currentVersionCode: Int,
         includePrerelease: Boolean = false
     ): Result<AppUpdateCheckResult> = withContext(Dispatchers.IO) {
-        runCatching {
-            val release = fetchRemoteText(RELEASES_API, required = false)
-                ?.let { selectLatestReleaseCandidate(it, includePrerelease = includePrerelease) }
-                ?: throw IllegalStateException(
-                    if (includePrerelease) {
-                        "未获取到包含安装包的测试版 Release"
+        checkReleases(currentVersion, currentVersionCode, includePrerelease, ::fetchRemoteText)
+    }
+
+    internal fun checkReleases(
+        currentVersion: String,
+        currentVersionCode: Int,
+        includePrerelease: Boolean,
+        fetchText: (String, Boolean) -> String?
+    ): Result<AppUpdateCheckResult> {
+        return runCatching {
+            val rawReleases = fetchText(APP_RELEASES_API_URL, true)
+                ?: throw IllegalStateException("更新接口未返回数据")
+            val release = selectLatestReleaseCandidate(rawReleases, includePrerelease)
+                ?: return@runCatching AppUpdateCheckResult(
+                    isUpdateAvailable = false,
+                    currentVersion = normalizeVersion(currentVersion),
+                    latestVersion = "",
+                    releaseUrl = OFFICIAL_RELEASES_URL,
+                    releaseNotes = "",
+                    publishedAt = null,
+                    assets = emptyList(),
+                    message = if (includePrerelease) {
+                        "Biluma 暂无可用的正式版或测试版发布"
                     } else {
-                        "未获取到包含安装包的稳定版 Release"
-                    }
+                        "Biluma 暂无可用的正式版发布"
+                    },
+                    hasAvailableRelease = false
                 )
 
             val latestTag = release.tagName
@@ -131,14 +149,14 @@ object AppUpdateChecker {
                 .firstOrNull { it.isBuildMetadata }
                 ?.downloadUrl
                 ?.let { metadataUrl ->
-                    fetchRemoteText(metadataUrl, required = false)
+                    fetchText(metadataUrl, false)
                 }
                 ?.let(::parseBuildMetadata)
             val verificationMetadata = assets
                 .firstOrNull { it.isVerificationMetadata }
                 ?.downloadUrl
                 ?.let { metadataUrl ->
-                    fetchRemoteText(metadataUrl, required = false)
+                    fetchText(metadataUrl, false)
                 }
                 ?.let(::parseVerificationMetadata)
             val updateAvailable = shouldOfferUpdate(
@@ -179,7 +197,7 @@ object AppUpdateChecker {
             readTimeout = READ_TIMEOUT_MS
             setRequestProperty("Accept", "application/vnd.github+json")
             setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
-            setRequestProperty("User-Agent", "BiliPai-UpdateChecker")
+            setRequestProperty("User-Agent", "Biluma-UpdateChecker")
         }
         return try {
             val responseCode = connection.responseCode
@@ -300,9 +318,7 @@ object AppUpdateChecker {
         rawReleaseJson: String,
         includePrerelease: Boolean = false
     ): AppUpdateReleaseCandidate? {
-        val releasesJson = runCatching {
-            releaseJson.parseToJsonElement(rawReleaseJson).jsonArray
-        }.getOrNull() ?: return null
+        val releasesJson = releaseJson.parseToJsonElement(rawReleaseJson).jsonArray
 
         val candidates = releasesJson
             .mapNotNull { releaseElement ->
@@ -331,7 +347,7 @@ object AppUpdateChecker {
         if (tagName.isBlank()) return null
         val releaseUrl = releaseObject["html_url"]?.jsonPrimitive?.content
             ?.takeIf { it.isNotBlank() }
-            ?: "https://github.com/jay3-yy/BiliPai/releases"
+            ?: OFFICIAL_RELEASES_URL
         val releaseNotes = releaseObject["body"]?.jsonPrimitive?.content.orEmpty().trim()
         val publishedAt = releaseObject["published_at"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
         val isPrerelease = releaseObject["prerelease"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false

@@ -376,8 +376,8 @@ fun SettingsScreen(
     }
     
     val onExportLogsAction: () -> Unit = { showLogExportDialog = true }
-    val onTelegramClick: () -> Unit = { uriHandler.openUri(OFFICIAL_TELEGRAM_CHANNEL_URL) }
-    val onTelegramGroupClick: () -> Unit = { uriHandler.openUri(OFFICIAL_TELEGRAM_GROUP_URL) }
+    val onReleasesClick: () -> Unit = { uriHandler.openUri(OFFICIAL_RELEASES_URL) }
+    val onFeedbackClick: () -> Unit = { uriHandler.openUri(OFFICIAL_ISSUES_URL) }
     val onTwitterClick: () -> Unit = { uriHandler.openUri("https://x.com/YangY_0x00") }
     val onGithubClick: () -> Unit = { uriHandler.openUri(OFFICIAL_GITHUB_URL) }
     val onVerificationClick: () -> Unit = {
@@ -419,9 +419,11 @@ fun SettingsScreen(
             includePrerelease = appUpdateChannel == SettingsManager.AppUpdateChannel.BETA
         )
         result.onSuccess { info ->
-            viewModel.recordReleaseEvidence(info)
+            if (info.hasAvailableRelease) {
+                viewModel.recordReleaseEvidence(info)
+            }
             updateStatusText = info.message
-            when (resolveAppUpdateDialogMode(info.isUpdateAvailable, shouldOpenReleaseNotes)) {
+            when (resolveAppUpdateDialogMode(info.isUpdateAvailable, shouldOpenReleaseNotes, info.hasAvailableRelease)) {
                 AppUpdateDialogMode.UPDATE_AVAILABLE -> {
                     updateCheckResult = info
                 }
@@ -674,7 +676,7 @@ fun SettingsScreen(
         ReleaseChannelDisclaimerDialog(
             onDismiss = { showReleaseDisclaimerDialog = false },
             onOpenGithub = onGithubClick,
-            onOpenTelegram = onTelegramClick
+            onOpenReleases = onReleasesClick
         )
     }
 
@@ -788,8 +790,8 @@ fun SettingsScreen(
                     onViewReleaseNotesClick = onViewReleaseNotesAction,
                     onVersionClick = onVersionClickAction,
                     onReplayOnboardingClick = onReplayOnboardingClick,
-                    onTelegramClick = onTelegramClick,
-                    onTelegramGroupClick = onTelegramGroupClick,
+                    onReleasesClick = onReleasesClick,
+                    onFeedbackClick = onFeedbackClick,
                     onTwitterClick = onTwitterClick,
                     onSettingsShareClick = onSettingsShareClick,
                     onWebDavBackupClick = onWebDavBackupClick,
@@ -979,8 +981,8 @@ private fun MobileSettingsNavLayout(
     onViewReleaseNotesClick: () -> Unit,
     onVersionClick: () -> Unit,
     onReplayOnboardingClick: () -> Unit,
-    onTelegramClick: () -> Unit,
-    onTelegramGroupClick: () -> Unit = {},
+    onReleasesClick: () -> Unit,
+    onFeedbackClick: () -> Unit = {},
     onTwitterClick: () -> Unit,
     onSettingsShareClick: () -> Unit,
     onWebDavBackupClick: () -> Unit,
@@ -1086,8 +1088,8 @@ private fun MobileSettingsNavLayout(
         onAutoCacheClearIntervalChange = onAutoCacheClearIntervalChange,
         onAutoCacheClearThresholdChange = onAutoCacheClearThresholdChange,
         onGithubClick = onGithubClick,
-        onTelegramClick = onTelegramClick,
-        onTelegramGroupClick = onTelegramGroupClick,
+        onReleasesClick = onReleasesClick,
+        onFeedbackClick = onFeedbackClick,
         onTwitterClick = onTwitterClick,
         onDonateClick = onDonateClick,
         onDisclaimerClick = onDisclaimerClick,

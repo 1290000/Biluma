@@ -8,8 +8,8 @@ import kotlin.test.assertSame
 
 class SettingsSearchUiPolicyTest {
     @Test
-    fun telegramSearchResult_reusesSettingsSectionIconResource() {
-        assertEquals(R.drawable.ic_telegram_mono, resolveSettingsEntryVisual(SettingsSearchTarget.TELEGRAM).iconResId)
+    fun feedbackSearchResult_reusesSettingsSectionIconResource() {
+        assertEquals(R.drawable.ms_bug_report_24, resolveSettingsEntryVisual(SettingsSearchTarget.FEEDBACK).iconResId)
     }
 
     @Test

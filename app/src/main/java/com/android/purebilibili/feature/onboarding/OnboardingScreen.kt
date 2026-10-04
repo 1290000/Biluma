@@ -51,8 +51,8 @@ import com.android.purebilibili.core.ui.components.AppSurface
 import com.android.purebilibili.core.ui.components.AppText
 import com.android.purebilibili.core.ui.components.AppTextButton
 import com.android.purebilibili.feature.settings.OFFICIAL_GITHUB_URL
-import com.android.purebilibili.feature.settings.OFFICIAL_TELEGRAM_CHANNEL_URL
-import com.android.purebilibili.feature.settings.OFFICIAL_TELEGRAM_GROUP_URL
+import com.android.purebilibili.feature.settings.OFFICIAL_RELEASES_URL
+import com.android.purebilibili.feature.settings.OFFICIAL_ISSUES_URL
 
 /**
  * Mandatory user-agreement gate (A+B): scrollable notice + required checkboxes.
@@ -74,8 +74,8 @@ fun OnboardingScreen(
     }
     val channels = remember {
         userAgreementChannelLinks(
-            telegramChannelUrl = OFFICIAL_TELEGRAM_CHANNEL_URL,
-            telegramGroupUrl = OFFICIAL_TELEGRAM_GROUP_URL,
+            releasesUrl = OFFICIAL_RELEASES_URL,
+            issuesUrl = OFFICIAL_ISSUES_URL,
             githubUrl = OFFICIAL_GITHUB_URL,
         )
     }
@@ -229,14 +229,14 @@ fun OnboardingScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     AppText(
-                        text = "官方渠道",
+                        text = "Biluma 项目入口",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
                 AppText(
-                    text = "更新与交流请仅通过以下官方渠道。",
+                    text = "源码、更新与问题反馈请使用 Biluma 的 GitHub 项目入口。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

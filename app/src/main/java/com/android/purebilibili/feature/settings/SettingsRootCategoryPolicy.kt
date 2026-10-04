@@ -133,7 +133,7 @@ internal fun resolveSettingsRootCategoryForSearchTarget(
     SettingsSearchTarget.VIEW_RELEASE_NOTES,
     SettingsSearchTarget.REPLAY_ONBOARDING,
     SettingsSearchTarget.DISCLAIMER,
-    SettingsSearchTarget.TELEGRAM,
+    SettingsSearchTarget.FEEDBACK,
     SettingsSearchTarget.TWITTER,
     SettingsSearchTarget.DONATE,
     SettingsSearchTarget.TIPS,

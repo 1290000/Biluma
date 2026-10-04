@@ -145,8 +145,8 @@ internal data class SettingsRootCategoryActions(
     val onAutoCacheClearIntervalChange: (SettingsManager.AutoCacheClearInterval) -> Unit,
     val onAutoCacheClearThresholdChange: (Int) -> Unit,
     val onGithubClick: () -> Unit,
-    val onTelegramClick: () -> Unit,
-    val onTelegramGroupClick: () -> Unit = {},
+    val onReleasesClick: () -> Unit,
+    val onFeedbackClick: () -> Unit = {},
     val onTwitterClick: () -> Unit,
     val onDonateClick: () -> Unit,
     val onDisclaimerClick: () -> Unit,
@@ -833,6 +833,7 @@ internal fun SettingsRootCategoryContent(
                             easterEggEnabled = state.easterEggEnabled,
                             onLicenseClick = actions.onLicenseClick,
                             onGithubClick = actions.onGithubClick,
+                            onFeedbackClick = actions.onFeedbackClick,
                             onVerificationClick = actions.onVerificationClick,
                             onBuildSourceClick = actions.onBuildSourceClick,
                             onBuildFingerprintClick = actions.onBuildFingerprintClick,
@@ -862,8 +863,8 @@ internal fun SettingsRootCategoryContent(
                 SettingsRootCategoryEntranceSection {
                     ReleaseChannelPinnedCard(
                         onGithubClick = actions.onGithubClick,
-                        onTelegramClick = actions.onTelegramClick,
-                        onTelegramGroupClick = actions.onTelegramGroupClick,
+                        onReleasesClick = actions.onReleasesClick,
+                        onFeedbackClick = actions.onFeedbackClick,
                         onDisclaimerClick = actions.onDisclaimerClick
                     )
                 }
@@ -905,8 +906,8 @@ fun SupportToolsSection(
 @Composable
 fun ReleaseChannelPinnedCard(
     onGithubClick: () -> Unit,
-    onTelegramClick: () -> Unit,
-    onTelegramGroupClick: () -> Unit = {},
+    onReleasesClick: () -> Unit,
+    onFeedbackClick: () -> Unit = {},
     onDisclaimerClick: () -> Unit
 ) {
     val disclaimerTint = rememberAdaptivePreferenceIconTint(iOSBlue)
@@ -931,12 +932,12 @@ fun ReleaseChannelPinnedCard(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     AppText(
-                        text = "官方渠道：GitHub · 频道 · 群组",
+                        text = "Biluma：源码 · 发布 · 反馈",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     AppText(
-                        text = "请从官方渠道获取安装包，注意来源安全。",
+                        text = "请仅从 Biluma 发布页获取安装包；暂无发行版时请等待发布。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -949,7 +950,7 @@ fun ReleaseChannelPinnedCard(
             ) {
                 AppOutlinedButton(
                     onClick = onGithubClick,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     AppText(
@@ -960,12 +961,12 @@ fun ReleaseChannelPinnedCard(
                     )
                 }
                 AppOutlinedButton(
-                    onClick = onTelegramClick,
-                    modifier = Modifier.weight(1f),
+                    onClick = onReleasesClick,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     AppText(
-                        text = "频道",
+                        text = "版本发布",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Clip
@@ -978,12 +979,12 @@ fun ReleaseChannelPinnedCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AppOutlinedButton(
-                    onClick = onTelegramGroupClick,
-                    modifier = Modifier.weight(1f),
+                    onClick = onFeedbackClick,
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     AppText(
-                        text = "群组",
+                        text = "问题反馈",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Clip
@@ -991,7 +992,7 @@ fun ReleaseChannelPinnedCard(
                 }
                 AppOutlinedButton(
                     onClick = onDisclaimerClick,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     AppText(
@@ -1805,6 +1806,7 @@ fun AboutSection(
     easterEggEnabled: Boolean,
     onLicenseClick: () -> Unit,
     onGithubClick: () -> Unit,
+    onFeedbackClick: () -> Unit,
     onVerificationClick: () -> Unit,
     onBuildSourceClick: () -> Unit,
     onBuildFingerprintClick: () -> Unit,
@@ -1842,6 +1844,7 @@ fun AboutSection(
     val updateSiblingTints = remember { resolveSettingsSiblingIconTints(5, paletteOffset = 3) }
     val licensesVisual = rememberSettingsEntryVisual(SettingsSearchTarget.OPEN_SOURCE_LICENSES)
     val openSourceHomeVisual = rememberSettingsEntryVisual(SettingsSearchTarget.OPEN_SOURCE_HOME)
+    val feedbackVisual = rememberSettingsEntryVisual(SettingsSearchTarget.FEEDBACK)
     val checkUpdateVisual = rememberSettingsEntryVisual(SettingsSearchTarget.CHECK_UPDATE)
     val releaseNotesVisual = rememberSettingsEntryVisual(SettingsSearchTarget.VIEW_RELEASE_NOTES)
     val replayOnboardingVisual = rememberSettingsEntryVisual(SettingsSearchTarget.REPLAY_ONBOARDING)
@@ -1950,6 +1953,15 @@ fun AboutSection(
             title = settingsDestinationCopy(SettingsSearchTarget.OPEN_SOURCE_LICENSES).title,
             onClick = onLicenseClick,
             iconTint = licensesVisual.iconTint
+        )
+        SettingsAdaptiveDivider()
+        SettingClickableItem(
+            icon = feedbackVisual.icon,
+            iconPainter = feedbackVisual.iconResId?.let { painterResource(id = it) },
+            title = settingsDestinationCopy(SettingsSearchTarget.FEEDBACK).title,
+            subtitle = settingsDestinationCopy(SettingsSearchTarget.FEEDBACK).summary,
+            onClick = onFeedbackClick,
+            iconTint = feedbackVisual.iconTint
         )
         SettingsAdaptiveDivider()
         SettingClickableItem(
@@ -2157,6 +2169,7 @@ private fun AboutProjectOverviewCard(
     contributors: List<AboutContributor> = AboutContributors
 ) {
     val slogan = remember { AboutSlogans.random() }
+    val uriHandler = LocalUriHandler.current
     AppCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -2170,7 +2183,7 @@ private fun AboutProjectOverviewCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
                     model = appIconRes,
-                    contentDescription = "BiliPai 图标",
+                    contentDescription = "Biluma 图标",
                     modifier = Modifier
                         .size(72.dp)
                         .clip(CircleShape)
@@ -2178,7 +2191,7 @@ private fun AboutProjectOverviewCard(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     AppText(
-                        text = "BiliPai",
+                        text = "Biluma",
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -2207,9 +2220,15 @@ private fun AboutProjectOverviewCard(
 
                 )
             }
+            AppTextButton(
+                onClick = { uriHandler.openUri(UPSTREAM_GITHUB_URL) },
+                modifier = Modifier.heightIn(min = 48.dp)
+            ) {
+                AppText("基于 BiliPai v0.2.8 · 查看上游项目")
+            }
             Spacer(modifier = Modifier.height(22.dp))
             AppText(
-                text = "贡献者",
+                text = "BiliPai 上游贡献者",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -443,7 +443,7 @@ internal fun resolveSettingsSearchTargetIconRole(
     SettingsSearchTarget.TIPS -> SettingsIconRole.TIPS
     SettingsSearchTarget.OPEN_LINKS -> SettingsIconRole.OPEN_LINKS
     SettingsSearchTarget.DONATE -> SettingsIconRole.DONATE
-    SettingsSearchTarget.TELEGRAM -> SettingsIconRole.OPEN_LINKS
+    SettingsSearchTarget.FEEDBACK -> SettingsIconRole.OPEN_LINKS
     SettingsSearchTarget.TWITTER -> SettingsIconRole.OPEN_LINKS
     SettingsSearchTarget.DISCLAIMER -> SettingsIconRole.DISCLAIMER
 }

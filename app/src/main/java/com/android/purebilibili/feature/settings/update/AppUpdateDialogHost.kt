@@ -14,8 +14,6 @@ import com.android.purebilibili.core.theme.LocalAppUiStyle
 import kotlinx.coroutines.delay
 import java.io.File
 
-internal const val GITHUB_RELEASE_DOWNLOAD_URL = "https://github.com/jay3-yy/BiliPai/releases/latest"
-internal const val GITHUB_TEST_DOWNLOAD_URL = "https://github.com/jay3-yy/BiliPai/releases"
 
 /** Owns update state and delegates rendering to the active theme's native dialog. */
 @Composable
@@ -79,8 +77,8 @@ internal fun AppUpdateDialogHost(
     val actions = AppUpdateDialogActions(
         onPrimaryAction = onPrimaryAction,
         onCancelDownload = onCancelDownload,
-        onOpenRelease = { uriHandler.openUri(GITHUB_RELEASE_DOWNLOAD_URL) },
-        onOpenTestRelease = { uriHandler.openUri(GITHUB_TEST_DOWNLOAD_URL) },
+        onOpenRelease = { uriHandler.openUri(OFFICIAL_RELEASES_URL) },
+        onOpenTestRelease = { uriHandler.openUri(OFFICIAL_RELEASES_URL) },
         onDismissRequest = onDismissRequest,
     )
 

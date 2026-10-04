@@ -58,7 +58,7 @@ class SettingsInformationArchitecturePolicyTest {
         listOf(
             SettingsSearchTarget.OPEN_SOURCE_HOME,
             SettingsSearchTarget.CHECK_UPDATE,
-            SettingsSearchTarget.TELEGRAM,
+            SettingsSearchTarget.FEEDBACK,
         ).forEach { target ->
             val result = SettingsSearchResult(
                 target = target,

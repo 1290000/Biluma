@@ -67,7 +67,7 @@ class SettingsRootCategoryPolicyTest {
         )
         assertEquals(
             SettingsRootCategory.SYSTEM_ABOUT,
-            resolveSettingsRootCategoryForSearchTarget(SettingsSearchTarget.TELEGRAM),
+            resolveSettingsRootCategoryForSearchTarget(SettingsSearchTarget.FEEDBACK),
         )
         assertEquals(
             SettingsRootCategory.SYSTEM_ABOUT,

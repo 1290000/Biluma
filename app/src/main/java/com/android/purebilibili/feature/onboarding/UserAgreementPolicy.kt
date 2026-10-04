@@ -40,20 +40,20 @@ fun userAgreementIntroText(): String =
 fun userAgreementClauseList(): List<UserAgreementClause> = UserAgreementClause.entries
 
 fun userAgreementChannelLinks(
-    telegramChannelUrl: String,
-    telegramGroupUrl: String,
+    releasesUrl: String,
+    issuesUrl: String,
     githubUrl: String,
 ): List<UserAgreementChannelLink> = listOf(
     UserAgreementChannelLink(
-        label = "Telegram 频道",
-        url = telegramChannelUrl,
+        label = "Biluma 版本发布",
+        url = releasesUrl,
     ),
     UserAgreementChannelLink(
-        label = "Telegram 交流群",
-        url = telegramGroupUrl,
+        label = "问题反馈",
+        url = issuesUrl,
     ),
     UserAgreementChannelLink(
-        label = "开源地址",
+        label = "Biluma 开源地址",
         url = githubUrl,
     ),
 )

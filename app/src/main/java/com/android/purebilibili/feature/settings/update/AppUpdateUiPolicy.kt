@@ -8,9 +8,11 @@ internal enum class AppUpdateDialogMode {
 
 internal fun resolveAppUpdateDialogMode(
     isUpdateAvailable: Boolean,
-    shouldOpenReleaseNotes: Boolean
+    shouldOpenReleaseNotes: Boolean,
+    hasAvailableRelease: Boolean = true
 ): AppUpdateDialogMode {
     return when {
+        !hasAvailableRelease -> AppUpdateDialogMode.NONE
         isUpdateAvailable -> AppUpdateDialogMode.UPDATE_AVAILABLE
         shouldOpenReleaseNotes -> AppUpdateDialogMode.CHANGELOG
         else -> AppUpdateDialogMode.NONE

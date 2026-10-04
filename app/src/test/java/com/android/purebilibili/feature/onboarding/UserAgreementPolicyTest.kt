@@ -57,20 +57,20 @@ class UserAgreementPolicyTest {
     }
 
     @Test
-    fun channelLinksIncludeTelegramChannelGroupAndGithub_withoutDisplayingUrls() {
+    fun channelLinksIncludeBilumaReleasesIssuesAndSource_withoutDisplayingUrls() {
         val links = userAgreementChannelLinks(
-            telegramChannelUrl = "https://t.me/bilipai666",
-            telegramGroupUrl = "https://t.me/bilipai888/1",
-            githubUrl = "https://github.com/jay3-yy/BiliPai/",
+            releasesUrl = "https://github.com/1290000/Biluma/releases",
+            issuesUrl = "https://github.com/1290000/Biluma/issues",
+            githubUrl = "https://github.com/1290000/Biluma",
         )
         assertEquals(3, links.size)
         assertEquals(
-            listOf("Telegram 频道", "Telegram 交流群", "开源地址"),
+            listOf("Biluma 版本发布", "问题反馈", "Biluma 开源地址"),
             links.map { it.label },
         )
-        assertTrue(links[0].url.contains("bilipai666"))
-        assertTrue(links[1].url.contains("bilipai888"))
-        assertTrue(links[2].url.contains("github.com"))
+        assertEquals("https://github.com/1290000/Biluma/releases", links[0].url)
+        assertEquals("https://github.com/1290000/Biluma/issues", links[1].url)
+        assertEquals("https://github.com/1290000/Biluma", links[2].url)
         // UI only shows labels; urls stay internal for openUri.
         assertEquals("user_agreement_ack_v1", USER_AGREEMENT_ACK_KEY)
     }

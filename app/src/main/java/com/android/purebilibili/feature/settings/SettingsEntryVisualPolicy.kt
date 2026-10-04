@@ -71,7 +71,7 @@ private fun resolveIosSettingsEntryTint(
     SettingsSearchTarget.TIPS -> iOSOrange
     SettingsSearchTarget.OPEN_LINKS -> iOSTeal
     SettingsSearchTarget.DONATE -> iOSRed
-    SettingsSearchTarget.TELEGRAM -> iOSBlue
+    SettingsSearchTarget.FEEDBACK -> iOSBlue
     SettingsSearchTarget.TWITTER -> iOSBlue
     SettingsSearchTarget.DISCLAIMER -> iOSBlue
 }
@@ -106,8 +106,8 @@ internal fun resolveSettingsEntryVisual(
 ): SettingsEntryVisual {
     val iconTint = resolveIosSettingsEntryTint(target)
     return when (target) {
-        SettingsSearchTarget.TELEGRAM -> SettingsEntryVisual(
-            iconResId = R.drawable.ic_telegram_mono,
+        SettingsSearchTarget.FEEDBACK -> SettingsEntryVisual(
+            iconResId = R.drawable.ms_bug_report_24,
             iconTint = iconTint
         )
         SettingsSearchTarget.TWITTER -> SettingsEntryVisual(

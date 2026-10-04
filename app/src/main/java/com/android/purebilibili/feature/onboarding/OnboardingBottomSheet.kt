@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.platform.LocalUriHandler
+import com.android.purebilibili.feature.settings.OFFICIAL_GITHUB_URL
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -261,7 +262,7 @@ fun OnboardingBottomSheet(
                                 )
                             ) {
                                 AppText(
-                                    "开始探索 BiliPai",
+                                    "开始探索 Biluma",
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelLarge
                                 )
@@ -272,11 +273,11 @@ fun OnboardingBottomSheet(
                     //  GitHub 链接
                     Spacer(modifier = Modifier.height(AppSpacingTokens.Medium))
                     AppText(
-                        "github.com/jay3-yy/BiliPai",
+                        "github.com/1290000/Biluma",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                         modifier = Modifier.clickable {
-                            uriHandler.openUri("https://github.com/jay3-yy/BiliPai")
+                            uriHandler.openUri(OFFICIAL_GITHUB_URL)
                         }
                     )
                 }
@@ -336,7 +337,7 @@ private fun WelcomePage(hazeState: HazeState) {
             // 主 Logo
             AsyncImage(
                 model = R.mipmap.ic_launcher_3d,
-                contentDescription = "BiliPai Logo",
+                contentDescription = "Biluma Logo",
                 modifier = Modifier
                     .size(80.dp)
                     .clip(AppShapes.container(ContainerLevel.Floating))
@@ -353,7 +354,7 @@ private fun WelcomePage(hazeState: HazeState) {
         
         // 标题 - 动画项 1
         AppText(
-            "欢迎使用 BiliPai",
+            "欢迎使用 Biluma",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,

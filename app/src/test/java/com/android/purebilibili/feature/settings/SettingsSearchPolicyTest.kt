@@ -7,6 +7,13 @@ import kotlin.test.assertTrue
 class SettingsSearchPolicyTest {
 
     @Test
+    fun bilumaFeedbackIsSearchableByNameAndIssues() {
+        listOf("问题反馈", "issues", "Biluma", "羽哩").forEach { query ->
+            assertTrue(resolveSettingsSearchResults(query).any { result -> result.target == SettingsSearchTarget.FEEDBACK })
+        }
+    }
+
+    @Test
     fun blankQuery_returnsEmptyList() {
         val results = resolveSettingsSearchResults("   ")
 

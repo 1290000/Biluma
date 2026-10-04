@@ -152,7 +152,7 @@ internal class AppUpdateDownloadWorker(
             connectTimeout = 10_000
             readTimeout = 30_000
             setRequestProperty("Accept", "application/octet-stream")
-            setRequestProperty("User-Agent", "BiliPai-AppUpdate")
+            setRequestProperty("User-Agent", "Biluma-AppUpdate")
             if (existingBytes > 0L) setRequestProperty("Range", "bytes=$existingBytes-")
         }
     }
