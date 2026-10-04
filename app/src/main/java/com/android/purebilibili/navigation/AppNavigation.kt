@@ -219,13 +219,6 @@ import com.android.purebilibili.navigation3.popBiliPaiNavKey
 import com.android.purebilibili.navigation3.popBiliPaiNavKeyToRoot
 import com.android.purebilibili.navigation3.pushBiliPaiNavKey
 import com.android.purebilibili.navigation3.pushOrReplaceSettingsCategoryNavKey
-import com.android.purebilibili.navigation3.selectSettingsPaneNavKey
-import com.android.purebilibili.navigation3.exitSettingsSceneStack
-import com.android.purebilibili.navigation3.popSettingsSceneStack
-import com.android.purebilibili.navigation3.shouldExitSettingsSceneOnBack
-import com.android.purebilibili.feature.settings.isSettingsSubtreeNavKey
-import com.android.purebilibili.feature.settings.isSettingsSubtreeRoute
-import com.android.purebilibili.feature.settings.screen.settingsHasPersistentPanes
 import com.android.purebilibili.navigation3.resolveBiliPaiBackGestureDecision
 import com.android.purebilibili.navigation3.resolveBiliPaiNavCardSourceDirection
 import com.android.purebilibili.navigation3.resolveBiliPaiNavEntryContentRole
@@ -400,8 +393,7 @@ fun AppNavigation(
     ) -> Unit = { _, onResult ->
         onResult(PrivacyAuthenticationResult.Failure("请先设置系统锁屏后再解锁隐私内容"))
     },
-    mainHazeState: dev.chrisbanes.haze.HazeState? = null, //  全局 Haze 状态
-    onBrandFeedbackBottomInsetChanged: (androidx.compose.ui.unit.Dp) -> Unit = {}
+    mainHazeState: dev.chrisbanes.haze.HazeState? = null //  全局 Haze 状态
 ) {
     val homeViewModel: HomeViewModel = viewModel()
     val coroutineScope = rememberCoroutineScope()
@@ -769,7 +761,6 @@ fun AppNavigation(
         // [修复] 平板模式下(宽度>=600dp)，进入设置页(Settings.route)时隐藏底栏
         // 因为平板设置页使用 SplitLayout，已经有自己的内部导航结构，不需要底栏
         val isTabletLayout = windowSizeClass.isTablet
-        val settingsPersistentPanes = settingsHasPersistentPanes()
         val navMotionSpec = remember(isTabletLayout, cardTransitionEnabled) {
             resolveAppNavigationMotionSpec(
                 isTabletLayout = isTabletLayout,
@@ -1549,10 +1540,6 @@ fun AppNavigation(
             isBottomBarFloating = isBottomBarFloating,
             hasUiSkinDecoration = bottomBarUiSkinDecoration != null,
         )
-        val latestBrandFeedbackInsetCallback by rememberUpdatedState(onBrandFeedbackBottomInsetChanged)
-        LaunchedEffect(bottomBarContentPadding) {
-            latestBrandFeedbackInsetCallback(bottomBarContentPadding)
-        }
 
         val setBottomBarVisible: (Boolean) -> Unit = remember {
             bottomBarSetter@{ visible: Boolean ->
@@ -1943,24 +1930,6 @@ fun AppNavigation(
                 popAction()
             }
 
-            fun exitSettingsNavigation() {
-                replaceNavigation3BackStack(exitSettingsSceneStack(navigation3BackStack))
-                if (navigation3BackStack.lastOrNull() == BiliPaiNavKey.MainHost &&
-                    isSettingsSubtreeRoute(activeBottomTabRoute)
-                ) {
-                    val homeIndex = visibleBottomBarItems.indexOf(BottomNavItem.HOME)
-                    if (homeIndex >= 0) mainBottomPagerState.switchToPage(homeIndex)
-                }
-            }
-            fun popSettingsDestination() {
-                if (shouldExitSettingsSceneOnBack(navigation3BackStack, persistentPanes = false) ||
-                    navigation3BackStack.lastOrNull()?.let(::isSettingsSubtreeNavKey) != true
-                ) {
-                    exitSettingsNavigation()
-                } else {
-                    replaceNavigation3BackStack(popSettingsSceneStack(navigation3BackStack))
-                }
-            }
             val performSystemBackAction = {
                 when (systemBackAction) {
                     AppSystemBackAction.RETURN_TO_HOME_TAB -> {
@@ -1979,10 +1948,6 @@ fun AppNavigation(
                             ) {
                                 replaceNavigation3BackStack(popBiliPaiNavKey(navigation3BackStack))
                             }
-                        } else if (shouldExitSettingsSceneOnBack(navigation3BackStack, settingsPersistentPanes)) {
-                            exitSettingsNavigation()
-                        } else if (navigation3BackStack.lastOrNull()?.let(::isSettingsSubtreeNavKey) == true) {
-                            popSettingsDestination()
                         } else {
                             replaceNavigation3BackStack(popBiliPaiNavKey(navigation3BackStack))
                         }
@@ -2309,17 +2274,6 @@ fun AppNavigation(
                             key = key,
                             onSystemBack = { performSystemBackAction() },
                             onPushKey = { pushNavigation3Key(it) },
-                            onSelectPaneKey = {
-                                replaceNavigation3BackStack(selectSettingsPaneNavKey(navigation3BackStack, it))
-                            },
-                            sceneActive = !isBottomPagerHosted || isBottomPagerPageActive,
-                            sceneContent = { sceneKey ->
-                                RenderNavigationContent(
-                                    key = sceneKey,
-                                    isBottomPagerPageActive = isBottomPagerPageActive,
-                                    isBottomPagerHosted = isBottomPagerHosted,
-                                )
-                            },
                             content = content,
                         )
                     }
@@ -4396,13 +4350,6 @@ fun AppNavigation(
 
                 BiliPaiNavDisplayHost(
                     backStack = navigation3BackStack,
-                    activeMainHostRoute = activeBottomTabRoute,
-                    onSelectSettingsKey = {
-                        replaceNavigation3BackStack(selectSettingsPaneNavKey(navigation3BackStack, it))
-                    },
-                    onPushSettingsKey = { pushNavigation3Key(it) },
-                    onPopSettingsDestination = { popSettingsDestination() },
-                    onExitSettings = { exitSettingsNavigation() },
                     cardTransitionEnabled =
                         com.android.purebilibili.navigation3.resolveVideoCardTransitionEnabledForSource(
                             cardTransitionEnabled = sharedVideoCardTransitionEnabled,

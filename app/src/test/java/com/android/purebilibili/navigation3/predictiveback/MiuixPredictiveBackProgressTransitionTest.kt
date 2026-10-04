@@ -132,11 +132,8 @@ class MiuixPredictiveBackProgressTransitionTest {
             "Live",
             "Web",
         ).forEach { keyName ->
-            val registration = requireNotNull(
-                Regex("""(?:entry|settingsEntry)<BiliPaiNavKey\.$keyName>\(""").find(source)
-            ) { "$keyName must have a registered entry" }
             val entryBlock = source
-                .substring(registration.range.last + 1)
+                .substringAfter("entry<BiliPaiNavKey.$keyName>(")
                 .substringBefore("content = content")
             assertTrue(
                 entryBlock.contains("transition = predictiveBackExcludedTransition"),

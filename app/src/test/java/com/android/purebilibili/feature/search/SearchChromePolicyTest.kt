@@ -17,7 +17,7 @@ import org.junit.Test
 class SearchChromePolicyTest {
 
     @Test
-    fun `home and search fields keep capsule ends at any width`() {
+    fun `search fields keep rounded corners instead of semicircular ends at any width`() {
         for (style in AppUiStyle.entries) {
             val chrome = resolveAppTopChromePolicy(style)
             val fields = listOf(
@@ -37,7 +37,7 @@ class SearchChromePolicyTest {
                             narrow.roundRect.bottomRightCornerRadius,
                         )
                         for (corner in corners) {
-                            assertEquals(heightPx / 2f, corner.x, 0.001f)
+                            assertTrue("Search ends must not become a pill: $style", corner.x > 0f && corner.x < heightPx / 2f)
                             assertEquals(corner.x, corner.y, 0.001f)
                         }
                         assertEquals(narrow.roundRect.topLeftCornerRadius, wide.roundRect.topLeftCornerRadius)

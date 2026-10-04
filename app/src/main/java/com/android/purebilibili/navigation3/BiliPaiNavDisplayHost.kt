@@ -5,10 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.toMutableStateList
-import com.android.purebilibili.feature.settings.isSettingsSubtreeNavKey
-import com.android.purebilibili.feature.settings.screen.SettingsAdaptiveSceneHost
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -45,7 +41,6 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.android.purebilibili.feature.settings.screen.settingsHasPersistentPanes
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.LocalGlobalWallpaperBackdropVisible
 import com.android.purebilibili.core.ui.LocalSharedTransitionEnabled
@@ -114,11 +109,6 @@ internal class BiliPaiProgrammaticBackDispatcher {
 @Composable
 internal fun BiliPaiNavDisplayHost(
     backStack: SnapshotStateList<BiliPaiNavKey>,
-    activeMainHostRoute: String? = null,
-    onSelectSettingsKey: (BiliPaiNavKey) -> Unit,
-    onPushSettingsKey: (BiliPaiNavKey) -> Unit,
-    onPopSettingsDestination: () -> Unit,
-    onExitSettings: () -> Unit,
     cardTransitionEnabled: Boolean = true,
     videoTransitionRealtimeBlurEnabled: Boolean = false,
     isLightBackground: Boolean = false,
@@ -164,16 +154,7 @@ internal fun BiliPaiNavDisplayHost(
             "predictive_style=$predictiveBackAnimationStyle reduced_motion=$reduceMotion",
     )
     val stackSnapshot = backStack.toList()
-    val displayKeys = resolveSettingsSceneDisplayStack(stackSnapshot)
-    val displayBackStack = remember(displayKeys) { displayKeys.toMutableStateList() }
     val currentKey = stackSnapshot.lastOrNull()
-    val settingsPersistentPanes = settingsHasPersistentPanes()
-    val settingsPaneNavigation = isSettingsPaneNavigation(
-        persistentPanes = settingsPersistentPanes,
-        fromKey = stackSnapshot.getOrNull(stackSnapshot.lastIndex - 1),
-        toKey = currentKey,
-        activeMainHostRoute = activeMainHostRoute,
-    )
     val latestOnBack by rememberUpdatedState(onBack)
     val latestPrepareReturn by rememberUpdatedState(onPrepareVideoCardSharedReturn)
     val latestRelatedReturn by rememberUpdatedState(onRelatedVideoDetailReturned)
@@ -679,11 +660,11 @@ internal fun BiliPaiNavDisplayHost(
             effectiveVideoCardExposure == VideoCardTransitionExposure.Returning ||
             effectiveVideoCardExposure == VideoCardTransitionExposure.Restoring
     )
-    val enableHostCornerClip = !videoCardMorphOwnsCorners && !settingsPaneNavigation
+    val enableHostCornerClip = !videoCardMorphOwnsCorners
     // The retained source page already owns blur/scrim through the video-card depth layer.
     // Miuix's generic covered-entry dim can be resolved from the lower VideoDetail transition
     // during nested related-video navigation, which darkens that page a second time.
-    val hostDimAmount = if (videoCardMorphOwnsCorners || settingsPaneNavigation) 0f else 0.5f
+    val hostDimAmount = if (videoCardMorphOwnsCorners) 0f else 0.5f
     val backdropColor = AppSurfaceTokens.surface()
     val effects = remember(
         navCornerRadius,
@@ -772,7 +753,7 @@ internal fun BiliPaiNavDisplayHost(
         )
         @Suppress("UNCHECKED_CAST")
         NavDisplay(
-            backStack = displayBackStack as NavBackStack,
+            backStack = backStack as NavBackStack,
             onBack = performBack,
             transition = globalTransition,
             effects = effects,
@@ -780,9 +761,6 @@ internal fun BiliPaiNavDisplayHost(
         ) {
             biliPaiNavEntries(
                 swipeBackDirection = swipeBackDirection,
-                settingsBackStack = displayKeys,
-                settingsPersistentPanes = settingsPersistentPanes,
-                activeMainHostRoute = activeMainHostRoute,
                 predictiveBackExcludedTransition = predictiveBackExcludedTransition,
                 videoCardTransition = videoCardTransition,
                 fullscreenVideoCardTransition = fullscreenVideoCardTransition,
@@ -815,22 +793,7 @@ internal fun BiliPaiNavDisplayHost(
                             ),
                         ) {
                             ProvideMiuixNavViewModelApplicationExtras(application) {
-                                if (isSettingsSubtreeNavKey(key)) {
-                                    val segment = resolveSettingsSceneSegment(stackSnapshot, key)
-                                    var retainedSegment by remember(key) { mutableStateOf(segment.ifEmpty { listOf(key) }) }
-                                    // Keep the exiting scene's content until its outer transition unloads.
-                                    SideEffect { if (segment.isNotEmpty()) retainedSegment = segment }
-                                    SettingsAdaptiveSceneHost(
-                                        segment = segment.ifEmpty { retainedSegment },
-                                        onSelectKey = onSelectSettingsKey,
-                                        onPushKey = onPushSettingsKey,
-                                        onPopDestination = onPopSettingsDestination,
-                                        onExit = onExitSettings,
-                                        content = content,
-                                    )
-                                } else {
-                                    content(key)
-                                }
+                                content(key)
                             }
                         }
                     }
