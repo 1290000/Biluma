@@ -434,11 +434,9 @@ fun OfflineVideoPlayerScreen(
     }
 
     LaunchedEffect(danmakuManager, showDanmakuLayer) {
-        if (showDanmakuLayer) {
-            danmakuManager.show()
-        } else {
-            danmakuManager.hide()
-        }
+        // Data commits and player callbacks also consult the engine's enabled state.
+        // Hiding only the View lets an asynchronous load turn it visible again.
+        danmakuManager.isEnabled = showDanmakuLayer
     }
 
     DisposableEffect(player, offlineSessionRegistered, offlineMiniPlayerPayload) {
@@ -685,31 +683,33 @@ fun OfflineVideoPlayerScreen(
         )
 
         if (danmakuAvailable) {
-            AndroidView(
-                factory = { ctx ->
-                    DanmakuRenderView(ctx).apply {
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                        configureAsPassiveDanmakuOverlay()
-                        danmakuManager.attachView(this)
-                    }
-                },
-                update = { view ->
-                    view.visibility = if (showDanmakuLayer) {
-                        android.view.View.VISIBLE
-                    } else {
-                        android.view.View.GONE
-                    }
-                    if (view.width > 0 && view.height > 0) {
-                        val sizeTag = "${view.width}x${view.height}"
-                        if (view.tag != sizeTag) {
-                            view.tag = sizeTag
-                            danmakuManager.attachView(view)
+            key(danmakuManager) {
+                AndroidView(
+                    factory = { ctx ->
+                        DanmakuRenderView(ctx).apply {
+                            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                            configureAsPassiveDanmakuOverlay()
+                            danmakuManager.attachView(this)
                         }
-                    }
-                },
-                onRelease = { view -> danmakuManager.detachView(view) },
-                modifier = Modifier.fillMaxSize()
-            )
+                    },
+                    update = { view ->
+                        view.visibility = if (showDanmakuLayer) {
+                            android.view.View.VISIBLE
+                        } else {
+                            android.view.View.GONE
+                        }
+                        if (view.width > 0 && view.height > 0) {
+                            val sizeTag = "${view.width}x${view.height}"
+                            if (view.tag != sizeTag) {
+                                view.tag = sizeTag
+                                danmakuManager.attachView(view)
+                            }
+                        }
+                    },
+                    onRelease = { view -> danmakuManager.detachView(view) },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
         
         // 2. 封面图（播放前显示，或是纯音频模式常驻显示）
