@@ -1327,7 +1327,14 @@ private fun VideoPlayerSectionContent(
     var measuredBottomControlsHeightPx by remember(bvid) { mutableIntStateOf(0) }
     val ambientPresentation = LocalAmbientPresentation.current
     val statusBarAmbientFrame = remember(ambientPresentation) {
-        derivedStateOf { ambientPresentation?.current?.raw }
+        derivedStateOf {
+            val presentation = ambientPresentation ?: return@derivedStateOf null
+            // 播放器尺寸/表面变化会推进 requiredRefresh；重采样到位前隐藏旧帧（回落黑底），
+            // 避免状态栏模糊条在下滑缩小过程中停留在旧几何的采样帧上。
+            presentation.current
+                ?.takeIf { it.refreshGeneration >= presentation.requiredRefresh }
+                ?.raw
+        }
     }
     
     // 🔒 [新增] 屏幕锁定状态（全屏时防误触）
@@ -3058,7 +3065,7 @@ private fun VideoPlayerSectionContent(
             hostLifecycleStarted = hostLifecycleStarted,
             isPortraitFullscreen = isPortraitFullscreen,
         )
-        LaunchedEffect(cid, aid, danmakuEnabled, runDanmakuHostEffects) {
+        LaunchedEffect(danmakuManager, cid, aid, danmakuEnabled, runDanmakuHostEffects) {
             // 相关推荐 push 会让新旧详情页在转场期间同时处于 STARTED。旧页不得再次
             // Enable/load 同一播放身份的 Session，否则会取消新 cid 请求或把新数据同步到旧播放器。
             if (!runDanmakuHostEffects) return@LaunchedEffect
@@ -3076,6 +3083,7 @@ private fun VideoPlayerSectionContent(
                     danmakuManager.isEnabled = false
                     danmakuManager.clear()
                 }
+                VideoPlayerDanmakuEngineSyncAction.KeepCurrent -> Unit
             }
             if (!shouldLoadDanmakuForForegroundHost(
                     hostLifecycleStarted = hostLifecycleStarted,
@@ -3277,7 +3285,8 @@ private fun VideoPlayerSectionContent(
             danmakuManager.recoverAfterForeground(
                 positionMs = player.currentPosition.coerceAtLeast(0L),
                 playWhenReady = player.playWhenReady,
-                playbackState = player.playbackState
+                playbackState = player.playbackState,
+                preserveTimeline = true
             )
             Logger.d("VideoPlayerSection") {
                 "↩️ Predictive back cancel restored current video surface: " +
@@ -3328,7 +3337,8 @@ private fun VideoPlayerSectionContent(
             danmakuManager.recoverAfterForeground(
                 positionMs = player.currentPosition.coerceAtLeast(0L),
                 playWhenReady = player.playWhenReady,
-                playbackState = player.playbackState
+                playbackState = player.playbackState,
+                preserveTimeline = !foregroundRecoveryNeedsSurface
             )
 
             delay(FOREGROUND_SURFACE_RECOVERY_TIMEOUT_MS)
@@ -3425,8 +3435,12 @@ private fun VideoPlayerSectionContent(
         }
         
         // 每个 Compose owner 严格成对绑定/解绑；SessionFactory 负责跨渲染目标复用。
-        DisposableEffect(playerState.player, runDanmakuHostEffects) {
-            val attachedPlayer = playerState.player.takeIf { runDanmakuHostEffects }
+        val keepDanmakuHost = shouldKeepVideoPlayerDanmakuHost(
+            danmakuHostActive = danmakuHostActive,
+            isPortraitFullscreen = isPortraitFullscreen
+        )
+        DisposableEffect(danmakuManager, playerState.player, keepDanmakuHost) {
+            val attachedPlayer = playerState.player.takeIf { keepDanmakuHost }
             if (attachedPlayer != null) {
                 android.util.Log.d("VideoPlayerSection", " attachPlayer, isFullscreen=$isFullscreen")
                 danmakuManager.attachPlayer(attachedPlayer)
@@ -3444,6 +3458,7 @@ private fun VideoPlayerSectionContent(
         val lifecyclePlayerView by rememberUpdatedState(playerViewRef)
         val lifecycleVideoOutputRouter by rememberUpdatedState(videoOutputRouter)
         val lifecycleDanmakuHostActive by rememberUpdatedState(danmakuHostActive)
+        val lifecycleDanmakuManager by rememberUpdatedState(danmakuManager)
         DisposableEffect(lifecycleOwner) {
             var hasObservedHostPause = false
             val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -3517,10 +3532,11 @@ private fun VideoPlayerSectionContent(
                                 "▶️ ON_RESUME kicked playback after surface recovery"
                             }
                         }
-                        danmakuManager.recoverAfterForeground(
+                        lifecycleDanmakuManager.recoverAfterForeground(
                             positionMs = player.currentPosition.coerceAtLeast(0L),
                             playWhenReady = player.playWhenReady,
-                            playbackState = player.playbackState
+                            playbackState = player.playbackState,
+                            preserveTimeline = !needsSurfaceRecovery
                         )
                     }
                     androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> {
@@ -4347,7 +4363,13 @@ private fun VideoPlayerSectionContent(
         val visibleCommandDanmakuList = remember(commandDanmakuList, danmakuHideInteractiveCommands) {
             filterVisibleCommandDanmakuItems(commandDanmakuList, danmakuHideInteractiveCommands)
         }
-        if (shouldShowDanmakuLayer) {
+        // Temporary lifecycle/return-preview hiding must not release the renderer.
+        // It owns the visible comments and the current playback timeline.
+        val keepDanmakuLayer = shouldKeepVideoPlayerDanmakuHost(
+            danmakuHostActive = danmakuHostActive,
+            isPortraitFullscreen = isPortraitFullscreen
+        ) && danmakuEnabled && !(isInPipMode && pipNoDanmakuEnabled)
+        if (keepDanmakuLayer) {
             //  计算状态栏高度
             val statusBarHeightPx = remember(context) {
                 val resourceId = context.resources.getIdentifier(
@@ -4376,6 +4398,7 @@ private fun VideoPlayerSectionContent(
             val viewportAspectRatio = if (isFullscreen) currentAspectRatio else VideoAspectRatio.FIT
             BoxWithConstraints(
                 modifier = playerContentModifier
+                    .graphicsLayer { alpha = if (shouldShowDanmakuLayer) 1f else 0f }
                     .then(
                         if (topOffset > 0) {
                             Modifier.padding(top = with(LocalContext.current.resources.displayMetrics) {
@@ -4411,43 +4434,45 @@ private fun VideoPlayerSectionContent(
                     }
                 }
                 DanmakuViewportHost(danmakuSurfaceModifier) { viewport ->
-                AndroidView(
-                    factory = { ctx ->
-                        DanmakuRenderView(ctx).apply {
+                key(danmakuManager) {
+                    AndroidView(
+                        factory = { ctx ->
+                            DanmakuRenderView(ctx).apply {
+                                danmakuManager.updateViewport(viewport)
+                                addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+                                    if (view.width > 0 && view.height > 0) danmakuManager.attachView(this)
+                                }
+                                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                configureAsPassiveDanmakuOverlay()
+                                danmakuManager.attachView(this)
+                                Logger.d("VideoPlayerSection") {
+                                    "DanmakuView (RenderEngine) created, isFullscreen=$isFullscreen"
+                                }
+                            }
+                        },
+                        update = { view ->
                             danmakuManager.updateViewport(viewport)
-                            addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
-                                if (view.width > 0 && view.height > 0) danmakuManager.attachView(this)
-                            }
-                            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                            configureAsPassiveDanmakuOverlay()
-                            danmakuManager.attachView(this)
+                            //  [关键] 横竖屏切换后视图尺寸变化时，重新 attachView 确保弹幕正确显示
                             Logger.d("VideoPlayerSection") {
-                                "DanmakuView (RenderEngine) created, isFullscreen=$isFullscreen"
+                                "DanmakuView update: size=${view.width}x${view.height}, isFullscreen=$isFullscreen"
                             }
-                        }
-                    },
-                    update = { view ->
-                        danmakuManager.updateViewport(viewport)
-                        //  [关键] 横竖屏切换后视图尺寸变化时，重新 attachView 确保弹幕正确显示
-                        Logger.d("VideoPlayerSection") {
-                            "DanmakuView update: size=${view.width}x${view.height}, isFullscreen=$isFullscreen"
-                        }
-                        // 只有当视图有有效尺寸时才 re-attach
-                        if (view.width > 0 && view.height > 0) {
-                            val sizeTag = "${view.width}x${view.height}"
-                            if (view.tag != sizeTag) {
-                                view.tag = sizeTag
-                                danmakuManager.attachView(view)
+                            // 只有当视图有有效尺寸时才 re-attach
+                            if (view.width > 0 && view.height > 0) {
+                                val sizeTag = "${view.width}x${view.height}"
+                                if (view.tag != sizeTag) {
+                                    view.tag = sizeTag
+                                    danmakuManager.attachView(view)
+                                }
                             }
-                        }
-                    },
-                    onRelease = { view ->
-                        // 仅当本 view 仍是当前绑定的弹幕视图时才解绑；
-                        // 相关推荐跳转后旧页面销毁不能清掉新页面已接管的 view/controller。
-                        danmakuManager.detachView(view)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+                        },
+                        onRelease = { view ->
+                            // 仅当本 view 仍是当前绑定的弹幕视图时才解绑；
+                            // 相关推荐跳转后旧页面销毁不能清掉新页面已接管的 view/controller。
+                            danmakuManager.detachView(view)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
                 com.android.purebilibili.feature.video.ui.overlay.AdvancedDanmakuOverlay(
                     viewport = viewport,
                     danmakuList = advancedDanmakuList,
@@ -5310,6 +5335,7 @@ private fun VideoPlayerSectionContent(
                     drawerHazeState = overlayDrawerHazeState,
                     statusBarAmbientFrame = statusBarAmbientFrame,
                     statusBarBackdropHeight = contentTopInset,
+                    ambientVideoBoundsInWindow = ambientPresentation?.videoBoundsInWindow,
                     landscapeCommentPanelVisible = landscapeCommentPanelVisible,
                     landscapeCommentPanelOnLeft = landscapeCommentPanelOnLeft,
                 )
