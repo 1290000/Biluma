@@ -16,7 +16,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.rounded.Share
@@ -252,10 +251,6 @@ private fun InteractionButton(
         Box(
             modifier = Modifier
                 .size(layoutPolicy.iconBackingSizeDp.dp)
-                .background(
-                    color = Color.White,
-                    shape = CircleShape
-                )
                 .padding(layoutPolicy.iconBackingInnerPaddingDp.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -290,7 +285,7 @@ private fun InteractionButton(
             AppIcon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isActive) activeColor else Color.Black,
+                tint = if (isActive) activeColor else Color.White,
                 modifier = Modifier.size(layoutPolicy.iconSizeDp.dp)
             )
         }
