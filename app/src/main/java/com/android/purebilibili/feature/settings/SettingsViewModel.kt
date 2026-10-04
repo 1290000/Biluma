@@ -64,7 +64,7 @@ internal fun shouldStartSettingsDiagnostics(
 ): Boolean = loadState != SettingsDiagnosticsLoadState.LOADED && !jobActive
 
 data class SettingsUiState(
-    val themeSelection: AppUiStyle = AppUiStyle.MATERIAL3,
+    val themeSelection: AppUiStyle = AppUiStyle.MIUIX,
     val hwDecode: Boolean = true,
     val themeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM,
     val darkThemeStyle: DarkThemeStyle = DarkThemeStyle.DEFAULT,

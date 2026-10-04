@@ -41,7 +41,7 @@ This round is being implemented in batches on `feat/ui-simplification`. Approved
 
 | Item | Fixed target | Source status |
 | --- | --- | --- |
-| 1. UI preset | Miuix only; remove MD3-specific UI | Pending; style selection and adapters still remain |
+| 1. UI preset | Miuix only; remove MD3-specific UI | Implemented; removed the user-facing preset entry and related resources, fixed runtime selection to Miuix, and retained Material 3 infrastructure for compatibility and fallback |
 | 2. Liquid glass | Enabled; retain non-glass UI and compatibility/performance fallbacks | Pending |
 | 3. Single-choice presentation | Anchored popup | Implemented; centered single-choice dialog, setting, and preference access removed |
 | 4. Splash icon mask animation | Disabled | Pending |
@@ -51,7 +51,7 @@ This round is being implemented in batches on `feat/ui-simplification`. Approved
 | 8. Floating bottom bar | Enabled | Pending |
 | 9. Navigation icon cross-scale | Enabled | Pending |
 
-The two retired options are no longer read, written, or exported; their keys are skipped when importing old backups. Confirmation/input dialogs, slider dialogs, and hinge-safe layouts are outside this batch's removal scope. MD3 style adapters will be addressed in item 1.
+The retired theme preset and two popup options no longer have user-facing entries. Legacy theme keys remain in migration/import compatibility code, but runtime selection is fixed to Miuix. Confirmation/input dialogs, slider dialogs, and hinge-safe layouts are outside this batch's removal scope; Material 3 infrastructure is also retained for shared components and non-glass fallbacks.
 
 ## Downloads and feedback
 

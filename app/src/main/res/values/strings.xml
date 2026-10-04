@@ -23,16 +23,6 @@
     <string name="tips_title">小贴士</string>
 
     <string name="appearance_theme_color_section">主题与颜色</string>
-    <string name="appearance_ui_preset_title">界面预设</string>
-    <string name="appearance_ui_preset_subtitle">一次切换全局组件、图标和页面风格</string>
-    <string name="appearance_ui_preset_android_material_title">安卓原生 · Material 3</string>
-    <string name="appearance_ui_preset_android_material_summary">使用 Google Material 3 风格的导航、图标、顶部栏和列表。</string>
-    <string name="appearance_ui_preset_android_miuix_title">安卓原生 · Miuix</string>
-    <string name="appearance_ui_preset_android_miuix_summary">保留安卓页面结构，并使用更接近小米系统的顶部栏和容器样式。</string>
-    <string name="appearance_android_native_variant_title">安卓原生风格</string>
-    <string name="appearance_android_native_variant_subtitle">选择更接近 Google 或小米系统的安卓界面风格</string>
-    <string name="appearance_android_native_variant_material3">Google Material 3</string>
-    <string name="appearance_android_native_variant_miuix">Miuix</string>
     <string name="appearance_theme_mode_title">主题模式</string>
     <string name="appearance_theme_mode_subtitle">选择浅色、深色或跟随系统</string>
     <string name="appearance_dark_theme_style_title">深色风格</string>

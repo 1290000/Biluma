@@ -518,15 +518,6 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.APPEARANCE,
-        title = "界面预设 / 主题模式",
-        subtitle = "切换界面风格、明暗模式、颜色来源和应用语言",
-        section = settingsDestinationCopy(SettingsSearchTarget.APPEARANCE).title,
-        // 只保留本项专属别名；MD3 颜色/取色类词归「自定义 MD3 颜色」，避免重叠稀释精准度
-        aliases = listOf("界面预设", "主题模式", "深色风格", "应用语言", "语言"),
-        focusId = SettingsSearchFocusIds.APPEARANCE_THEME
-    ),
-    SettingsSearchEntry(
-        target = SettingsSearchTarget.APPEARANCE,
         title = "安卓液态玻璃",
         subtitle = "统一应用到首页顶部标签栏、搜索框、底部导航栏和评论区底栏",
         section = settingsDestinationCopy(SettingsSearchTarget.APPEARANCE).title,

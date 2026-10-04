@@ -710,7 +710,7 @@ internal fun resolveHomeCardFrostedGlassEnabled(
 ): Boolean = storedValue ?: legacyCombinedValue ?: false
 
 data class AppThemeSettings(
-    val uiStyle: AppUiStyle = AppUiStyle.MATERIAL3,
+    val uiStyle: AppUiStyle = AppUiStyle.MIUIX,
     val themeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM,
     val darkThemeStyle: DarkThemeStyle = DarkThemeStyle.DEFAULT,
     val appLanguage: AppLanguage = AppLanguage.FOLLOW_SYSTEM,
@@ -2218,13 +2218,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     internal fun mapAppThemeSettingsFromPreferences(preferences: Preferences): AppThemeSettings {
         val rawDpiOverride = preferences[KEY_APP_DPI_OVERRIDE_PERCENT] ?: 0
         val defaultRoleOverrides = ThemeRoleOverrides()
-        // 两值运行时模型：优先新键；缺失时回退旧键解析并归一化。
-        // 新用户缺失主题键默认 Material 3；历史/非法组合由迁移表兼容为 MIUIX。
-        val uiStyle = resolveThemeSelectionFromPreferences(
-            preferences,
-            KEY_UI_PRESET,
-            KEY_ANDROID_NATIVE_VARIANT
-        )
+        // Biluma 当前仅提供 Miuix 界面；旧主题键保留在迁移和分享兼容层中，运行时忽略。
+        val uiStyle = AppUiStyle.MIUIX
         return AppThemeSettings(
             uiStyle = uiStyle,
             themeMode = resolveThemeModePreference(
@@ -2432,21 +2427,15 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         ensureThemeSelectionMigrated(context, KEY_UI_PRESET, KEY_ANDROID_NATIVE_VARIANT)
         emitAll(
             context.settingsDataStore.data
-                .map { preferences ->
-                    resolveThemeSelectionFromPreferences(
-                        preferences,
-                        KEY_UI_PRESET,
-                        KEY_ANDROID_NATIVE_VARIANT
-                    )
-                }
+                .map { AppUiStyle.MIUIX }
                 .distinctUntilChanged()
         )
     }
 
     suspend fun setUiStyle(context: Context, uiStyle: AppUiStyle) {
-        // 只写新稳定键，不再双写旧键；两值模型不存在非法运行时值。
+        // 保留旧调用边界，但不允许旧偏好或外部调用切回 Material 3。
         context.settingsDataStore.edit { preferences ->
-            preferences[KEY_THEME_SELECTION] = uiStyle.name
+            preferences[KEY_THEME_SELECTION] = AppUiStyle.MIUIX.name
             preferences.remove(KEY_UI_PRESET)
             preferences.remove(KEY_ANDROID_NATIVE_VARIANT)
         }

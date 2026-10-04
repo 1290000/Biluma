@@ -117,6 +117,18 @@ class UiPresetSettingsPolicyTest {
     }
 
     @Test
+    fun appThemeSettings_alwaysUseMiuixRegardlessOfPersistedThemeSelection() {
+        val legacyPreferences = preferencesOf(
+            stringPreferencesKey("theme_selection_v1") to "MATERIAL3",
+        )
+
+        assertEquals(
+            AppUiStyle.MIUIX,
+            SettingsManager.mapAppThemeSettingsFromPreferences(legacyPreferences).uiStyle,
+        )
+    }
+
+    @Test
     fun liquidGlassShare_includesEveryPortableGlassSetting() {
         val keys = SettingsManager.getLiquidGlassShareableSettingsEntryDefinitions()
             .mapTo(mutableSetOf()) { it.storageKey }

@@ -28,11 +28,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.animation.*
-import com.android.purebilibili.core.theme.AppUiStyle
-import com.android.purebilibili.core.ui.AdaptivePlainTooltipBox
 import com.android.purebilibili.core.ui.AppAlertDialog
 import com.android.purebilibili.core.ui.AppShapes
-import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.ContainerLevel
 import androidx.compose.animation.core.*
 import androidx.compose.material3.*
@@ -79,7 +76,6 @@ import com.android.purebilibili.core.ui.performance.displayModePreferenceLabel
 import com.android.purebilibili.core.ui.performance.normalizePreferredDisplayModeId
 import com.android.purebilibili.core.ui.performance.supportedAppDisplayModes
 import com.android.purebilibili.core.ui.getWindowNavigationBarColor
-import com.android.purebilibili.core.ui.rememberAppSparklesIcon
 import com.android.purebilibili.core.ui.setWindowNavigationBarColor
 import com.android.purebilibili.feature.settings.ui.SettingsPageScaffold
 import com.android.purebilibili.core.util.HapticType
@@ -293,38 +289,6 @@ fun AppearanceSettingsContent(
     }
     val scope = rememberCoroutineScope()
     val themeSectionTitle = stringResource(R.string.appearance_theme_color_section)
-    val uiPresetTitle = stringResource(R.string.appearance_ui_preset_title)
-    val uiPresetSubtitle = stringResource(R.string.appearance_ui_preset_subtitle)
-    val uiStyleMaterialLabel = stringResource(R.string.appearance_android_native_variant_material3)
-    val uiStyleMiuixLabel = stringResource(R.string.appearance_android_native_variant_miuix)
-    val uiStyleOptions = remember(uiStyleMaterialLabel, uiStyleMiuixLabel) {
-        resolveThemeSelectionOptions(
-            material3Label = uiStyleMaterialLabel,
-            miuixLabel = uiStyleMiuixLabel,
-        )
-    }
-    val uiPresetAndroidMaterialTitle = stringResource(R.string.appearance_ui_preset_android_material_title)
-    val uiPresetAndroidMaterialSummary = stringResource(R.string.appearance_ui_preset_android_material_summary)
-    val uiPresetAndroidMiuixTitle = stringResource(R.string.appearance_ui_preset_android_miuix_title)
-    val uiPresetAndroidMiuixSummary = stringResource(R.string.appearance_ui_preset_android_miuix_summary)
-    val uiPresetDescription = remember(
-        state.themeSelection,
-        uiPresetAndroidMaterialTitle,
-        uiPresetAndroidMaterialSummary,
-        uiPresetAndroidMiuixTitle,
-        uiPresetAndroidMiuixSummary
-    ) {
-        resolveAppearanceUiPresetDescription(
-            selection = state.themeSelection,
-            materialTitle = uiPresetAndroidMaterialTitle,
-            materialSummary = uiPresetAndroidMaterialSummary,
-            miuixTitle = uiPresetAndroidMiuixTitle,
-            miuixSummary = uiPresetAndroidMiuixSummary
-        )
-    }
-    val selectedUiStyleLabel = uiStyleOptions
-        .first { it.value == state.themeSelection }
-        .label
     val themeModeTitle = stringResource(R.string.appearance_theme_mode_title)
     val themeModeSubtitle = stringResource(R.string.appearance_theme_mode_subtitle)
     val themeModeFollowSystemLabel = stringResource(R.string.theme_mode_follow_system)
@@ -591,22 +555,7 @@ fun AppearanceSettingsContent(
             Box(modifier = Modifier.entrance()) {
                 AppPreferenceGroup {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingsSingleChoicePreference(
-                            title = "${uiPresetTitle}：$selectedUiStyleLabel",
-                            subtitle = uiPresetSubtitle,
-                            options = uiStyleOptions,
-                            selectedValue = state.themeSelection,
-                            onSelectionChange = viewModel::setThemeSelection,
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        AppearanceUiPresetDescriptionCard(
-                            title = uiPresetDescription.title,
-                            summary = uiPresetDescription.summary
-                        )
-
                         Column {
-                            AppPreferenceDivider()
                             SettingsSingleChoicePreference(
                                 title = "屏幕帧率：$selectedScreenDisplayModeLabel",
                                 subtitle = "默认跟随系统自动调节；手动锁定某一档后，LTPO 设备将暂停自动升降帧率",
@@ -643,7 +592,7 @@ fun AppearanceSettingsContent(
 
                         SettingsSingleChoicePreference(
                             title = "列表条目样式",
-                            subtitle = "统一圆角条目，或跟随当前界面预设",
+                            subtitle = "统一圆角条目，或跟随当前界面风格",
                             options = resolveAppListItemStyleOptions(),
                             selectedValue = state.appListItemStyle,
                             onSelectionChange = { style ->
@@ -2350,84 +2299,6 @@ private fun Md3ColorPickerSliderFrame(
                     shape = CircleShape
                 )
         )
-    }
-}
-
-@Composable
-private fun AppearanceUiPresetDescriptionCard(
-    title: String,
-    summary: String
-) {
-    val icon = rememberAppSparklesIcon()
-    val colorScheme = MaterialTheme.colorScheme
-    val nativeMiuix = com.android.purebilibili.core.ui.isMiuixNonGlassEnabled()
-    val cardColors = remember(colorScheme, nativeMiuix) {
-        resolveAccessibleContainerColors(
-            containerColor = if (nativeMiuix) colorScheme.surfaceContainer
-                else colorScheme.primaryContainer.copy(alpha = 0.44f),
-            contentColor = colorScheme.onPrimaryContainer,
-            backgroundColor = colorScheme.surface,
-            fallbackContentColors = listOf(colorScheme.onSurface, colorScheme.onBackground),
-        )
-    }
-    val iconColors = remember(colorScheme, cardColors.containerColor) {
-        resolveAccessibleContainerColors(
-            containerColor = colorScheme.primary.copy(alpha = 0.14f),
-            contentColor = colorScheme.primary,
-            backgroundColor = cardColors.containerColor,
-            fallbackContentColors = listOf(colorScheme.onSurface),
-            minimumContrast = ACCESSIBLE_UI_MIN_CONTRAST,
-        )
-    }
-    val borderColor = colorScheme.outlineVariant.copy(alpha = 0.55f)
-
-    AdaptivePlainTooltipBox(text = summary) {
-        AppSurface(
-            shape = AppShapes.borderedContainer(ContainerLevel.Dialog),
-            color = cardColors.containerColor,
-            contentColor = cardColors.contentColor,
-            tonalElevation = 0.dp,
-            border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                AppSurface(
-                    modifier = Modifier.size(34.dp),
-                    shape = CircleShape,
-                    color = iconColors.containerColor,
-                    contentColor = iconColors.contentColor,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        AppIcon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    AppText(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    AppText(
-                        text = summary,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = cardColors.contentColor
-                    )
-                }
-            }
-        }
     }
 }
 
