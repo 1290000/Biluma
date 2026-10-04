@@ -146,6 +146,21 @@ class AppIconAliasMappingTest {
     }
 
     @Test
+    fun bilumaVariantsKeepTheOriginalLauncherComponentNamespace() {
+        listOf("com.biluma.app", "com.biluma.app.dev").forEach { applicationId ->
+            assertEquals(
+                "com.android.purebilibili.MainActivityAlias3DLauncher",
+                resolveAppIconLauncherAlias(applicationId, "icon_3d")
+            )
+            assertTrue(
+                allManagedAppIconLauncherAliases(applicationId).all { alias ->
+                    alias.startsWith("com.android.purebilibili.")
+                }
+            )
+        }
+    }
+
+    @Test
     fun allManagedAppIconLauncherAliases_containsBiliPaiAndHeadphone_withoutRemovedAliases() {
         val aliases = allManagedAppIconLauncherAliases("com.android.purebilibili")
         assertTrue(aliases.contains("com.android.purebilibili.MainActivityAliasBlueSnowMaid"))

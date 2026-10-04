@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BiliPai</string>
+    <string name="app_name" translatable="false">Biluma</string>
 
     <string name="common_back">返回</string>
     <string name="common_more">更多</string>

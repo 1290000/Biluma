@@ -9,7 +9,7 @@
         android:shortcutLongLabel="@string/shortcut_search_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.android.purebilibili"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.android.purebilibili.MainActivity"
             android:data="bilipai://search" />
     </shortcut>
@@ -23,7 +23,7 @@
         android:shortcutLongLabel="@string/shortcut_watch_later_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.android.purebilibili"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.android.purebilibili.MainActivity"
             android:data="bilipai://watch_later" />
     </shortcut>
@@ -37,7 +37,7 @@
         android:shortcutLongLabel="@string/shortcut_favorite_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.android.purebilibili"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.android.purebilibili.MainActivity"
             android:data="bilipai://favorite" />
     </shortcut>
@@ -51,7 +51,7 @@
         android:shortcutLongLabel="@string/shortcut_history_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.android.purebilibili"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.android.purebilibili.MainActivity"
             android:data="bilipai://history" />
     </shortcut>

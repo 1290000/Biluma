@@ -115,7 +115,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.android.purebilibili"
+        applicationId = "com.biluma.app"
         minSdk = 26
         targetSdk = 37
         // 版本名按发行计划确定；versionCode 每次发布单调 +1
@@ -168,7 +168,7 @@ android {
             // Debug 构建保持快速编译
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            resValue("string", "app_name", "BiliPai Debug")
+            resValue("string", "app_name", "Biluma Debug")
             buildConfigField("boolean", "ALLOW_HARDCODED_DNS_FALLBACK", "true")
             buildConfigField("boolean", "ENABLE_VERBOSE_DEBUG_LOGS", debugVerboseLogsEnabled.toString())
             buildConfigField(
@@ -184,7 +184,7 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            resValue("string", "app_name", "BiliPai Dev")
+            resValue("string", "app_name", "Biluma Dev")
             buildConfigField("boolean", "ALLOW_HARDCODED_DNS_FALLBACK", "true")
             buildConfigField("boolean", "ENABLE_VERBOSE_DEBUG_LOGS", "false")
             buildConfigField("boolean", "ENABLE_VERBOSE_RUNTIME_LOG_PERSISTENCE", "false")
@@ -196,7 +196,7 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-smooth"
-            resValue("string", "app_name", "BiliPai Smooth")
+            resValue("string", "app_name", "Biluma Smooth")
             buildConfigField("boolean", "ALLOW_HARDCODED_DNS_FALLBACK", "true")
             buildConfigField("boolean", "ENABLE_VERBOSE_DEBUG_LOGS", "false")
             buildConfigField("boolean", "ENABLE_VERBOSE_RUNTIME_LOG_PERSISTENCE", "false")
@@ -259,6 +259,12 @@ base {
 }
 androidComponents {
     onVariants(selector().all()) { variant ->
+        variant.resValues.put(
+            variant.makeResValueKey("string", "shortcut_target_package"),
+            variant.applicationId.map { applicationId ->
+                com.android.build.api.variant.ResValue(applicationId, null)
+            }
+        )
         val variantName = variant.name.lowercase()
         if (variantName == "release" || variantName == "dev") {
             val capitalizedVariantName = variant.name.replaceFirstChar { character ->

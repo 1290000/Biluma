@@ -75,7 +75,7 @@ class BiliPaiDanmakuFrameTimingBenchmark {
             setupBlock = { killProcess() }
         ) {
             device.executeShellCommand(
-                "am start -W -n $TARGET_PACKAGE_NAME/.MainActivity " +
+                "am start -W -n $TARGET_PACKAGE_NAME/com.android.purebilibili.MainActivity " +
                     "-a android.intent.action.VIEW -d https://live.bilibili.com/$roomId"
             )
             device.wait(Until.findObject(By.pkg(TARGET_PACKAGE_NAME)), DANMAKU_UI_WAIT_TIMEOUT_MS)
@@ -97,7 +97,7 @@ class BiliPaiDanmakuFrameTimingBenchmark {
             setupBlock = { killProcess() }
         ) {
             device.executeShellCommand(
-                "am start -W -n $TARGET_PACKAGE_NAME/.feature.video.VideoActivity --es bvid $bvid"
+                "am start -W -n $TARGET_PACKAGE_NAME/com.android.purebilibili.feature.video.VideoActivity --es bvid $bvid"
             )
             device.wait(Until.findObject(By.textContains("评论")), DANMAKU_UI_WAIT_TIMEOUT_MS)
             SystemClock.sleep(1_000L)

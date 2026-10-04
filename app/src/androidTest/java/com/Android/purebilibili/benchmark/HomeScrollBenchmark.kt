@@ -3,6 +3,7 @@ package com.android.purebilibili.benchmark
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.purebilibili.MainActivity
 import com.android.purebilibili.feature.onboarding.USER_AGREEMENT_ACK_KEY
 import com.android.purebilibili.feature.settings.RELEASE_DISCLAIMER_ACK_KEY
 import org.junit.Assert.assertTrue
@@ -13,7 +14,7 @@ import java.io.FileInputStream
 @RunWith(AndroidJUnit4::class)
 class HomeScrollBenchmark {
 
-    private val packageName = "com.android.purebilibili"
+    private val packageName = InstrumentationRegistry.getInstrumentation().targetContext.packageName
 
     private fun runShell(command: String): String {
         val pfd = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)
@@ -42,7 +43,7 @@ class HomeScrollBenchmark {
     fun homeSwipeScenario_recordsFrameAndPss() {
         prepareHomeEntry()
         runShell("input keyevent 3")
-        runShell("am start -W -n $packageName/.MainActivity")
+        runShell("am start -W -n $packageName/${MainActivity::class.java.name}")
         Thread.sleep(10_000)
 
         runShell("dumpsys gfxinfo $packageName reset")

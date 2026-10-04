@@ -82,7 +82,7 @@ class BiliPaiNonLiveSurfaceFrameTimingBenchmark {
     )
 
     private fun MacrobenchmarkScope.startExplicitDeepLink(uri: String) {
-        val component = "$TARGET_PACKAGE_NAME/.MainActivity"
+        val component = "$TARGET_PACKAGE_NAME/com.android.purebilibili.MainActivity"
         device.executeShellCommand(
             "am start -W -n $component -a android.intent.action.VIEW -d ${shellQuote(uri)}"
         )
