@@ -1,557 +1,98 @@
 # Biluma · 羽哩
 
-Biluma is an independently maintained derivative of [BiliPai](https://github.com/jay3-yy/BiliPai). It aims to simplify settings and non-essential features while gradually refining the interface and interactions. This is not an official BiliPai release.
+An independently maintained third-party Bilibili Android client based on [BiliPai](https://github.com/jay3-yy/BiliPai). Biluma aims to simplify settings and non-essential features while developing clearer defaults and a focused interface.
 
-- Repository: [1290000/Biluma](https://github.com/1290000/Biluma)
-- Bug reports: [Biluma Issues](https://github.com/1290000/Biluma/issues)
-- Releases: [Biluma Releases](https://github.com/1290000/Biluma/releases) (no independent release yet)
-- 简体中文：[README.md](README.md)
+[简体中文](README.md) · [Repository](https://github.com/1290000/Biluma) · [Issues](https://github.com/1290000/Biluma/issues) · [Releases](https://github.com/1290000/Biluma/releases)
 
-## Starting point and current status
+> **This project is in early development and has no independent Biluma release yet.** The feature-reduction list has not been decided, so this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
 
-- Based on upstream release [`v0.2.8`](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.8), at commit [`edb3d596d381464f02feba646eadc3f023911a75`](https://github.com/jay3-yy/BiliPai/commit/edb3d596d381464f02feba646eadc3f023911a75).
-- The baseline commit and its complete ancestor history are preserved. Biluma development continues on this repository's `main` branch.
-- The release launcher name is configured as `Biluma` with application ID `com.biluma.app`; the test variant uses `Biluma Dev` and `com.biluma.app.dev`. The source namespace is unchanged.
-- Update checks, download entry points, the project homepage, and issue reporting now point to Biluma. When no suitable release exists, the app shows an informational message without opening an update or empty changelog dialog, and never falls back to BiliPai downloads. The About page retains upstream attribution and contributors.
-- Icons, APK filenames, and some UI branding still come from upstream, and feature simplification has not started. Changes have only been checked statically, not compiled or installation-tested. GitHub Actions remains disabled pending an independent release workflow.
-- The upstream [GPLv3 license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md) are preserved. Thanks to the BiliPai authors and contributors.
+## Project identity
 
-## Upstream documentation snapshot
+The Chinese name, 羽哩, combines elements of 羽毛笔 (La Pluma) and 哔哩哔哩. The English and repository name is **Biluma**. Launcher names use English; the naming inspiration does not imply authorization or affiliation with the relevant rights holders.
 
-The original BiliPai documentation is retained below for development reference. Its version badges, screenshots, download channels, and community links refer to upstream, not Biluma releases. Some documentation may list a version older than this project's actual `v0.2.8` baseline.
+| `:app` variant | Launcher name | Application ID |
+| --- | --- | --- |
+| `release` | `Biluma` | `com.biluma.app` |
+| `dev` | `Biluma Dev` | `com.biluma.app.dev` |
 
----
+The separate IDs distinguish release and test installations from each other and from BiliPai. Private app data is not migrated automatically. The source namespace remains `com.android.purebilibili`; changing the application ID does not require renaming the entire source tree.
 
-# BiliPai <img src="docs/images/233娘.jpeg" height="80" align="center">
+These settings apply only to the main `:app` module. The retained `app-tv` module has not undergone Biluma branding migration; whether to retain or adapt it is undecided.
 
-<p align="center">
-  <strong>Native, Pure, Extensible — Redefining your Bilibili experience</strong>
-</p>
+## Current status
 
-<p align="center">
-  <sub>Last updated: 2026-10-03 · Current source build: 0.2.7 · Latest documented release: v0.2.7</sub>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Release-0.2.7-fb7299?style=flat-square" alt="Release">
-  <img src="https://img.shields.io/github/stars/jay3-yy/BiliPai?style=flat-square&color=yellow" alt="Stars">
-  <img src="https://img.shields.io/github/forks/jay3-yy/BiliPai?style=flat-square&color=green" alt="Forks">
-  <img src="https://img.shields.io/github/last-commit/jay3-yy/BiliPai?style=flat-square&color=purple" alt="Last Commit">
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2026)-brightgreen?style=flat-square" alt="Platform">
-  <img src="https://img.shields.io/badge/APK-Varies-orange?style=flat-square" alt="Size">
-  <img src="https://img.shields.io/badge/License-Non--Commercial-blue?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/Plugins-10%20Built--in-blueviolet?style=flat-square" alt="Plugins">
-</p>
-
-<p align="center">
-  <a href="https://t.me/bilipai666"><img src="https://img.shields.io/badge/Telegram-Channel-5AC8FA?style=flat-square&logo=telegram" alt="Telegram channel"></a>
-  <a href="https://t.me/bilipai888/1"><img src="https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram" alt="Telegram group"></a>
-  <a href="https://x.com/YangY_0x00"><img src="https://img.shields.io/badge/X-Follow-000000?style=flat-square&logo=x" alt="X"></a>
-</p>
-
-## 🚀 Repository Navigation
-
-| I want to… | Quick entry |
+| Area | Status |
 | --- | --- |
-| Download and try BiliPai | [Install](#-download--install) · [Changelog](CHANGELOG.md) · [Telegram channel](https://t.me/bilipai666) · [FAQ](docs/wiki/FAQ.md) |
-| Explore the project | [Device previews](#-preview) · [Features](#-features) · [Feature matrix](docs/wiki/FEATURE_MATRIX.md) · [Roadmap](docs/wiki/ROADMAP.md) |
-| Read the docs | [Wiki home](docs/wiki/README.md) · [Architecture](docs/wiki/ARCHITECTURE.md) · [QA guide](docs/wiki/QA.md) |
-| Build and develop | [Build](#️-build) · [Structure guidelines](STRUCTURE_GUIDELINES.adoc) · [Versioning](docs/wiki/VERSIONING.md) · [Release workflow](docs/wiki/RELEASE_WORKFLOW.md) |
-| Develop plugins | [JSON plugin guide](docs/PLUGIN_DEVELOPMENT.md) · [Native plugin guide](docs/NATIVE_PLUGIN_DEVELOPMENT.md) · [Plugin SDK](plugins/sdk/README.md) · [Samples](plugins/samples/) |
-| Contribute | [Contributing](#-contributing) · [Open an issue](https://github.com/jay3-yy/BiliPai/issues/new/choose) · [Pull requests](https://github.com/jay3-yy/BiliPai/pulls) · [AI / LLM entry](llms.txt) |
+| Repository and history | Independent public repository, preserving the baseline's complete ancestor history |
+| App identity | Release and Dev application IDs, English launcher names, and matching shortcut targets are configured |
+| Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
+| Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
+| Upstream attribution | The About page retains BiliPai attribution and contributor credits |
+| Feature and settings reduction | Not started; decisions to retain, fix behavior, remove, or redesign features are pending |
+| Icons and other branding | Not replaced; some copy and assets still come from upstream |
+| APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
+| Automation | GitHub Actions is currently disabled in this repository's settings |
 
-> [!CAUTION]
-> `README`, `AI.txt`, `llms.txt`, and the Wiki are maintained periodically, but fast-moving main-branch changes can still make parts of them stale. Treat them as reference only; verify current behavior with source, `CHANGELOG.md`, and real builds.
+Changes have only received static checks and an update API connectivity check. Regression test code has been added, but tests, compilation, installation, and on-device verification have not been performed. Configuration and command examples do not establish that a build succeeds.
 
-## 📸 Preview
+## Downloads and feedback
 
-<p align="center">
-  <img src="docs/images/screenshot1.png" alt="Preview 1" height="500">
-  <img src="docs/images/screenshot2.png" alt="Preview 2" height="500">
-  <img src="docs/images/screenshot3.png" alt="Preview 3" height="500">
-  <img src="docs/images/screenshot4.png" alt="Preview 4" height="500">
-  <img src="docs/images/screenshot5.png" alt="Preview 5" height="500">
-  <img src="docs/images/screenshot6.png" alt="Preview 6" height="500">
-  <img src="docs/images/screenshot7.png" alt="Preview 7" height="500">
-  <img src="docs/images/screenshot8.png" alt="Preview 8" height="500">
-  <img src="docs/images/screenshot9.png" alt="Preview 9" height="500">
-</p>
----
+- [Biluma Releases](https://github.com/1290000/Biluma/releases) is the only Biluma release channel and is currently empty. Do not use a BiliPai APK as a Biluma update.
+- Report issues and suggestions to [Biluma Issues](https://github.com/1290000/Biluma/issues), rather than sending derivative-specific problems directly upstream.
+- Include device and OS details, build version, reproduction steps, and relevant logs or screenshots. Remove cookies, tokens, and personal information before submitting.
 
-## ✨ Features
+## Baseline and upstream relationship
 
-### 🎬 Video Playback
+- Upstream: [jay3-yy/BiliPai](https://github.com/jay3-yy/BiliPai).
+- Starting tag: [v0.2.8](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.8).
+- Baseline commit: [`edb3d596d381464f02feba646eadc3f023911a75`](https://github.com/jay3-yy/BiliPai/commit/edb3d596d381464f02feba646eadc3f023911a75).
+- Biluma development continues on this repository's `main`. For development, `origin` points to Biluma and `upstream` to BiliPai. Keep a separate BiliPai fork and local directory for contributing upstream.
 
-| Feature | Description |
-|-----|-----|
-| **HD Quality** | Supports 4K / 1080P60 / HDR / Dolby Vision (Login/Premium required) |
-| **DASH Streaming** | Adaptive bitrate selection, seamless quality switching, smooth playback |
-| **Danmaku System** | Adjustable opacity, font size, speed, and density filtering |
-| **Video Notes** | Private notes, AI-summary drafts, rich text editing, timestamps, Markdown as the editor interchange format, and system sharing |
-| **Gesture Control** | Brightness (left), Volume (right), Seek (horizontal) |
-| **Playback Speed** | Edit the shared speed list (0.1x–8x) under Settings → Playback and choose the default speed from it. Temporary long-press speed has an independent 1.0x–8.0x slider, quick presets, and tap-to-enter value; player menus and two-finger speed gestures use the shared list. |
-| **Picture-in-Picture** | Floating window playback for multitasking |
-| **Audio Mode** | 🆕 Dedicated audio player with immersive/vinyl modes, lyrics, playlists, and a sleep timer |
-| **In-app Update** | Check for updates from Settings; also follow the Telegram channel for releases |
-| **Background Play** | Continue listening when screen is off or in background, with dedicated background-play and audio-focus toggles plus more reliable prev/next controls from notifications and system media controls |
-| **Playback Order** | Supports Stop After Current / In-order / Single Loop / List Loop / Auto Continue, with quick toggle in landscape and portrait |
-| **Portrait Interaction Fixes** | Fixes like/favorite actions after swiping to the next portrait video, and favorites now open the folder picker directly |
-| **Seek Preview Optimization** | Preview image updates are quantized to videoshot frame boundaries to reduce redraw cost during drag/tap seeking |
-| **Comment Copy UX** | Long-press opens selectable-copy panel so users can drag-select exact comment text (including rich text scenarios) |
-| **Playback History** | Automatically resume playback, with a toggle and one-time prompt per target |
-| **TV Login** | Scan QR code to login as TV client to unlock high quality |
-| **Plugin System** | Built-in SponsorBlock, AdBlock, Danmaku Enhancement, Eye Protection, Today Watch, CDN Region, and First Visit Recommendation plugins |
+The source still uses `versionName = 0.2.8` and `versionCode = 435`; this does not mean Biluma has published version 0.2.8. Its independent version policy is undecided. See [app/build.gradle.kts](app/build.gradle.kts) for the actual configuration.
 
-### 🔌 Plugin System
+## Development and build reference
 
-| Plugin | Description |
-|-----|-----|
-| **SponsorBlock** | Automatically skip ads/sponsor segments based on BilibiliSponsorBlock database |
-| **AdBlock** | Smartly filter commercial content from recommendation feeds |
-| **Danmaku Plus** | Keyword blocking and highlighting for personalized danmaku experience |
-| **Eye Protection** | Scheduled eye care, 3 presets + DIY tuning, real-time preview, warm filter, humane reminders with snooze |
-| **🆕 Today Watch** | Local recommendation plugin with Relax/Learn modes, collapse/expand, independent refresh, UP ranking, and reason tags |
-| **🆕 CDN Region** | Off by default; prioritizes same-region CDN candidates for normal video playback while preserving original URLs for fallback |
-| **🆕 First Visit Recommendation** | Off by default; removes cookies only from the Web home recommendation API so the feed is closer to public guest recommendations |
-| **Plugin Center** | Unified management for all plugins with independent configurations |
-| **🆕 External Plugins** | Support loading dynamic JSON rule plugins via URL |
+Read [AGENTS.md](AGENTS.md) before making changes. It defines repository boundaries, development constraints, verification authorization, and commit expectations. Examples in documentation do not authorize automatically running a build.
 
-First Visit Recommendation credits wangdaodao's original [TabulaBili](https://github.com/wangdaodaodao/TabulaBili) and tjsky's [TabulaBili-Plus](https://github.com/tjsky/TabulaBili), adapted here as a built-in Android plugin.
+The current configuration uses **JDK 21, AGP 9.3.1, Gradle 9.5.0, Kotlin 2.4.0, and compileSdk 37**. The main app requires at least **Android 8.0 / API 26**. The sources of truth are the [version catalog](gradle/libs.versions.toml), [Gradle wrapper](gradle/wrapper/gradle-wrapper.properties), and app build configuration.
 
-#### Implemented Details (Supplement)
+Some Miuix dependencies use GitHub Packages. Supply credentials with the appropriate read access through user-level Gradle properties `gpr.user` / `gpr.key` or environment variables `GITHUB_ACTOR` / `GITHUB_TOKEN`. Never commit credentials to the repository.
 
-- `Today Watch`:
-  - dual mode switch: `Relax Tonight` / `Deep Learning`
-  - UP ranking + recommendation queue + per-item explanation tags
-  - queue rows display uploader avatar + name for better readability
-  - linked with eye-care night signal (prefers shorter, lower-stimulation content at night)
-  - local negative-feedback learning (disliked video/uploader/keywords)
-  - one-shot cold-start exposure strategy so users can see the card on first screen
-  - one-tap reset of local profile + feedback in plugin settings
-- `Eye Protection 2.0`:
-  - 3 presets (`Gentle/Balanced/Focus`) + full DIY controls
-  - real-time brightness and warm-filter preview
-  - schedule + usage reminders + snooze
-  - improved humane reminder copy and pacing strategy
-- `Quality Switching`:
-  - quality options now follow the API list, while real DASH tracks decide which tiers stay switchable
-  - cache switching requires exact target quality match; falls back to API when missing
-  - clearer fallback toast when requested quality is unavailable
+When a developer explicitly chooses to generate an installable local test APK, use the Dev variant:
 
-#### Today Watch UI Example
-
-<p align="center">
-  <img src="docs/images/screenshot_today_watch_plan.png" alt="Today Watch screenshot" height="560">
-</p>
-
-#### Today Watch Algorithm (Detailed)
-
-1. Inputs
-
-- history sample from local watch history
-- candidate videos from home recommend feed
-- mode (`Relax` or `Learn`)
-- eye-care night signal
-- creator profile signals (cross-session local memory)
-- penalty signals (disliked video/uploader/keywords)
-
-2. Creator affinity build-up
-
-- filter valid history items (`bvid` not empty, valid `owner.mid`)
-- aggregate per-creator score with completion + recency bonus
-- merge cross-session profile signals from local store
-
-3. Candidate scoring
-
-- score = base popularity + creator affinity + freshness + mode score + night adjustment + feedback penalty + seen penalty
-- seen videos are explicitly penalized
-- mode score differs for Relax and Learn (duration + keyword orientation)
-- night adjustment favors short, low-stimulation items
-
-4. Diversity queue
-
-- queue is not pure score sort
-- each round applies anti-streak penalties for repeated creators
-- includes novelty bonus for unseen creators in the current queue
-
-5. Explainability and privacy
-
-- each queued item has explanation tags (e.g. `Learn · Mid Length · Night Friendly · Preferred Uploader`)
-- runs fully local; no history upload for personalization
-- users can clear local profile/feedback and restart recommendation learning
-
-<details>
-<summary><b>📖 JSON Rule Plugin Quick Start (Click to expand)</b></summary>
-
-#### What is a JSON Rule Plugin?
-
-A lightweight plugin format requiring **no coding**, just a simple JSON file to implement content filtering.
-
-#### Plugin Structure
-
-```json
-{
-    "id": "my_plugin",
-    "name": "My Plugin",
-    "description": "Plugin description",
-    "version": "1.0.0",
-    "author": "Your Name",
-    "type": "feed",
-    "rules": [
-        {
-            "field": "title",
-            "op": "contains",
-            "value": "Ad",
-            "action": "hide"
-        }
-    ]
-}
+```powershell
+.\gradlew.bat :app:assembleDev
 ```
 
-#### Supported Fields
+The macOS / Linux equivalent is `./gradlew :app:assembleDev`. Do not package, install, or distribute debug / smooth APKs. A formal Release publication still needs independent signing and release workflow configuration.
 
-| Type | Field | Description |
-|------|------|------|
-| **Feed** | `title` | Video Title |
-| **Feed** | `duration` | Video Duration (seconds) |
-| **Feed** | `owner.mid` | Uploader UID |
-| **Feed** | `owner.name` | Uploader Name |
-| **Feed** | `stat.view` | Play Count |
-| **Danmaku** | `content` | Danmaku Content |
+The currently configured Dev export path is `app/build/outputs/bilipai/dev/BiliPai-<versionName>-dev.apk`; Release uses `app/build/outputs/bilipai/release/BiliPai-<versionName>.apk`. These are inherited naming rules, not generated artifacts. `<versionName>` is the main app's base version name. The Gradle root project name also remains `BiliPai`.
 
-#### Operators
+## Main directories
 
-| Operator | Description | Example |
-|--------|------|------|
-| `contains` | Contains string | `"value": "Ad"` |
-| `regex` | Regular expression | `"value": "Shocking.*Must Watch"` |
-| `lt` / `gt` | Less than / Greater than | `"value": 60` |
-| `eq` / `ne` | Equal / Not Equal | `"value": 123456` |
-| `startsWith` | Starts with | `"value": "【"` |
-
-#### Example: Short Video Filter
-
-```json
-{
-    "id": "short_video_filter",
-    "name": "Short Video Filter",
-    "type": "feed",
-    "rules": [
-        { "field": "duration", "op": "lt", "value": 60, "action": "hide" }
-    ]
-}
-```
-
-#### Installation
-
-1. Upload the JSON file to a publicly accessible URL (e.g., GitHub Gist)
-2. In BiliPai, go to **Settings → Plugin Center → Import External Plugin**
-3. Paste the URL and install
-
-</details>
-
-> 📚 **Full Documentation**: [Plugin Development Guide](docs/PLUGIN_DEVELOPMENT.md)
->
-> 🧩 **Sample Plugins**: [plugins/samples/](plugins/samples/)
-
-### 📺 Anime / Bangumi
-
-| Feature | Description |
-|-----|-----|
-| **Bangumi Home** | Hot recommendations, schedule, categorical browsing |
-| **Episode Selection** | Official style bottom sheet for switching episodes/seasons |
-| **Landscape Top Bar Actions** | Like / coin / share are now available in landscape/fullscreen and stay closer to the regular video player behavior |
-| **Tracking** | Watch list management and progress synchronization |
-| **Danmaku** | Full danmaku support for anime |
-
-### 📡 Live Streaming
-
-| Feature | Description |
-|-----|-----|
-| **Live List** | Hot live streams, categories, followed streamers |
-| **HD Streaming** | HLS adaptive bitrate playback |
-| **Live Danmaku** | Real-time danmaku display |
-| **Quick Access** | Jump to live room directly from dynamic cards |
-
-### 📱 Dynamic Feed
-
-| Feature | Description |
-|-----|-----|
-| **Feeds** | View videos/posts/reposts from followed uploaders |
-| **Filtering** | Switch between All / Video Only |
-| **GIF Support** | Perfect rendering of GIF images in dynamic posts |
-| **Image Download** | Long press to preview and save to gallery |
-| **Image Preview** | Global non-dialog overlay with iOS-style open/close motion; comment scene uses top caption to avoid covering image content, with 3D-like text transition |
-| **@ Highlighting** | Auto-highlight @User mentions |
-
-### 💬 Message Center & Direct Messages
-
-| Feature | Description |
-|-----|-----|
-| **Message Center** | Unified entry for replies, mentions, likes, and system notices |
-| **History List** | View session history with pagination |
-| **Rich Content** | Supports stickers, mentions, and image viewing |
-| **Video Link Preview** | Detects BV links and renders inline preview cards |
-| **Deep Link Routing** | Opens video, dynamic, space, live, bangumi, music, and web targets directly from messages |
-
-### 📥 Offline Cache
-
-| Feature | Description |
-|-----|-----|
-| **Download** | Select quality, auto-merge audio/video |
-| **Resumable** | Auto-resume downloads after network interruption |
-| **Management** | Clear download list and progress display |
-| **Local Playback** | Manage and play offline videos |
-
-### 🔍 Smart Search
-
-| Feature | Description |
-|-----|-----|
-| **Real-time Suggestions** | Search suggestions while typing (300ms debounce) |
-| **Trending** | Display current hot search terms |
-| **History** | Auto-save search history with deduplication |
-| **Categories** | Search by Video / Uploader / Anime |
-
-### 🎨 Modern UI Design
-
-| Feature | Description |
-|-----|-----|
-| **Material You** | Dynamic theming based on wallpaper |
-| **Dark Mode** | Perfect dark mode support |
-| **iOS Style Bar** | Elegant frosted glass navigation bar |
-| **Animations** | Wave entrance, elastic scaling, shared element transitions |
-| **Shimmer** | Elegant loading placeholders |
-| **Lottie** | Beautiful interactions for Like/Coin/Fav |
-| **Celebration** | Particle effects for successful interactions |
-
-### 👤 Profile
-
-| Feature | Description |
-|-----|-----|
-| **Login Methods** | TV QR, phone/password, SMS verification, and cookie import |
-| **Info** | Avatar, nickname, level, coin display |
-| **History** | Local history browsing, deletion, and article-aware navigation; cloud synchronization remains planned |
-| **Favorites** | Manage favorites and playlists |
-| **Following** | Browse following/fans list |
-
-### 🔒 Privacy Friendly
-
-- 🚫 **No Ads** - Pure viewing experience, no ad injections
-- 🔐 **Minimal Permissions** - Only essential permissions (No Location/Contacts/Phone)
-- 💾 **Local Storage** - Login credentials stored locally, no privacy data upload
-- 🛡️ **More conservative telemetry defaults** - Crash tracking stays on by default, usage analytics is off by default, and player diagnostic logging remains separately available for troubleshooting
-- 🪵 **Runtime logs no longer persist by default** - Ordinary runtime logs are no longer written to disk by default, while crash snapshots and manual export remain available
-- 🔍 **Open Source** - Full source code available for review
-
----
-
-## 📦 Download & Install
-
-<p>
-  <a href="https://t.me/bilipai666"><img src="https://img.shields.io/badge/Telegram-Channel-5AC8FA?style=for-the-badge&logo=telegram" alt="Telegram channel"></a>
-  <a href="https://t.me/bilipai888/1"><img src="https://img.shields.io/badge/Telegram-Group-2CA5E0?style=for-the-badge&logo=telegram" alt="Telegram group"></a>
-</p>
-
-| Channel | Link |
+| Directory | Contents |
 | --- | --- |
-| Announcements / releases | [t.me/bilipai666](https://t.me/bilipai666) |
-| Community group | [t.me/bilipai888](https://t.me/bilipai888/1) |
-| Source code | [GitHub](https://github.com/jay3-yy/BiliPai) |
+| `app/` | Main app, phone and tablet features, navigation, and UI |
+| `app-tv/` | Retained upstream TV app, not yet migrated |
+| `settings-core/`, `network-core/`, `core-data/`, `core-player/` | Shared settings, networking, data, and player code |
+| `design-system/`, `design-tokens/`, `miuix-navigation/` | UI components, design tokens, and navigation support |
+| `plugin-sdk/`, `plugins/` | Plugin interfaces and related code |
+| `danmaku-engine/`, `dolby-ffmpeg-decoder/` | Danmaku and audio decoding components |
+| `baselineprofile/` | Upstream performance benchmarks and baseline configuration |
+| `docs/`, `artwork/`, `scripts/` | Documentation, assets, and tools; inherited assumptions need review before use |
 
-### Requirements
+## Documentation and historical references
 
-| Item | Requirement |
-|-----|-----|
-| **Android Version** | Android 8.0+ (API 26) |
-| **Architecture** | 64-bit (arm64-v8a) |
-| **Recommended** | Android 12+ for full Material You experience |
-| **Size** | Varies by ABI/build variant |
+- Current collaboration rules: [AGENTS.md](AGENTS.md).
+- Pinned upstream baseline documentation: [Chinese README](https://github.com/jay3-yy/BiliPai/blob/edb3d596d381464f02feba646eadc3f023911a75/README.md) · [English README](https://github.com/jay3-yy/BiliPai/blob/edb3d596d381464f02feba646eadc3f023911a75/README_EN.md).
+- Retained technical references: [Architecture](docs/wiki/ARCHITECTURE.md) · [Code structure](STRUCTURE_GUIDELINES.adoc) · [Plugin development](docs/PLUGIN_DEVELOPMENT.md).
 
-### Installation
+Screenshots, version badges, download links, and community links in upstream READMEs are historical references. [CHANGELOG.md](CHANGELOG.md), the Wiki, old release instructions, `AI.txt`, and `llms.txt` have not all been rewritten and must not be treated as Biluma's released feature list or approved roadmap.
 
-1. Download the latest APK from the [Telegram channel](https://t.me/bilipai666) or [group](https://t.me/bilipai888/1)
-2. Install on your device (Unknown Sources permission may be required)
-3. Open the app and sign in with TV QR, phone/password, SMS verification, or cookie import
-4. Enjoy the pure Bilibili experience!
+## License and acknowledgments
 
----
+This project retains the [GNU GPL v3.0](LICENSE). Use, modification, and distribution must comply with the applicable license. When distributing modified versions or binaries, provide corresponding source as required by GPLv3 and preserve license and copyright notices. Third-party code and assets remain subject to their respective licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## 🧱 Project Structure
+Thanks to **BiliPai's original author YangY, its maintainers, and all contributors**, along with the open-source projects it uses and references. The complete upstream acknowledgments remain in the [v0.2.8 baseline documentation](https://github.com/jay3-yy/BiliPai/blob/edb3d596d381464f02feba646eadc3f023911a75/README.md#致谢). Biluma's new name does not erase these sources or their Git history.
 
-```text
-BiliPai/
-├── app/                         # App shell, product features, navigation, player, state and tests
-│   └── src/main/java/com/android/purebilibili/
-│       ├── app/                 # Application startup and top-level assembly
-│       ├── core/                # Shared network, storage, player, plugin, theme and UI capabilities
-│       ├── data/                # API/database models and repositories
-│       ├── domain/              # Reusable use cases and business policies
-│       ├── feature/             # Home, video, dynamic, live, settings and other product areas
-│       ├── navigation/          # Route compatibility and top-level navigation policies
-│       └── navigation3/         # NavKey, back stack, entries/scenes and predictive back
-├── design-system/               # Shared MD3, Miuix and iOS visual primitives and policies
-├── settings-core/               # Reusable settings policies
-├── network-core/                # Reusable network fallback and feed policies
-├── plugin-sdk/                  # Recommendation, player and danmaku plugin contracts
-├── baselineprofile/             # Startup and frame-timing benchmarks/profiles
-├── docs/                        # Wiki, plugin guides and image assets
-├── plugins/                     # SDK docs, JSON/source samples, skins and community index
-└── scripts/                     # CI, release, profiling and device collection tools
-```
-
----
-
-## 🛠 Tech Stack
-
-### Core Framework
-
-| Category | Technology | Description |
-|-----|-----|-----|
-| **Language** | Kotlin 2.4 | AGP built-in Kotlin toolchain |
-| **Build Baseline** | AGP 9.3.1 / Gradle 9.5 / Kotlin 2.4 / JDK 21 | compileSdk 37, minSdk 26 |
-| **UI** | Jetpack Compose | Material 3, Miuix, Compose Cupertino |
-| **Navigation** | Navigation3 1.2.0-alpha07 | App-owned back stack, scenes and predictive back |
-| **Architecture** | MVVM + Clean Architecture | Clear separation, maintainable |
-
-### Network & Data
-
-| Category | Technology | Description |
-|-----|-----|-----|
-| **Network** | Retrofit + OkHttp | RESTful API |
-| **Serialization** | Kotlinx Serialization | JSON parsing |
-| **Storage** | Room + DataStore | Database + Preferences |
-| **Image** | Coil Compose | GIF support |
-
-### Media
-
-| Category | Technology | Description |
-|-----|-----|-----|
-| **Player** | ExoPlayer (Media3) | DASH / HLS / MP4 |
-| **Danmaku** | DanmakuRenderEngine + app policies | GPU rendering, filtering, layout, and live-overlay integration |
-| **Decoding** | MediaCodec | Hardware acceleration |
-
-### UI Enhancements
-
-| Category | Technology | Description |
-|-----|-----|-----|
-| **Animation** | Compose Animation / SharedTransition + Lottie | Card morphs, predictive back and vector motion |
-| **Blur** | Haze 2 + Miuix Backdrop / Liquid Glass | Frosted and liquid-glass surfaces with fallbacks |
-| **Theming** | Material 3 + Miuix + iOS preset | Dynamic color, dark mode and adaptive components |
-
----
-
-## 📚 Wiki
-
-- AI / LLM Entry: [`llms.txt`](llms.txt)
-- Current Roadmap: [`docs/wiki/ROADMAP.md`](docs/wiki/ROADMAP.md)
-- Compatibility alias: `AI.txt`
-- AI Navigation Guide: [`docs/wiki/AI.md`](docs/wiki/AI.md)
-- Wiki Home: [`docs/wiki/README.md`](docs/wiki/README.md)
-- Feature Matrix: [`docs/wiki/FEATURE_MATRIX.md`](docs/wiki/FEATURE_MATRIX.md)
-- Architecture: [`docs/wiki/ARCHITECTURE.md`](docs/wiki/ARCHITECTURE.md)
-- Release Workflow: [`docs/wiki/RELEASE_WORKFLOW.md`](docs/wiki/RELEASE_WORKFLOW.md)
-- QA Checklist: [`docs/wiki/QA.md`](docs/wiki/QA.md)
-
----
-
-## 🗺️ Roadmap
-
-> [!TIP]
-> This summary reflects the current direction. For implemented behavior and source status, prefer the code and `CHANGELOG.md`.
-
-| Status | Direction |
-| --- | --- |
-| Product baseline | Home, playback, bangumi, live, dynamic feed, messages, offline/audio mode, video notes, casting, WebDAV, account sessions, plugins, large-screen layouts and three visual presets |
-| Current P0 | End-to-end video-card/predictive-return acceptance, transition steady-state performance, Navigation3 1.2 device regression, and restoration of the AGP 9 unit-test pipeline |
-| Next | Controlled external-plugin execution, per-account data isolation, favorites management, complete localization, and evaluation of history cloud sync |
-
-See the [current roadmap](docs/wiki/ROADMAP.md) for priorities, completion criteria, guardrails, and non-goals.
-
----
-
-## 🔄 Changelog
-
-See full changelog: [CHANGELOG.md](CHANGELOG.md)
-
-### Current source build (v0.2.7 · 2026-10-03)
-
-- Current source build: `0.2.7` / `versionCode 432`.
-- RSS subscriptions now include reading recaps, saved article progress, and dedicated reading wallpapers; home recommendations, search, and history recaps have also been refined.
-- Comment input, refresh, timestamps, and typography have been improved, alongside clearer hot-danmaku counters and massive-mode behavior.
-- The home dock supports drag navigation and edge auto-scroll; video-card alignment, foldable layouts, and list/navigation stability have been improved.
-- See [CHANGELOG.md](CHANGELOG.md) for the complete changelog since v0.2.5.
-- Official Telegram: channel [@bilipai666](https://t.me/bilipai666), group [@bilipai888](https://t.me/bilipai888/1).
-
----
-
-## 🏗️ Build
-
-```bash
-git clone https://github.com/jay3-yy/BiliPai.git
-cd BiliPai
-./gradlew :app:assembleDev
-```
-
-The installable artifact is exported to `app/build/outputs/bilipai/dev/BiliPai-0.2.3-alpha.7-dev.apk`. Release builds use `app/build/outputs/bilipai/release/BiliPai-0.2.3-alpha.7.apk`; AGP's internal `app-*.apk` files are not delivery artifacts.
-
----
-
-## 🤝 Contributing
-
-Issues and Pull Requests are welcome!
-
-1. Fork the repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Submit Pull Request
-
----
-
-## 🙏 Acknowledgements
-
-| Project | Description |
-|-----|-----|
-| [PiliPlus](https://github.com/bggRGjQaUbCoE/PiliPlus) | Playback flow, comment presentation, and mobile UX reference |
-| [Bili Pilot](https://github.com/siwei-yuan/bili-pilot) | Signed CDN candidate, segment-level routing, and prefetch design reference; independently implemented in Kotlin without copying its JavaScript |
-| [biliSendCommAntifraud](https://github.com/freedom-introvert/biliSendCommAntifraud) | Reference implementation for comment anti-fraud detection |
-| [BilibiliSponsorBlock](https://github.com/hanydd/BilibiliSponsorBlock) | Sponsor skip segment data and API reference |
-| [DanmakuRenderEngine](https://github.com/bytedance/DanmakuRenderEngine) | High-performance danmaku rendering engine |
-| [Miuix](https://github.com/compose-miuix-ui/miuix) | Miuix-style Compose Multiplatform components |
-| [Haze](https://github.com/chrisbanes/haze) | Blur and frosted-glass effects |
-| [Compose Cupertino](https://github.com/alexzhirkevich/compose-cupertino) | Cupertino-style Compose UI components |
-
----
-
-## ⚠️ Disclaimer
-
-> [!CAUTION]
->
-> 1. This project is for **learning purposes only**. Commercial use is strictly prohibited.
-> 2. Data source: Bilibili Official API. Copyright belongs to Shanghai Hupu Information Technology Co., Ltd.
-> 3. Login info is stored locally and never uploaded.
-> 4. Please comply with local laws and regulations.
-> 5. Contact for deletion if copyright infringement occurs.
-
----
-
-## 📄 License
-
-[BiliPai Non-Commercial License 1.0](LICENSE)
-
-You may use, copy, modify, build, and distribute this project or modified versions for non-commercial purposes. Modified versions may be distributed as closed-source works, and no source disclosure or acknowledgement is required.
-
-Commercial use, paid distribution, commercial services, ad monetization, or any other profit-oriented use requires separate prior written permission from the copyright holder.
-
----
-
-## ☕ Support
-
-If you like BiliPai, buy me a coffee ☕
-
-<p align="center">
-  <img src="docs/donate.jpg" alt="Donation" width="300">
-</p>
+This project is not officially affiliated with Bilibili or the rights holders of the works that inspired its name. Follow applicable law, platform rules, and permissions when using services, content, and assets.
