@@ -115,21 +115,9 @@ internal fun ImmersiveAmbientLetterboxBackdrop(
                 videoBounds = videoBoundsInWindow?.invoke(),
             )
             when {
-                videoBoundsInWindow == null -> {
-                    // 旧映射：不知道 surface 位置时按整帧 Crop 铺满（letterbox 条等调用方）。
-                    Image(
-                        bitmap = currentAmbientFrame,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        alignment = contentAlignment,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .hazeSourceCompat(hazeState),
-                    )
-                }
+                // 几何映射：surface 与条重叠时（沉浸模式下视频顶到屏幕最上沿），
+                // 把采样帧按 surface 的实际投影摆放，播放器放大缩小时跟随几何变化。
                 framePlacement != null -> {
-                    // 几何映射：把采样帧按 surface 在条上的实际投影摆放，
-                    // 播放器放大缩小时跟随 surface 的实时位置与尺寸。
                     val density = LocalDensity.current
                     Image(
                         bitmap = currentAmbientFrame,
@@ -141,7 +129,19 @@ internal fun ImmersiveAmbientLetterboxBackdrop(
                             .hazeSourceCompat(hazeState),
                     )
                 }
-                // surface 与条无交集（缩小后不在条下方）：保持黑底。
+                else -> {
+                    // 无重叠（常规布局：视频贴在状态栏条下方）或不知道 surface 位置：
+                    // 沿用整帧 Crop + 顶对齐的切片映射，把画面顶边“延伸”进状态栏区域。
+                    Image(
+                        bitmap = currentAmbientFrame,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        alignment = contentAlignment,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSourceCompat(hazeState),
+                    )
+                }
             }
             Box(
                 modifier = Modifier
