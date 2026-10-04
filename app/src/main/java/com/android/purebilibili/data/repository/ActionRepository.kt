@@ -219,7 +219,7 @@ object ActionRepository {
      * @param mid UP 主的用户 ID
      * @param follow true=关注, false=取关
      */
-    suspend fun followUser(mid: Long, follow: Boolean): Result<Boolean> {
+    suspend fun followUser(mid: Long, follow: Boolean, emitBrandFeedback: Boolean = true): Result<Boolean> {
         return withContext(Dispatchers.IO) {
             try {
                 val csrf = TokenManager.csrfCache ?: ""
@@ -236,10 +236,15 @@ object ActionRepository {
                 
                 if (response.code == 0) {
                     _followStateChanges.tryEmit(FollowStateChange(mid = mid, isFollowing = follow))
+                    if (emitBrandFeedback) {
+                        com.android.purebilibili.core.events.BrandSuccessEvents.followChanged(follow)
+                    }
                     Result.success(follow)
                 } else {
                     Result.failure(Exception(response.message.ifEmpty { "操作失败: ${response.code}" }))
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("ActionRepository", "followUser failed", e)
                 Result.failure(e)
@@ -253,7 +258,12 @@ object ActionRepository {
      * @param favorite true=收藏, false=取消收藏
      * @param folderId 收藏夹 ID，为空时使用默认收藏夹
      */
-    suspend fun favoriteVideo(aid: Long, favorite: Boolean, folderId: Long? = null): Result<Boolean> {
+    suspend fun favoriteVideo(
+        aid: Long,
+        favorite: Boolean,
+        folderId: Long? = null,
+        showSuccessFeedback: Boolean = true
+    ): Result<Boolean> {
         return withContext(Dispatchers.IO) {
             try {
                 val csrf = TokenManager.csrfCache ?: ""
@@ -274,6 +284,9 @@ object ActionRepository {
                 }
                 
                 if (response.code == 0) {
+                    if (favorite && showSuccessFeedback) {
+                        com.android.purebilibili.core.events.BrandSuccessEvents.favoriteSaved()
+                    }
                     Result.success(favorite)
                 } else {
                     Result.failure(Exception(response.message.ifEmpty { "操作失败: ${response.code}" }))
@@ -406,6 +419,9 @@ object ActionRepository {
                 val response = api.dealFavorite(rid = aid, addIds = addIds, delIds = delIds, csrf = csrf)
 
                 if (response.code == 0) {
+                    if (addFolderIds.isNotEmpty()) {
+                        com.android.purebilibili.core.events.BrandSuccessEvents.favoriteSaved()
+                    }
                     Result.success(true)
                 } else {
                     Result.failure(Exception(response.message.ifEmpty { "操作失败: ${response.code}" }))
@@ -907,7 +923,7 @@ object ActionRepository {
             val coinMessage = coinResult.exceptionOrNull()?.message
             
             // 3. 收藏
-            val favoriteResult = favoriteVideo(aid, true)
+            val favoriteResult = favoriteVideo(aid, true, showSuccessFeedback = false)
             val favoriteSuccess = favoriteResult.isSuccess
             
             com.android.purebilibili.core.util.Logger.d("ActionRepository", " tripleAction: like=$likeSuccess, coin=$coinSuccess, fav=$favoriteSuccess")
