@@ -8,6 +8,13 @@ import org.junit.Test
 class StartupSplashPolicyTest {
 
     @Test
+    fun customWallpaperRequiresAnEnabledSettingAndNonemptyUri() {
+        assertTrue(shouldShowCustomSplashOverlay(true, "content://wallpaper"))
+        assertFalse(shouldShowCustomSplashOverlay(false, "content://wallpaper"))
+        assertFalse(shouldShowCustomSplashOverlay(true, ""))
+    }
+
+    @Test
     fun alwaysReadsCustomSplashPreferences() {
         assertTrue(shouldReadCustomSplashPreferences())
     }
@@ -97,58 +104,6 @@ class StartupSplashPolicyTest {
                 fixedSplashUri = "content://fixed",
                 poolUris = listOf("content://a", "content://b"),
                 launchSeed = 9L
-            )
-        )
-    }
-
-    @Test
-    fun enablesSplashFlyoutOnlyAfterStartupPrivacyFlowCompleted() {
-        assertFalse(
-            shouldEnableSplashFlyoutAnimation(
-                sdkInt = 30,
-                hasCompletedOnboarding = false,
-                hasAcceptedReleaseDisclaimer = false,
-                splashIconAnimationEnabled = true
-            )
-        )
-        assertFalse(
-            shouldEnableSplashFlyoutAnimation(
-                sdkInt = 30,
-                hasCompletedOnboarding = false,
-                hasAcceptedReleaseDisclaimer = true,
-                splashIconAnimationEnabled = true
-            )
-        )
-        assertFalse(
-            shouldEnableSplashFlyoutAnimation(
-                sdkInt = 30,
-                hasCompletedOnboarding = true,
-                hasAcceptedReleaseDisclaimer = false,
-                splashIconAnimationEnabled = true
-            )
-        )
-        assertFalse(
-            shouldEnableSplashFlyoutAnimation(
-                sdkInt = 30,
-                hasCompletedOnboarding = true,
-                hasAcceptedReleaseDisclaimer = true,
-                splashIconAnimationEnabled = true
-            )
-        )
-        assertTrue(
-            shouldEnableSplashFlyoutAnimation(
-                sdkInt = 31,
-                hasCompletedOnboarding = true,
-                hasAcceptedReleaseDisclaimer = true,
-                splashIconAnimationEnabled = true
-            )
-        )
-        assertFalse(
-            shouldEnableSplashFlyoutAnimation(
-                sdkInt = 31,
-                hasCompletedOnboarding = true,
-                hasAcceptedReleaseDisclaimer = true,
-                splashIconAnimationEnabled = false
             )
         )
     }

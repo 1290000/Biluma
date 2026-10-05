@@ -164,7 +164,6 @@ internal enum class SettingsIconRole {
     CAST_BUTTON,
     PROGRESS_PEAK_DANMAKU,
     IMAGE_3D_PAGE,
-    SPLASH_ICON_ANIMATION,
     NAV_ICON_CROSS_SCALE,
     SUB_REPLY_LOADED_COUNT,
     COMMENT_VISIBILITY_CHECK,
@@ -362,7 +361,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.CAST_BUTTON -> R.drawable.ms_cast_24
     SettingsIconRole.PROGRESS_PEAK_DANMAKU -> R.drawable.ms_graphic_eq_24
     SettingsIconRole.IMAGE_3D_PAGE -> R.drawable.ms_3d_rotation_24
-    SettingsIconRole.SPLASH_ICON_ANIMATION -> R.drawable.ms_filter_frames_24
     SettingsIconRole.NAV_ICON_CROSS_SCALE -> R.drawable.ms_compare_arrows_24
     SettingsIconRole.SUB_REPLY_LOADED_COUNT -> R.drawable.ms_numbers_24
     SettingsIconRole.COMMENT_VISIBILITY_CHECK -> R.drawable.ms_fact_check_24
@@ -631,7 +629,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.CAST_BUTTON -> MiuixIcons.ScreenMirroring
     SettingsIconRole.PROGRESS_PEAK_DANMAKU -> MiuixIcons.Sort
     SettingsIconRole.IMAGE_3D_PAGE -> MiuixIcons.Photos
-    SettingsIconRole.SPLASH_ICON_ANIMATION -> MiuixIcons.Recording
     SettingsIconRole.NAV_ICON_CROSS_SCALE -> MiuixIcons.Replace
     SettingsIconRole.SUB_REPLY_LOADED_COUNT -> MiuixIcons.Answer
     SettingsIconRole.COMMENT_VISIBILITY_CHECK -> MiuixIcons.Tasks

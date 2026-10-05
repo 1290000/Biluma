@@ -11,60 +11,60 @@ class AppIconAliasMappingTest {
         val packageName = "com.android.purebilibili"
 
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBlueSnowMaid",
+            "com.android.purebilibili.MainActivityAliasBlueSnowMaidNoIcon",
             resolveAppIconLauncherAlias(packageName, "icon_blue_snow_maid")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBlueSnowMaidFront",
+            "com.android.purebilibili.MainActivityAliasBlueSnowMaidFrontNoIcon",
             resolveAppIconLauncherAlias(packageName, "icon_blue_snow_maid_front")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBlueSnowMaidAnnouncement",
+            "com.android.purebilibili.MainActivityAliasBlueSnowMaidAnnouncementNoIcon",
             resolveAppIconLauncherAlias(packageName, "icon_blue_snow_maid_announcement")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBiliPai",
+            "com.android.purebilibili.MainActivityAliasBiliPaiNoIcon",
             resolveAppIconLauncherAlias(packageName, "icon_bilipai")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBiliPai",
+            "com.android.purebilibili.MainActivityAliasBiliPaiNoIcon",
             resolveAppIconLauncherAlias(packageName, "BiliPai")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBiliPaiPink",
+            "com.android.purebilibili.MainActivityAliasBiliPaiPinkNoIcon",
             resolveAppIconLauncherAlias(packageName, "icon_bilipai_pink")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBiliPaiWhite",
+            "com.android.purebilibili.MainActivityAliasBiliPaiWhiteNoIcon",
             resolveAppIconLauncherAlias(packageName, "BiliPai White")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBiliPaiMonet",
+            "com.android.purebilibili.MainActivityAliasBiliPaiMonetNoIcon",
             resolveAppIconLauncherAlias(packageName, "BiliPai Monet")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBlueSnowMaid",
+            "com.android.purebilibili.MainActivityAliasBlueSnowMaidNoIcon",
             resolveAppIconLauncherAlias(packageName, "icon_headphone")
         )
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBlueSnowMaid",
+            "com.android.purebilibili.MainActivityAliasBlueSnowMaidNoIcon",
             resolveAppIconLauncherAlias(packageName, "unknown")
         )
         assertEquals(
             "com.android.purebilibili.MainActivityAliasBiliPaiNoIcon",
-            resolveAppIconLauncherAlias(packageName, "icon_bilipai", splashIconVisible = false)
+            resolveAppIconLauncherAlias(packageName, "icon_bilipai")
         )
         assertEquals(
             "com.android.purebilibili.MainActivityAliasBlueSnowMaidNoIcon",
-            resolveAppIconLauncherAlias(packageName, "unknown", splashIconVisible = false)
+            resolveAppIconLauncherAlias(packageName, "unknown")
         )
         assertEquals(
             "com.android.purebilibili.MainActivityAliasBlueSnowMaidFrontNoIcon",
-            resolveAppIconLauncherAlias(packageName, "icon_blue_snow_maid_front", splashIconVisible = false)
+            resolveAppIconLauncherAlias(packageName, "icon_blue_snow_maid_front")
         )
         assertEquals(
             "com.android.purebilibili.MainActivityAliasBlueSnowMaidAnnouncementNoIcon",
-            resolveAppIconLauncherAlias(packageName, "icon_blue_snow_maid_announcement", splashIconVisible = false)
+            resolveAppIconLauncherAlias(packageName, "icon_blue_snow_maid_announcement")
         )
     }
 
@@ -73,7 +73,7 @@ class AppIconAliasMappingTest {
         val packageName = "com.android.purebilibili"
 
         assertEquals(
-            "$packageName.MainActivityAliasBlueSnowMaidLight",
+            "$packageName.MainActivityAliasBlueSnowMaidLightNoIcon",
             resolveAppIconLauncherAlias(
                 packageName,
                 "icon_blue_snow_maid",
@@ -85,12 +85,11 @@ class AppIconAliasMappingTest {
             resolveAppIconLauncherAlias(
                 packageName,
                 "icon_blue_snow_maid",
-                splashIconVisible = false,
                 appearance = AppIconAppearance.DARK
             )
         )
         assertEquals(
-            "$packageName.MainActivityAliasBlueSnowMaidFrontDark",
+            "$packageName.MainActivityAliasBlueSnowMaidFrontDarkNoIcon",
             resolveAppIconLauncherAlias(
                 packageName,
                 "icon_blue_snow_maid_front",
@@ -102,12 +101,11 @@ class AppIconAliasMappingTest {
             resolveAppIconLauncherAlias(
                 packageName,
                 "icon_blue_snow_maid_front",
-                splashIconVisible = false,
                 appearance = AppIconAppearance.LIGHT
             )
         )
         assertEquals(
-            "$packageName.MainActivityAliasBlueSnowMaidAnnouncementLight",
+            "$packageName.MainActivityAliasBlueSnowMaidAnnouncementLightNoIcon",
             resolveAppIconLauncherAlias(
                 packageName,
                 "icon_blue_snow_maid_announcement",
@@ -119,7 +117,6 @@ class AppIconAliasMappingTest {
             resolveAppIconLauncherAlias(
                 packageName,
                 "icon_blue_snow_maid_announcement",
-                splashIconVisible = false,
                 appearance = AppIconAppearance.DARK
             )
         )
@@ -128,7 +125,7 @@ class AppIconAliasMappingTest {
     @Test
     fun resolveAppIconLauncherAlias_ignoresAppearanceForNonMaidIcons() {
         assertEquals(
-            "com.android.purebilibili.MainActivityAliasBiliPai",
+            "com.android.purebilibili.MainActivityAliasBiliPaiNoIcon",
             resolveAppIconLauncherAlias(
                 "com.android.purebilibili",
                 "icon_bilipai",
@@ -140,7 +137,7 @@ class AppIconAliasMappingTest {
     @Test
     fun resolveAppIconLauncherAlias_keepsStableComponentNamespaceForDebugBuilds() {
         assertEquals(
-            "com.android.purebilibili.MainActivityAlias3DLauncher",
+            "com.android.purebilibili.MainActivityAlias3DNoIcon",
             resolveAppIconLauncherAlias("com.android.purebilibili.debug", "icon_3d")
         )
     }
@@ -149,7 +146,7 @@ class AppIconAliasMappingTest {
     fun bilumaVariantsKeepTheOriginalLauncherComponentNamespace() {
         listOf("com.biluma.app", "com.biluma.app.dev").forEach { applicationId ->
             assertEquals(
-                "com.android.purebilibili.MainActivityAlias3DLauncher",
+                "com.android.purebilibili.MainActivityAlias3DNoIcon",
                 resolveAppIconLauncherAlias(applicationId, "icon_3d")
             )
             assertTrue(

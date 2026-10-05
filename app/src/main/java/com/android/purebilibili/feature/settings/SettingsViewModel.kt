@@ -899,7 +899,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val normalizedIconKey = normalizeAppIconKey(iconKey)
             // 1. 保存偏好
             SettingsManager.setAppIcon(context, normalizedIconKey)
-            applyLauncherAliasForCurrentSplashIconSetting(normalizedIconKey)
+            applyLauncherIconAlias(normalizedIconKey)
         }
     }
 
@@ -908,14 +908,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             SettingsManager.setAppIconAppearance(context, appearance)
             val currentIcon = SettingsManager.getAppIconSync(context)
             if (!supportsAppIconAppearance(currentIcon)) return@launch
-            applyLauncherAliasForCurrentSplashIconSetting(
+            applyLauncherIconAlias(
                 iconKey = currentIcon,
                 appearance = appearance
             )
         }
     }
 
-    private suspend fun applyLauncherAliasForCurrentSplashIconSetting(
+    private suspend fun applyLauncherIconAlias(
         iconKey: String,
         appearance: AppIconAppearance = SettingsManager.getAppIconAppearanceSync(context)
     ) {
@@ -923,17 +923,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // 2. 应用 Alias
         val pm = context.packageManager
         val packageName = context.packageName
-        val splashIconVisible = SettingsManager.isSplashIconAnimationEnabledSync(context)
 
         val targetAlias = resolveAppIconLauncherAlias(
             packageName = packageName,
             rawKey = normalizedIconKey,
-            splashIconVisible = splashIconVisible,
             appearance = appearance
         )
         val allUniqueAliases = allManagedAppIconLauncherAliases(packageName)
 
-        android.util.Log.d("SettingsViewModel", "Switching icon to: $normalizedIconKey, splashIconVisible=$splashIconVisible -> $targetAlias")
+        android.util.Log.d("SettingsViewModel", "Switching icon to: $normalizedIconKey -> $targetAlias")
 
         try {
             // 第一步：先启用目标 alias（确保始终有一个活动入口点）
@@ -1090,20 +1088,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // [New] Splash Screen
     fun toggleSplashEnabled(value: Boolean) { viewModelScope.launch { SettingsManager.setSplashEnabled(context, value) } }
     fun toggleSplashRandomEnabled(value: Boolean) { viewModelScope.launch { SettingsManager.setSplashRandomEnabled(context, value) } }
-    fun setStartupAnimationStyle(value: com.android.purebilibili.core.store.StartupAnimationStyle) {
-        viewModelScope.launch {
-            SettingsManager.setStartupAnimationStyle(context, value)
-        }
-    }
-
-    fun toggleSplashIconAnimationEnabled(value: Boolean) {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            SettingsManager.setSplashIconAnimationEnabled(context, value)
-            val currentIcon = SettingsManager.getAppIconSync(context)
-            applyLauncherAliasForCurrentSplashIconSetting(currentIcon)
-        }
-    }
-
     // [New] 触感反馈
     fun toggleHapticFeedback(value: Boolean) { viewModelScope.launch { SettingsManager.setHapticFeedbackEnabled(context, value) } }
     

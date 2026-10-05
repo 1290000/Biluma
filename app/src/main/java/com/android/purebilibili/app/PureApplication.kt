@@ -647,7 +647,6 @@ class PureApplication : Application(), SingletonImageLoader.Factory, ComponentCa
                     rawKey = DEFAULT_APP_ICON_KEY,
                     appearance = appearance
                 )
-                val splashIconVisible = SettingsManager.isSplashIconAnimationEnabledSync(this@PureApplication)
                 val cacheSynced = this@PureApplication
                     .getSharedPreferences("app_icon_cache", Context.MODE_PRIVATE)
                     .edit()
@@ -660,7 +659,6 @@ class PureApplication : Application(), SingletonImageLoader.Factory, ComponentCa
                 val targetAlias = resolveAppIconLauncherAlias(
                     packageName = packageName,
                     rawKey = currentIcon,
-                    splashIconVisible = splashIconVisible,
                     appearance = appearance
                 )
                 
@@ -732,11 +730,9 @@ class PureApplication : Application(), SingletonImageLoader.Factory, ComponentCa
             if (appearance != AppIconAppearance.FOLLOW_SYSTEM) return@launch
             val currentIcon = SettingsManager.getAppIconSync(this@PureApplication)
             if (!supportsAppIconAppearance(currentIcon)) return@launch
-            val splashIconVisible = SettingsManager.isSplashIconAnimationEnabledSync(this@PureApplication)
             val alias = resolveAppIconLauncherAlias(
                 packageName = packageName,
                 rawKey = currentIcon,
-                splashIconVisible = splashIconVisible,
                 appearance = appearance
             )
             val component = ComponentName(packageName, alias)

@@ -112,23 +112,12 @@ fun supportsAppIconAppearance(rawKey: String?): Boolean {
 fun resolveAppIconLauncherAlias(
     packageName: String,
     rawKey: String?,
-    splashIconVisible: Boolean = true,
     appearance: AppIconAppearance = AppIconAppearance.FOLLOW_SYSTEM
 ): String {
     val normalizedKey = normalizeAppIconKey(rawKey)
-    val aliasMap = if (splashIconVisible) {
-        LAUNCHER_ALIAS_SUFFIX_BY_KEY
-    } else {
-        NO_ICON_LAUNCHER_ALIAS_SUFFIX_BY_KEY
-    }
-    val fixedMaidAliasMap = if (splashIconVisible) {
-        FIXED_MAID_LAUNCHER_ALIAS_SUFFIX_BY_KEY_AND_APPEARANCE
-    } else {
-        FIXED_MAID_NO_ICON_ALIAS_SUFFIX_BY_KEY_AND_APPEARANCE
-    }
-    val aliasSuffix = fixedMaidAliasMap[normalizedKey to appearance]
-        ?: aliasMap[normalizedKey]
-        ?: aliasMap.getValue(DEFAULT_APP_ICON_KEY)
+    val aliasSuffix = FIXED_MAID_NO_ICON_ALIAS_SUFFIX_BY_KEY_AND_APPEARANCE[normalizedKey to appearance]
+        ?: NO_ICON_LAUNCHER_ALIAS_SUFFIX_BY_KEY[normalizedKey]
+        ?: NO_ICON_LAUNCHER_ALIAS_SUFFIX_BY_KEY.getValue(DEFAULT_APP_ICON_KEY)
     return "$APP_ICON_COMPONENT_PACKAGE_NAME.$aliasSuffix"
 }
 

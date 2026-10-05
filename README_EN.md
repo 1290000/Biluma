@@ -28,7 +28,7 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
-| Feature and settings reduction | Items 3 and 5 are implemented in the first popup batch; seven items remain pending, as listed below |
+| Feature and settings reduction | Items 1, 2, 3, 4, and 5 are implemented; four items remain pending, as listed below |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
@@ -44,7 +44,7 @@ This round is being implemented in batches on `feat/ui-simplification`. Approved
 | 1. UI preset | Miuix only; remove MD3-specific UI | Implemented; removed the user-facing preset entry and related resources, fixed runtime selection to Miuix, and retained Material 3 infrastructure for compatibility and fallback |
 | 2. Liquid glass | Enabled; retain non-glass UI and compatibility/performance fallbacks | Implemented; removed the global switch, search entry, and old-backup share entry; runtime is fixed on, with non-glass fallback on unsupported devices |
 | 3. Single-choice presentation | Anchored popup | Implemented; centered single-choice dialog, setting, and preference access removed |
-| 4. Splash icon mask animation | Disabled | Pending |
+| 4. Splash icon mask animation | Disabled | Implemented; removed the toggle, animation styles, and startup-only assets; system splash icons are transparent, while wallpaper, preloading, and launcher compatibility entries remain |
 | 5. Native Miuix popups | Enabled | Implemented; switch and its disabled alternatives removed; Miuix dialogs no longer fall back to Material through this switch |
 | 6. Video tag size | Smallest | Pending |
 | 7. Compact player controls | Enabled | Pending |
