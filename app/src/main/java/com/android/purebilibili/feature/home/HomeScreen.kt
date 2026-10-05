@@ -516,13 +516,6 @@ fun HomeScreen(
         displayedTabIndex = displayedTabIndexFromState
     )
     val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = initialPage) { topTabEntries.size }
-    val heroCarouselPointerActive = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
-    val onHeroCarouselGestureActiveChange = remember(heroCarouselPointerActive) {
-        { active: Boolean -> heroCarouselPointerActive.set(active) }
-    }
-    val shouldYieldHomePagerToHeroCarousel = remember(heroCarouselPointerActive) {
-        { shouldYieldHomeTopPagerToHeroCarousel(heroCarouselPointerActive.get()) }
-    }
     // PagerState 会从 SaveableState 恢复实际页码；不能用 initialPage 判断同步状态，
     // 否则详情返回后可能把恢复的旧页反向写回当前分类。
     val initialPageSyncedWithState = shouldTreatInitialHomePagerPageAsSyncedWithState(
@@ -1682,15 +1675,8 @@ fun HomeScreen(
     val homeTopPresetStyle = remember(topChromePolicy, homeSettings.topTabLabelMode) {
         resolveHomeTopPresetStyle(topChromePolicy, homeSettings.topTabLabelMode)
     }
-    val homeTopSearchMetrics = resolveHomeTopSearchRowMetrics(
-        configuredHeight = homeTopPresetStyle.searchBarHeight,
-        configuredTabsSpacing = homeTopPresetStyle.searchToTabsSpacing,
-        bottomBarSearchEnabled = homeSettings.isBottomBarSearchEnabled,
-        hideTopTabs = effectiveHomeSettings.hideTopTabs,
-        keepTopSearch = homeSettings.keepHomeTopSearchWithBottomSearch,
-    )
-    val searchBarHeightDp = homeTopSearchMetrics.height
-    val searchToTabsSpacingDp = homeTopSearchMetrics.tabsSpacing
+    val searchBarHeightDp = homeTopPresetStyle.searchBarHeight
+    val searchToTabsSpacingDp = homeTopPresetStyle.searchToTabsSpacing
     val tabRowHeightDp = resolveEffectiveHomeTabRowHeight(
         hideTopTabs = effectiveHomeSettings.hideTopTabs,
         defaultTabRowHeight = if (topTabStyle.floating) {
@@ -2072,7 +2058,6 @@ fun HomeScreen(
                                     enabled = homeTopPagerSwipeEnabled,
                                     horizontalLockSlopMultiplier =
                                         HOME_PAGER_HORIZONTAL_LOCK_SLOP_MULTIPLIER,
-                                    shouldYield = shouldYieldHomePagerToHeroCarousel,
                                 ),
                             key = { index -> resolveHomeTopTabEntryKey(topTabEntries, index) }
                         ) { page ->
@@ -2370,19 +2355,6 @@ fun HomeScreen(
                                       verticalItemSpacing = homeFeedCardLayout.verticalItemSpacingDp.dp,
                                       modifier = Modifier.fillMaxSize()
                                   ) {
-                                      // [新增] 用户启用首页横幅时，骨架顶部渲染横幅占位，
-                                      // 与加载完成后的 HomeHeroCarousel 布局对齐
-                                      if (category == HomeCategory.RECOMMEND && homeSettings.homeHeroCarouselEnabled) {
-                                          item(
-                                              key = "home_hero_carousel_skeleton",
-                                              contentType = "home_hero_carousel_skeleton",
-                                              span = StaggeredGridItemSpan.FullLine
-                                          ) {
-                                              HomeFeedHeroCarouselSkeleton(
-                                                  pulse = { skeletonPulseState.value }
-                                              )
-                                          }
-                                      }
                                       // [Fix] Dynamic skeleton count to fill tablet screens (at least 5 rows)
                                       val skeletonItemCount = effectiveGridColumns * 5
                                      items(
@@ -2446,19 +2418,11 @@ fun HomeScreen(
                                      PopularSubCategory,
                                      () -> Unit
                                  ) -> Unit = { pageCategoryState, contentGridState, selectedPopularSubCategory, onPageLoadMore ->
-                                 val pageShowsHeroCarousel = shouldShowHomeHeroCarousel(
-                                     enabled = homeSettings.homeHeroCarouselEnabled,
-                                     category = category,
-                                     itemCount = pageCategoryState.videos.size
-                                 )
                                  val pageContentPadding = PaddingValues(
                                      bottom = homeListBottomPadding,
                                      start = homeFeedCardLayout.outerPaddingDp.dp,
                                      end = homeFeedCardLayout.outerPaddingDp.dp,
-                                     top = resolveHomeFeedTopPaddingDp(
-                                         reservedTopPaddingDp = listTopPadding.value,
-                                         showHeroCarousel = pageShowsHeroCarousel
-                                     ).dp
+                                     top = listTopPadding
                                  )
                                  HomeCategoryPageContent(
                                      category = category,
@@ -2507,10 +2471,6 @@ fun HomeScreen(
                                      homeDurationStyle = homeSettings.homeDurationStyle,
                                      homeFeedCardStyle = homeFeedCardStyle,
                                      showFullVideoCardContent = homeSettings.showFullVideoCardContent,
-                                     homeHeroCarouselEnabled = homeSettings.homeHeroCarouselEnabled,
-                                     homeHeroCarouselAutoplayEnabled = homeSettings.homeHeroCarouselAutoplayEnabled,
-                                     onHeroCarouselGestureActiveChange = onHeroCarouselGestureActiveChange,
-                                     onGetPreviewUrl = { bvid, cid -> viewModel.getPreviewVideoUrl(bvid, cid) },
                                      oldContentAnchorBvid = if (shouldShowRecommendOldContentDivider(
                                              currentCategory = category,
                                              refreshNewItemsKey = refreshNewItemsKey,

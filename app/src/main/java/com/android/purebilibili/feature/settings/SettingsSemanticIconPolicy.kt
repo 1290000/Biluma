@@ -131,7 +131,6 @@ internal enum class SettingsIconRole {
     AUTO_HIGHEST_QUALITY,
     AUTO_PLAY_ON_OPEN,
     STARTUP_PORTRAIT_FEED,
-    HOME_HERO_AUTOPLAY,
     AUTO_PLAY_NEXT,
     VIDEO_NOTE_COLLAPSE,
     INTERACTIVE_COMMANDS,
@@ -140,7 +139,6 @@ internal enum class SettingsIconRole {
     SYSTEM_BRIGHTNESS,
     APP_ICON,
     HOME_CARD_STATS_COMPACT,
-    HOME_HERO_CAROUSEL,
     HOME_ONLINE_COUNT,
     PORTRAIT_STORY_ENTRY,
     DISPLAY_SCALE,
@@ -182,7 +180,6 @@ internal enum class SettingsIconRole {
     SPACE_PLAYED_VIDEO_LOCATE,
     IMAGE_LONG_PRESS_ACTION,
     PLAYER_COLLAPSE_PAUSE,
-    BOTTOM_BAR_SEARCH,
     DATA_SAVER_COVER_QUALITY,
     SEGMENT_LOADING_COMPATIBILITY,
     NOTIFICATION_SCOPE_MESSAGE,
@@ -330,7 +327,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.AUTO_HIGHEST_QUALITY -> R.drawable.ms_settings_suggest_24
     SettingsIconRole.AUTO_PLAY_ON_OPEN -> R.drawable.ms_play_arrow_24
     SettingsIconRole.STARTUP_PORTRAIT_FEED -> R.drawable.ms_vertical_align_top_24
-    SettingsIconRole.HOME_HERO_AUTOPLAY -> R.drawable.ms_smart_display_24
     SettingsIconRole.AUTO_PLAY_NEXT -> R.drawable.ms_playlist_play_24
     SettingsIconRole.VIDEO_NOTE_COLLAPSE -> R.drawable.ms_short_text_24
     SettingsIconRole.INTERACTIVE_COMMANDS -> R.drawable.ms_comments_disabled_24
@@ -339,7 +335,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.SYSTEM_BRIGHTNESS -> R.drawable.ms_brightness_medium_24
     SettingsIconRole.APP_ICON -> R.drawable.ms_apps_24
     SettingsIconRole.HOME_CARD_STATS_COMPACT -> R.drawable.ms_stacked_bar_chart_24
-    SettingsIconRole.HOME_HERO_CAROUSEL -> R.drawable.ms_view_day_24
     SettingsIconRole.HOME_ONLINE_COUNT -> R.drawable.ms_groups_24
     SettingsIconRole.PORTRAIT_STORY_ENTRY -> R.drawable.ms_stay_current_portrait_24
     SettingsIconRole.DISPLAY_SCALE -> R.drawable.ms_zoom_out_map_24
@@ -381,7 +376,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.SPACE_PLAYED_VIDEO_LOCATE -> R.drawable.ms_search_24
     SettingsIconRole.IMAGE_LONG_PRESS_ACTION -> R.drawable.ms_photo_library_24
     SettingsIconRole.PLAYER_COLLAPSE_PAUSE -> R.drawable.ms_pause_24
-    SettingsIconRole.BOTTOM_BAR_SEARCH -> R.drawable.ms_search_fill_24
     SettingsIconRole.DATA_SAVER_COVER_QUALITY -> R.drawable.ms_wifi_24
     SettingsIconRole.SEGMENT_LOADING_COMPATIBILITY -> R.drawable.ms_cloud_download_24
     SettingsIconRole.NOTIFICATION_SCOPE_MESSAGE -> R.drawable.ms_mail_24
@@ -461,7 +455,6 @@ internal fun resolveSettingsSemanticIconSizeDp(
         SettingsIconRole.BOTTOM_BAR,
         SettingsIconRole.DISPLAY_STYLE,
         SettingsIconRole.GRID_COLUMNS,
-        SettingsIconRole.HOME_HERO_CAROUSEL,
         SettingsIconRole.APP_ICON -> 19
 
         SettingsIconRole.PLAYBACK_QUALITY,
@@ -600,7 +593,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.AUTO_HIGHEST_QUALITY -> MiuixIcons.TopDownloads
     SettingsIconRole.AUTO_PLAY_ON_OPEN -> MiuixIcons.Play
     SettingsIconRole.STARTUP_PORTRAIT_FEED -> MiuixIcons.GridView
-    SettingsIconRole.HOME_HERO_AUTOPLAY -> MiuixIcons.Recording
     SettingsIconRole.AUTO_PLAY_NEXT -> MiuixIcons.Playlist
     SettingsIconRole.VIDEO_NOTE_COLLAPSE -> MiuixIcons.MoreCircle
     SettingsIconRole.INTERACTIVE_COMMANDS -> MiuixIcons.MicSlash
@@ -609,7 +601,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.SYSTEM_BRIGHTNESS -> MiuixIcons.Show
     SettingsIconRole.APP_ICON -> MiuixIcons.All
     SettingsIconRole.HOME_CARD_STATS_COMPACT -> MiuixIcons.Sort
-    SettingsIconRole.HOME_HERO_CAROUSEL -> MiuixIcons.Album
     SettingsIconRole.HOME_ONLINE_COUNT -> MiuixIcons.ContactsBook
     SettingsIconRole.PORTRAIT_STORY_ENTRY -> MiuixIcons.Phone
     SettingsIconRole.DISPLAY_SCALE -> MiuixIcons.ZoomOut
@@ -651,7 +642,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.SPACE_PLAYED_VIDEO_LOCATE -> MiuixIcons.Search
     SettingsIconRole.IMAGE_LONG_PRESS_ACTION -> MiuixIcons.MoreCircle
     SettingsIconRole.PLAYER_COLLAPSE_PAUSE -> MiuixIcons.Pause
-    SettingsIconRole.BOTTOM_BAR_SEARCH -> MiuixIcons.Search
     SettingsIconRole.DATA_SAVER_COVER_QUALITY -> MiuixIcons.Download
     SettingsIconRole.SEGMENT_LOADING_COMPATIBILITY -> MiuixIcons.Merge
     SettingsIconRole.NOTIFICATION_SCOPE_MESSAGE -> MiuixIcons.Messages

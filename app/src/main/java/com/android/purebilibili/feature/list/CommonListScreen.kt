@@ -734,13 +734,10 @@ fun CommonListScreen(
         androidx.compose.runtime.mutableStateOf(initialFavoriteSearchScope)
     }
     val hideListTopSearchBar = shouldHideListTopSearchBar(
-        bottomBarSearchEnabled = homeSettings.isBottomBarSearchEnabled,
-        listScopedSearchEnabled = homeSettings.listScopedSearchEnabled,
+        hasScopedSearchEntry = listScopedSearchChannel != null,
         isSearchDestination = isSearchDestination,
     )
     val showListScopedSearchActiveBar = shouldShowListScopedSearchActiveBar(
-        bottomBarSearchEnabled = homeSettings.isBottomBarSearchEnabled,
-        listScopedSearchEnabled = homeSettings.listScopedSearchEnabled,
         searchQuery = searchQuery,
     )
     LaunchedEffect(listScopedSearchChannel) {
@@ -1830,8 +1827,6 @@ fun CommonListScreen(
 
                     // 🔍 搜索栏。历史页开启全局液态玻璃复用后，搜索与筛选各自成为
                     // 一条独立 Dock，结构与首页顶部一致。
-                    // 「列表精简搜索」开启后隐藏顶栏搜索，由底栏胶囊页内搜索；有关键词时
-                    // 显示轻量结果条以便确认与清除。
                     if (hideListTopSearchBar) {
                         if (showListScopedSearchActiveBar) {
                             ListScopedSearchActiveBar(

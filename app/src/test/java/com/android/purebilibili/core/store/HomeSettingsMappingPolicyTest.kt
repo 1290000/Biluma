@@ -44,10 +44,6 @@ class HomeSettingsMappingPolicyTest {
         assertFalse(result.isTopBarLiquidGlassEnabled)
         assertFalse(result.isHomeSearchLiquidGlassEnabled)
         assertFalse(result.isBottomBarLiquidGlassEnabled)
-        assertFalse(result.isBottomBarSearchEnabled)
-        assertFalse(result.listScopedSearchEnabled)
-        assertEquals(BottomBarSearchAutoExpandMode.EXPAND_AT_HOME_TOP, result.bottomBarSearchAutoExpandMode)
-        assertEquals(BottomBarSearchLayoutMode.FULL_DOCK, result.bottomBarSearchLayoutMode)
         assertTrue(result.androidNativeLiquidGlassEnabled)
         assertTrue(result.isLiquidGlassEnabled)
         assertEquals(LiquidGlassStyle.SUKISU, result.liquidGlassStyle)
@@ -102,10 +98,6 @@ class HomeSettingsMappingPolicyTest {
             booleanPreferencesKey("top_bar_liquid_glass_enabled") to true,
             booleanPreferencesKey("home_search_liquid_glass_enabled") to false,
             booleanPreferencesKey("bottom_bar_liquid_glass_enabled") to false,
-            booleanPreferencesKey("bottom_bar_search_enabled") to true,
-            booleanPreferencesKey("list_scoped_search_enabled") to true,
-            intPreferencesKey("bottom_bar_search_auto_expand_mode") to BottomBarSearchAutoExpandMode.DISABLED.value,
-            intPreferencesKey("bottom_bar_search_layout_mode") to BottomBarSearchLayoutMode.HOME_AND_SEARCH.value,
             booleanPreferencesKey("android_native_liquid_glass_enabled") to true,
             intPreferencesKey("liquid_glass_style") to LiquidGlassStyle.IOS26.value,
             intPreferencesKey("liquid_glass_advanced_preset") to
@@ -156,10 +148,6 @@ class HomeSettingsMappingPolicyTest {
         assertTrue(result.isTopBarLiquidGlassEnabled)
         assertFalse(result.isHomeSearchLiquidGlassEnabled)
         assertFalse(result.isBottomBarLiquidGlassEnabled)
-        assertTrue(result.isBottomBarSearchEnabled)
-        assertTrue(result.listScopedSearchEnabled)
-        assertEquals(BottomBarSearchAutoExpandMode.DISABLED, result.bottomBarSearchAutoExpandMode)
-        assertEquals(BottomBarSearchLayoutMode.HOME_AND_SEARCH, result.bottomBarSearchLayoutMode)
         assertTrue(result.androidNativeLiquidGlassEnabled)
         assertFalse(result.isLiquidGlassEnabled)
         assertEquals(LiquidGlassStyle.IOS26, result.liquidGlassStyle)

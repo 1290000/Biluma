@@ -228,7 +228,7 @@ class VerticalPriorityPagerGestureTest {
         assertTrue(homePager.contains("userScrollEnabled = false"))
         assertTrue(homePager.contains(".verticalPriorityHorizontalPagerSwipe("))
         assertTrue(homePager.contains("HOME_PAGER_HORIZONTAL_LOCK_SLOP_MULTIPLIER"))
-        assertTrue(homePager.contains("shouldYield = shouldYieldHomePagerToHeroCarousel"))
+        assertFalse(homePager.contains("shouldYield = shouldYieldHomePagerToHeroCarousel"))
 
         val commentPager = videoContentSource
             .substringAfter("HorizontalPager(")

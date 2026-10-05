@@ -63,8 +63,8 @@ class HomeCategoryPageKeyPolicyTest {
     }
 
     @Test
-    fun `hero carousel dedup key uses bvid before numeric ids`() {
-        val key = resolveHomeHeroCarouselDedupKey(
+    fun `feed video dedup key uses bvid before numeric ids`() {
+        val key = resolveHomeFeedVideoDedupKey(
             VideoItem(id = 42L, aid = 77L, bvid = "BV1SEorB6E6u")
         )
 
@@ -72,8 +72,8 @@ class HomeCategoryPageKeyPolicyTest {
     }
 
     @Test
-    fun `hero carousel dedup key falls back when bvid is blank`() {
-        val key = resolveHomeHeroCarouselDedupKey(
+    fun `feed video dedup key falls back when bvid is blank`() {
+        val key = resolveHomeFeedVideoDedupKey(
             VideoItem(id = 42L, aid = 77L)
         )
 

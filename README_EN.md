@@ -4,7 +4,7 @@ An independently maintained third-party Bilibili Android client based on [BiliPa
 
 [简体中文](README.md) · [Repository](https://github.com/1290000/Biluma) · [Issues](https://github.com/1290000/Biluma/issues) · [Releases](https://github.com/1290000/Biluma/releases)
 
-> **This project is in early development and has no independent Biluma release yet.** The feature-reduction list has not been decided, so this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
+> **This project is in early development and has no independent Biluma release yet.** The full reduction scope is still being decided, so this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
 
 ## Project identity
 
@@ -28,12 +28,23 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
-| Feature and settings reduction | Not started; decisions to retain, fix behavior, remove, or redesign features are pending |
+| Feature and settings reduction | First home/navigation settings consolidation implemented; other retain/remove/redesign decisions remain open |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
 
 Changes have only received static checks and an update API connectivity check. Regression test code has been added, but tests, compilation, installation, and on-device verification have not been performed. Configuration and command examples do not establish that a build succeeds.
+
+## Fixed home and navigation behavior
+
+The main app no longer exposes these switches. Legacy preferences, shared settings, and restored backups cannot override the fixed behavior:
+
+- The home cover carousel is removed, including its autoplay option and dedicated implementation; recommendations use the complete regular video feed.
+- Bottom-bar search is enabled and the home top search bar is retained. Scrolling down no longer merges the search control, navigation dock, and playback strip.
+- Favorites, history, and watch-later use compact page-scoped search when hosted in the main navigation with an available bottom search entry. Search results can still be inspected and cleared. Standalone search pages, sidebar layouts, and lists without bottom search retain a top search entry.
+- The sidebar account-switch entry is always available when using the sidebar; sidebar navigation itself is not forced on.
+
+Unused legacy bottom-search auto-expansion and layout modes are also removed. Active search input, search-page transitions, playback-strip state transitions, and shared navigation visuals remain. The TV module is unchanged. Regression tests are added and static checks are performed; tests, compilation, and on-device verification have not been run for this batch.
 
 ## Downloads and feedback
 

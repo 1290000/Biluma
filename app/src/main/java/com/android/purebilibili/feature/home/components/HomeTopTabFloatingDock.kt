@@ -88,7 +88,7 @@ internal fun resolveHomeTopTabFloatingDockWidth(
         darkTheme = false,
     ).outerHorizontalPaddingDp.dp,
     labelMode = labelMode,
-    cornerRadius = resolveBiliPaiBottomBarDockHeight(searchExpanded = false) / 2,
+    cornerRadius = resolveBiliPaiBottomBarDockHeight() / 2,
 )
 
 /** Top category navigation matching the active bottom-bar renderer contract. */
@@ -193,7 +193,7 @@ internal fun HomeTopTabFloatingDock(
         }
         return
     }
-    val dockHeight = resolveBiliPaiBottomBarDockHeight(searchExpanded = false)
+    val dockHeight = resolveBiliPaiBottomBarDockHeight()
     val isDarkTheme = resolveBottomBarDarkTheme(AppSurfaceTokens.background())
     val isBlurActive = liquidGlassEffectsEnabled || (miuixBackdrop != null)
     val bottomBarTuning = resolveAndroidNativeBottomBarTuning(

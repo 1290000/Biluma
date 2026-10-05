@@ -37,7 +37,7 @@ class LinkedBottomDockStructureTest {
         assertTrue(visual.contains("graphicsLayer { alpha = fieldAlpha() }"))
         assertFalse(visual.contains(".alpha(fieldAlpha"))
         assertTrue(visual.contains("pendingUserImeRequest: Boolean = false"))
-        assertTrue(visual.contains("shouldRequestBottomBarSearchIme(pendingUserImeRequest)"))
+        assertTrue(visual.contains("if (!pendingUserImeRequest)"))
         assertFalse(visual.contains("if (expanded && interactive) focusRequester.requestFocus()"))
     }
 

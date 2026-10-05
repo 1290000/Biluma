@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,7 +33,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.unit.dp
 import com.android.purebilibili.core.store.HomeWallpaperEffectMode
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.AppShapes
@@ -239,46 +237,6 @@ private fun HomeFeedSkeletonBlock(
             .clip(resolvedShape)
             .homeFeedSkeletonBlockBackground(pulse, baseColor, isDarkTheme)
     )
-}
-
-/**
- * 首页横幅（Hero Carousel）骨架占位。
- * 与真实横幅 [HomeHeroCarousel] 对齐：垂直 padding、当前窗口限宽限高、卡片圆角。
- */
-@Composable
-internal fun HomeFeedHeroCarouselSkeleton(
-    pulse: () -> Float,
-    modifier: Modifier = Modifier
-) {
-    val cardShape = AppShapes.container(ContainerLevel.Card)
-    val isDarkCardTheme = AppSurfaceTokens.chromeBackground().luminance() < 0.5f
-    val blockBaseColor = MaterialTheme.colorScheme.onSurface
-    val windowSizeClass = com.android.purebilibili.core.util.LocalWindowSizeClass.current
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = AppSpacingTokens.ExtraSmall)
-    ) {
-        val layout = remember(
-            maxWidth,
-            windowSizeClass.widthDp,
-            windowSizeClass.heightDp,
-        ) {
-            resolveHomeHeroCarouselLayout(
-                containerWidthDp = maxWidth.value,
-                windowWidthDp = windowSizeClass.widthDp.value,
-                windowHeightDp = windowSizeClass.heightDp.value,
-            )
-        }
-        Box(
-            modifier = Modifier
-                .width(layout.widthDp.dp)
-                .aspectRatio(layout.aspectRatio)
-                .clip(cardShape)
-                .homeFeedSkeletonBlockBackground(pulse, blockBaseColor, isDarkCardTheme)
-                .align(Alignment.Center)
-        )
-    }
 }
 
 /**

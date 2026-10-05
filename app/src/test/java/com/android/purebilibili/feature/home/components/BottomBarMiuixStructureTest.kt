@@ -2,7 +2,6 @@ package com.android.purebilibili.feature.home.components
 
 import java.io.File
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -45,14 +44,12 @@ class BottomBarMiuixStructureTest {
         assertTrue(renderer.contains("FloatingBottomBarColors("))
         assertTrue(renderer.contains("shellHeight = dockHeight"))
         assertTrue(renderer.contains("indicatorHeight = resolveBiliPaiBottomBarIndicatorHeight(dockHeight)"))
-        assertTrue(renderer.contains("BiliPaiBottomBarSearchSlot("))
+        assertTrue(source.contains("LinkedBottomDock("))
         assertTrue(renderer.contains("BottomBarSkinDecorativeTrim("))
         assertTrue(renderer.contains("uiSkinDecoration: BottomBarUiSkinDecoration? = null"))
-        assertTrue(source.contains("private data class BiliPaiBottomBarSearchLayoutState("))
-        assertTrue(source.contains("private fun rememberBiliPaiBottomBarSearchLayoutState("))
+        assertTrue(source.contains("private data class BiliPaiBottomBarLayoutState("))
+        assertTrue(source.contains("private fun rememberBiliPaiBottomBarLayoutState("))
         assertTrue(source.contains("resolveBiliPaiFloatingBottomBarWidth("))
-        assertTrue(source.contains("resolveBiliPaiBottomBarSearchLayout("))
-        assertTrue(source.contains("val shellHeight = if (dockHeight > searchHeight) dockHeight else searchHeight"))
         assertTrue(source.contains("BOTTOM_BAR_INDICATOR_DRAG_SCALE_TARGET =") ||
             floatingSource.contains("BottomBarReferencePressedScale"))
 
@@ -120,27 +117,6 @@ class BottomBarMiuixStructureTest {
         assertFalse(host.contains("miuixVibrancy()"))
         assertFalse(host.contains("miuixLens("))
         assertFalse(host.contains(".biliPaiMiuixFloatingDockSurface("))
-    }
-
-    @Test
-    fun `disabled sukisu search path skips search layout animations`() {
-        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
-        val layoutStateSource = source
-            .substringAfter("private fun rememberBiliPaiBottomBarSearchLayoutState(")
-            .substringBefore("private const val BottomBarSearchTopThresholdPx")
-
-        assertTrue(layoutStateSource.contains("if (!searchEnabled) {"))
-        assertTrue(layoutStateSource.contains("searchWidth = AppSpacingTokens.None"))
-        assertTrue(layoutStateSource.contains("searchGap = AppSpacingTokens.None"))
-        assertTrue(layoutStateSource.contains("searchHeight = AppSpacingTokens.None"))
-        assertTrue(layoutStateSource.contains("return BiliPaiBottomBarSearchLayoutState("))
-
-        val disabledBranch = layoutStateSource
-            .substringAfter("if (!searchEnabled) {")
-            .substringBefore("val searchWidth by animateDpAsState(")
-        assertFalse(disabledBranch.contains("label = \"bottomBarSearchWidth\""))
-        assertFalse(disabledBranch.contains("label = \"bottomBarSearchGap\""))
-        assertFalse(disabledBranch.contains("label = \"bottomBarSearchHeight\""))
     }
 
     @Test
@@ -242,16 +218,6 @@ class BottomBarMiuixStructureTest {
     }
 
     @Test
-    fun `search layout reservation does not follow the current home item`() {
-        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
-        val renderer = source.substringAfter("fun BiliPaiFloatingBottomBar(")
-
-        assertTrue(renderer.contains("val searchLayoutReserved = shouldReserveBottomBarSearchLayout("))
-        assertTrue(renderer.contains("searchEnabled = searchLayoutReserved"))
-        assertTrue(renderer.contains("visible = searchLayoutReserved"))
-    }
-
-    @Test
     fun `floating bottom bar forwards pager position to draggable indicator`() {
         val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
         val floatingBarSource = source.substringAfter("fun BiliPaiFloatingBottomBar(")
@@ -263,93 +229,6 @@ class BottomBarMiuixStructureTest {
                 "isScrollInProgressProvider = isPagerScrollInProgressProvider"
             )
         )
-    }
-
-    @Test
-    fun `bottom bar search click keeps capsule scale stable`() {
-        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
-        val refractionProfileSource = source
-            .substringAfter("internal fun resolveBottomBarRefractionMotionProfile(")
-            .substringBefore("@Composable\nfun FrostedBottomBar(")
-        val searchCapsuleSource = source
-            .substringAfter("private fun BiliPaiBottomBarSearchCapsule(")
-            .substringBefore("@Composable\nprivate fun RowScope.BottomBarInputTarget(")
-            .ifEmpty {
-                source.substringAfter("private fun BiliPaiBottomBarSearchCapsule(")
-                    .substringBefore("@Composable\nprivate fun RowScope.AndroidNativeBottomBarItem(")
-            }
-
-        assertTrue(searchCapsuleSource.contains("label = \"bottomBarSearchFieldAlpha\""))
-        assertTrue(searchCapsuleSource.contains("label = \"bottomBarSearchIconScale\""))
-        assertFalse(searchCapsuleSource.contains("bottomBarSearchLongPressHorizontalScale"))
-        assertFalse(searchCapsuleSource.contains("rememberBottomBarClickPulseTransform(searchClickPulseKey)"))
-        assertFalse(searchCapsuleSource.contains("searchClickPulseKey += 1"))
-        assertFalse(searchCapsuleSource.contains("detectTapGestures("))
-        assertFalse(searchCapsuleSource.contains("onLongPress = {"))
-        assertFalse(searchCapsuleSource.contains("currentHaptic(HapticType.SELECTION)"))
-        assertTrue(searchCapsuleSource.contains("val currentOnSubmit by rememberUpdatedState(onSubmit)"))
-        assertTrue(searchCapsuleSource.contains("val currentHaptic by rememberUpdatedState(haptic)"))
-        assertTrue(searchCapsuleSource.contains("role = Role.Button"))
-        assertFalse(searchCapsuleSource.contains("modifier.pointerInput(onExpandChange)"))
-        val collapsedTapSource = searchCapsuleSource
-            .substringAfter("role = Role.Button")
-            .substringBefore("} else {")
-        assertTrue(collapsedTapSource.contains("currentOnCompactClick()"))
-        assertFalse(collapsedTapSource.contains("currentOnExpandChange(true)"))
-        assertTrue(searchCapsuleSource.contains("BasicTextField("))
-        assertTrue(searchCapsuleSource.contains("onClick = onSubmit"))
-        assertTrue(searchCapsuleSource.contains("keyboardActions = KeyboardActions(onSearch = { onSubmit() })"))
-        assertFalse(searchCapsuleSource.contains("launchSearchFromExpandedBlankQuery"))
-        assertTrue(searchCapsuleSource.contains("contentDescription = \"搜索输入框\""))
-        assertTrue(searchCapsuleSource.contains("animationSpec = bottomBarContentVisibilityMotionSpec()"))
-        assertTrue(searchCapsuleSource.contains("pendingUserImeRequest = true"))
-        assertTrue(source.contains("resolveBottomBarSearchExpansionOverrideAfterSubmit("))
-        assertTrue(source.contains("shouldRequestBottomBarSearchIme("))
-        assertTrue(source.contains("shouldDismissBottomBarSearchImeOnScroll("))
-        assertFalse(source.contains("if (expanded && interactive) focusRequester.requestFocus()"))
-        assertFalse(source.contains("private fun rememberBottomBarSettlePulseTransform("))
-        assertFalse(source.contains("settlePulseKey = if (index == selectedIndex)"))
-        assertTrue(refractionProfileSource.contains("rawProgress * rawProgress * (3f - 2f * rawProgress)"))
-        assertFalse(refractionProfileSource.contains("resolveBottomBarIOSMotionProgress"))
-    }
-
-    @Test
-    fun `search launch completes handoff without forcing compact home dock`() {
-        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
-
-        val spec = resolveBottomBarSearchLaunchMorphSpec()
-        assertEquals(190, spec.expandDurationMillis)
-        assertEquals(40L, spec.postHandoffResetDelayMillis)
-
-        assertTrue(source.contains("searchLaunchKey: Int = 0"))
-        assertTrue(source.contains("onSearchLaunchTransitionFinished: (Int) -> Unit = {}"))
-        assertFalse(source.contains("searchLaunchInProgress = true"))
-        assertFalse(source.contains("searchExpansionOverride = BottomBarSearchExpansionOverride.EXPANDED"))
-        assertTrue(source.contains("delay(searchLaunchMorphSpec.expandDurationMillis.toLong())"))
-        assertTrue(source.contains("onSearchLaunchTransitionFinished(searchLaunchKey)"))
-        assertFalse(source.contains("searchLaunchProgressState.animateTo("))
-        assertFalse(source.contains("scaleX = lerp(1f, searchLaunchSpec.targetScaleX, searchLaunchProgress)"))
-        assertFalse(source.contains("scaleY = lerp(1f, searchLaunchSpec.targetScaleY, searchLaunchProgress)"))
-        assertFalse(source.contains("alpha = lerp(1f, searchLaunchSpec.targetAlpha, searchLaunchProgress)"))
-        assertTrue(source.contains("launchAdjustedSearchGap = searchGap"))
-        assertFalse(source.contains("Spacer(modifier = Modifier.width(searchGap))"))
-        assertTrue(source.contains("Spacer(modifier = Modifier.width(launchAdjustedSearchGap))"))
-    }
-
-    @Test
-    fun `sukisu search stays outside FloatingBottomBar dock`() {
-        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
-        val renderer = biliPaiFloatingBody(source)
-
-        assertFalse(source.contains("private fun BiliPaiBottomBarSearchRefractionCapture("))
-        assertFalse(renderer.contains("BiliPaiBottomBarSearchRefractionCapture("))
-        assertTrue(renderer.contains("BiliPaiBottomBarSearchSlot("))
-        assertTrue(renderer.contains("FloatingBottomBar("))
-        // Search is a sibling after the dock Box, not inside FloatingBottomBar content.
-        val floatingCall = renderer.indexOf("FloatingBottomBar(")
-        val searchCall = renderer.indexOf("BiliPaiBottomBarSearchSlot(")
-        assertTrue(floatingCall >= 0)
-        assertTrue(searchCall > floatingCall)
     }
 
     @Test
@@ -472,7 +351,7 @@ class BottomBarMiuixStructureTest {
 
         val officialToolbarSource = source
             .substringAfter("private fun OfficialMd3FloatingToolbarContent(")
-            .substringBefore("private fun OfficialMd3FloatingBottomBar(")
+            .substringBefore("private fun MaterialBottomBarAnimatedIcon(")
 
         assertTrue(
             officialToolbarSource.contains("HorizontalFloatingToolbar("),
@@ -495,6 +374,19 @@ class BottomBarMiuixStructureTest {
             }
         }
         return after
+    }
+
+    @Test
+    fun linkedSearchRemainsOutsideNavigationChrome() {
+        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
+        val host = source.substringAfter("private fun BiliPaiFloatingBottomBar(")
+            .substringBefore("private fun BiliPaiFloatingBottomBarChrome(")
+        val chrome = biliPaiFloatingBody(source)
+        assertTrue(host.contains("LinkedBottomDock("))
+        assertTrue(host.contains("navigationContent = {"))
+        assertFalse(chrome.contains("BiliPaiBottomBarSearchSlot("))
+        assertFalse(chrome.contains("searchExpansionOverride"))
+        assertTrue(chrome.contains("FloatingBottomBar("))
     }
 
     private fun loadSource(path: String): String {

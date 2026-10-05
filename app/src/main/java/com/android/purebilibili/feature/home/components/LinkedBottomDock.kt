@@ -69,9 +69,7 @@ internal fun LinkedBottomDock(
     currentItem: BottomNavItem,
     firstItem: BottomNavItem,
     firstLabel: String,
-    searchEnabled: Boolean,
     isFeedScrollInProgress: Boolean,
-    collapseRequested: Boolean,
     onSearchClick: () -> Unit,
     onSearchKeywordSubmit: (String) -> Unit,
     containerColor: Color,
@@ -86,7 +84,6 @@ internal fun LinkedBottomDock(
     dockPhase: LinkedDockPhase? = null,
     onDockPhaseChange: ((LinkedDockPhase) -> Unit)? = null,
     isTopLevelDestination: Boolean = true,
-    mergeOnScrollDownEnabled: Boolean = true,
     animateNowPlayingPresence: Boolean = true,
     modifier: Modifier = Modifier,
     blurEnabled: Boolean = false,
@@ -94,11 +91,9 @@ internal fun LinkedBottomDock(
     navigationContent: @Composable () -> Unit,
 ) {
     val hasAudio = nowPlayingContent != null
-    var internalPhase by remember(currentItem, searchEnabled) {
+    var internalPhase by remember(currentItem) {
         mutableStateOf(
             resolveLinkedDockInitialPhase(
-                currentItem = currentItem,
-                collapseRequested = collapseRequested,
                 hasAudio = hasAudio,
                 savedPhase = dockPhase,
             )
@@ -130,7 +125,7 @@ internal fun LinkedBottomDock(
     val currentPhase by rememberUpdatedState(phase)
     val scrolling by rememberUpdatedState(isFeedScrollInProgress)
     val threshold = with(LocalDensity.current) { 24.dp.toPx() }
-    LaunchedEffect(currentItem, hasAudio, searchEnabled, scroll, threshold, isTopLevelDestination, mergeOnScrollDownEnabled) {
+    LaunchedEffect(currentItem, hasAudio, scroll, threshold, isTopLevelDestination) {
         var previous = scroll.floatValue
         var accumulated = 0f
         snapshotFlow { scroll.floatValue to scrolling }.collect { (offset, active) ->
@@ -138,37 +133,13 @@ internal fun LinkedBottomDock(
             previous = offset
             if (!active || !isTopLevelDestination || currentPhase == LinkedDockPhase.Search) {
                 accumulated = 0f
-            } else if (!mergeOnScrollDownEnabled) {
-                // 用户选择下滑不合体：只保留向上滚动回到展开（分体）的能力。
-                accumulated = accumulateDockScroll(accumulated, delta)
-                if ((offset <= 0f && delta < 0f) || accumulated <= -threshold) {
-                    updatePhase(LinkedDockPhase.Expanded)
-                    accumulated = 0f
-                }
             } else {
                 accumulated = accumulateDockScroll(accumulated, delta)
                 if ((offset <= 0f && delta < 0f) || accumulated <= -threshold) {
                     updatePhase(LinkedDockPhase.Expanded)
                     accumulated = 0f
-                } else if (hasAudio && accumulated >= threshold) {
-                    updatePhase(LinkedDockPhase.Playback)
-                    accumulated = 0f
                 }
             }
-        }
-    }
-    // Keep the dock phase while a child destination covers the current tab. Keying this effect
-    // by isTopLevelDestination made the returning page re-expand/re-collapse the playback strip,
-    // which also shifted the predictive-back target after the gesture had started.
-    // Skip while the list is scrolling so resting phase does not fight scroll-driven search size.
-    LaunchedEffect(currentItem, collapseRequested, hasAudio) {
-        if (
-            isTopLevelDestination &&
-            currentItem != BottomNavItem.HOME &&
-            currentPhase != LinkedDockPhase.Search &&
-            !isFeedScrollInProgress
-        ) {
-            updatePhase(resolveLinkedDockRestingPhase(collapseRequested, hasAudio))
         }
     }
     fun expand() {
@@ -321,7 +292,7 @@ internal fun LinkedBottomDock(
                 cornerRadius = 32.dp,
             ).roundToPx()
         }
-        val reservedSearchWidth = if (searchEnabled) button + gap else 0
+        val reservedSearchWidth = button + gap
         val expandedNavigationWidth = preferredNavigationWidth.coerceAtMost(
             (maximumWidth - reservedSearchWidth).coerceAtLeast(0)
         )
@@ -331,7 +302,6 @@ internal fun LinkedBottomDock(
             navigationWidth = navWidth,
             button = button,
             gap = gap,
-            searchEnabled = searchEnabled,
         )
         // 小横条展开态与底栏整簇（导航胶囊 + 搜索圆钮）同宽同起点：
         // 两行胶囊长度一致、左右边缘对齐。
@@ -456,7 +426,6 @@ internal fun LinkedBottomDock(
                                 barHeight = barHeight,
                                 gap = gap,
                                 hasAudio = true,
-                                searchEnabled = searchEnabled,
                                 mergeProgress = merge.value,
                                 searchProgress = search.value,
                                 verticalGap = verticalGap,
@@ -480,7 +449,6 @@ internal fun LinkedBottomDock(
                                 barHeight = barHeight,
                                 gap = gap,
                                 hasAudio = true,
-                                searchEnabled = searchEnabled,
                                 mergeProgress = merge.value,
                                 searchProgress = search.value,
                                 verticalGap = verticalGap,
@@ -526,7 +494,6 @@ internal fun LinkedBottomDock(
                             barHeight = barHeight,
                             gap = gap,
                             hasAudio = hasAudio,
-                            searchEnabled = searchEnabled,
                             mergeProgress = merge.value,
                             searchProgress = search.value,
                             verticalGap = verticalGap,
@@ -551,7 +518,6 @@ internal fun LinkedBottomDock(
                             barHeight = barHeight,
                             gap = gap,
                             hasAudio = hasAudio,
-                            searchEnabled = searchEnabled,
                             mergeProgress = merge.value,
                             searchProgress = search.value,
                             verticalGap = verticalGap,
@@ -564,69 +530,67 @@ internal fun LinkedBottomDock(
                         }
                     },
             ) {
-                if (searchEnabled) {
-                    Box(Modifier.fillMaxSize()) {
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .biliPaiFloatingDockShell(
-                                    backdrop = backdrop,
-                                    containerColor = containerColor,
-                                    pressProgress = 0f,
-                                    shape = shape,
-                                    enabled = glassEnabled,
-                                    blurEnabled = blurEnabled,
-                                    hazeState = hazeState,
-                                    liquidGlassTuning = liquidGlassTuning,
-                                )
-                        )
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .clip(shape)
-                                .then(
-                                    if (phase != LinkedDockPhase.Search) {
-                                        Modifier.clickable(role = Role.Button) {
-                                            phaseBeforeSearch = phase
-                                            pendingUserImeRequest = true
-                                            updatePhase(LinkedDockPhase.Search)
-                                        }
-                                    } else Modifier
-                                )
-                        ) {
-                            BiliPaiBottomBarSearchVisualContent(
-                                expanded = phase == LinkedDockPhase.Search ||
-                                    phase == LinkedDockPhase.Compact,
-                                query = query,
-                                onQueryChange = { query = it },
-                                onSubmit = {
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
-                                    val keyword = query.trim()
-                                    query = ""
-                                    if (keyword.isBlank()) {
-                                        onSearchClick()
-                                    } else {
-                                        onSearchKeywordSubmit(keyword)
-                                        pendingUserImeRequest = false
-                                        updatePhase(
-                                            resolveLinkedDockPhaseOnSearchDismiss(
-                                                hasAudio = hasAudio,
-                                                previousPhase = phaseBeforeSearch,
-                                            )
-                                        )
-                                    }
-                                },
-                                contentColor = contentColor,
-                                accentColor = accentColor,
-                                iconScale = identityIconScaleProvider,
-                                fieldAlpha = searchProgressProvider,
-                                interactive = phase == LinkedDockPhase.Search,
-                                iconStyle = iconStyle,
-                                pendingUserImeRequest = pendingUserImeRequest,
-                                onUserImeRequestConsumed = { pendingUserImeRequest = false },
+                Box(Modifier.fillMaxSize()) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .biliPaiFloatingDockShell(
+                                backdrop = backdrop,
+                                containerColor = containerColor,
+                                pressProgress = 0f,
+                                shape = shape,
+                                enabled = glassEnabled,
+                                blurEnabled = blurEnabled,
+                                hazeState = hazeState,
+                                liquidGlassTuning = liquidGlassTuning,
                             )
-                        }
+                    )
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .clip(shape)
+                            .then(
+                                if (phase != LinkedDockPhase.Search) {
+                                    Modifier.clickable(role = Role.Button) {
+                                        phaseBeforeSearch = phase
+                                        pendingUserImeRequest = true
+                                        updatePhase(LinkedDockPhase.Search)
+                                    }
+                                } else Modifier
+                            )
+                    ) {
+                        BiliPaiBottomBarSearchVisualContent(
+                            expanded = phase == LinkedDockPhase.Search ||
+                                phase == LinkedDockPhase.Compact,
+                            query = query,
+                            onQueryChange = { query = it },
+                            onSubmit = {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                val keyword = query.trim()
+                                query = ""
+                                if (keyword.isBlank()) {
+                                    onSearchClick()
+                                } else {
+                                    onSearchKeywordSubmit(keyword)
+                                    pendingUserImeRequest = false
+                                    updatePhase(
+                                        resolveLinkedDockPhaseOnSearchDismiss(
+                                            hasAudio = hasAudio,
+                                            previousPhase = phaseBeforeSearch,
+                                        )
+                                    )
+                                }
+                            },
+                            contentColor = contentColor,
+                            accentColor = accentColor,
+                            iconScale = identityIconScaleProvider,
+                            fieldAlpha = searchProgressProvider,
+                            interactive = phase == LinkedDockPhase.Search,
+                            iconStyle = iconStyle,
+                            pendingUserImeRequest = pendingUserImeRequest,
+                            onUserImeRequestConsumed = { pendingUserImeRequest = false },
+                        )
                     }
                 }
             }
