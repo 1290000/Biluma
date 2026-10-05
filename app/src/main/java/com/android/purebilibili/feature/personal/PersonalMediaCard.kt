@@ -39,6 +39,7 @@ import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.AppSpacingTokens
 import com.android.purebilibili.core.ui.AppSurfaceTokens
 import com.android.purebilibili.core.ui.ContainerLevel
+import com.android.purebilibili.core.ui.components.AppCheckbox
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppSurface
 import com.android.purebilibili.core.ui.skeleton.ContentSkeletonBlock
@@ -63,6 +64,7 @@ internal fun PersonalMediaCardFrame(
     coverModifier: Modifier = Modifier,
     coverOverlayModifier: Modifier = Modifier,
     selected: Boolean = false,
+    showSelectionCheckbox: Boolean = false,
     stacked: Boolean = false,
     enabled: Boolean = true,
     coverAspectRatio: Float = PERSONAL_LIST_HORIZONTAL_COVER_ASPECT_RATIO,
@@ -145,6 +147,16 @@ internal fun PersonalMediaCardFrame(
                             )
                         }
                     },
+                )
+            }
+
+            if (selected && showSelectionCheckbox) {
+                AppCheckbox(
+                    checked = true,
+                    onCheckedChange = null,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(AppSpacingTokens.Small),
                 )
             }
         }

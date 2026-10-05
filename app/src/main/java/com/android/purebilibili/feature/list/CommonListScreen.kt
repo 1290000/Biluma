@@ -2,6 +2,8 @@ package com.android.purebilibili.feature.list
 
 import com.android.purebilibili.navigation.animatePagerSelection
 import com.android.purebilibili.core.ui.components.videoListItemModifier
+import com.android.purebilibili.core.ui.components.VideoListLayoutToggle
+import com.android.purebilibili.core.ui.components.resolveVideoListColumns
 import com.android.purebilibili.feature.home.GridPinchColumnHudPill
 import com.android.purebilibili.feature.home.homeFeedPinchZoom
 import com.android.purebilibili.feature.home.resolveHomeFeedPinchColumnBounds
@@ -267,7 +269,6 @@ fun CommonListScreen(
     val pinchListColumns = pinchColumnsByWindow[isCompactGridWindow] ?: defaultPersonalColumns
     val primaryGridState = rememberLazyGridState()
     val subscribedFolderListState = androidx.compose.foundation.lazy.rememberLazyListState()
-    val favoriteFolderListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val favoritePagerGridStates = remember { mutableStateMapOf<Int, androidx.compose.foundation.lazy.grid.LazyGridState>() }
     val historyPagerGridStates = remember { mutableStateMapOf<Int, androidx.compose.foundation.lazy.grid.LazyGridState>() }
 
@@ -510,6 +511,12 @@ fun CommonListScreen(
         hasFavoriteViewModel = favoriteViewModel != null,
         isFavoriteDetail = seasonSeriesDetailViewModel?.isFavoriteDetail == true
     )
+    var searchQuery by rememberSaveable { androidx.compose.runtime.mutableStateOf(initialSearchQuery) }
+    var favoriteSearchScope by rememberSaveable {
+        androidx.compose.runtime.mutableStateOf(initialFavoriteSearchScope)
+    }
+    val isFavoriteVideoSearchActive = favoriteViewModel != null &&
+        isSearchDestination && favoriteSection == FavoriteSection.VIDEO && searchQuery.isNotBlank()
     val favoriteContentMode = resolveFavoriteContentMode(
         isFavoritePage = favoriteViewModel != null &&
             favoriteSection == FavoriteSection.VIDEO &&
@@ -587,24 +594,27 @@ fun CommonListScreen(
         favoriteViewModel,
         favoriteSection,
         isSubscribedBrowse,
-        isSearchDestination,
+        isFavoriteVideoSearchActive,
         historyViewModel,
         historyPagerState.currentPage,
         primaryGridState,
         subscribedFolderListState,
-        favoriteFolderListState,
+        favoriteContentMode,
+        pagerState.currentPage,
+        favoritePagerGridStates.size,
         favoriteCategoryGridState,
         historyPagerGridStates.size
     ) {
         {
             when {
-                favoriteViewModel != null && isSearchDestination ->
-                    CommonListScrollState.Grid(primaryGridState)
+                isFavoriteVideoSearchActive -> CommonListScrollState.Grid(primaryGridState)
                 favoriteViewModel != null && favoriteSection != FavoriteSection.VIDEO ->
                     CommonListScrollState.Grid(favoriteCategoryGridState)
                 isSubscribedBrowse -> CommonListScrollState.List(subscribedFolderListState)
-                // 视频 Tab 是收藏夹卡片列表；不要再跟已废弃的 HorizontalPager 网格状态。
-                favoriteViewModel != null -> CommonListScrollState.List(favoriteFolderListState)
+                favoriteContentMode == FavoriteContentMode.PAGER -> {
+                    favoritePagerGridStates[pagerState.currentPage]?.let(CommonListScrollState::Grid)
+                        ?: CommonListScrollState.Grid(primaryGridState)
+                }
                 historyViewModel != null -> {
                     historyPagerGridStates[historyPagerState.currentPage]?.let(CommonListScrollState::Grid)
                         ?: CommonListScrollState.Grid(primaryGridState)
@@ -729,11 +739,7 @@ fun CommonListScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     // 🔍 搜索状态
-    var searchQuery by rememberSaveable { androidx.compose.runtime.mutableStateOf(initialSearchQuery) }
-    var favoriteSearchScope by rememberSaveable {
-        androidx.compose.runtime.mutableStateOf(initialFavoriteSearchScope)
-    }
-    val hideListTopSearchBar = shouldHideListTopSearchBar(
+    val hideListTopSearchBar = favoriteViewModel == null && shouldHideListTopSearchBar(
         bottomBarSearchEnabled = homeSettings.isBottomBarSearchEnabled,
         listScopedSearchEnabled = homeSettings.listScopedSearchEnabled,
         isSearchDestination = isSearchDestination,
@@ -1003,9 +1009,12 @@ fun CommonListScreen(
         null
     }
     val loadingChromeContent = when {
-        favoriteViewModel != null && isSearchDestination && searchQuery.isNotBlank() ->
+        isFavoriteVideoSearchActive ->
             favoriteSearchUiState.isLoading && favoriteSearchUiState.items.isEmpty()
-        favoriteViewModel != null -> state.isLoading && foldersState.isEmpty()
+        favoriteContentMode == FavoriteContentMode.PAGER ->
+            selectedFolderUiState.isLoading && selectedFolderUiState.items.isEmpty()
+        favoriteContentMode == FavoriteContentMode.SINGLE_FOLDER ->
+            singleFolderUiState.isLoading && singleFolderUiState.items.isEmpty()
         else -> state.isLoading && state.items.isEmpty()
     }
     val commonListChromeSource = if (isProgressiveTopBlurEnabled || liquidGlassEnabled) {
@@ -1169,12 +1178,8 @@ fun CommonListScreen(
                 .globalWallpaperAwareBackground(AppSurfaceTokens.groupedListContainer())
 
             Box(modifier = contentModifier) {
-                if (
-                    favoriteViewModel != null &&
-                    isSearchDestination &&
-                    favoriteSection == FavoriteSection.VIDEO &&
-                    searchQuery.isNotBlank()
-                ) {
+                if (isFavoriteVideoSearchActive) {
+                    val favoriteVm = requireNotNull(favoriteViewModel)
                     CommonListContent(
                         items = favoriteSearchUiState.items,
                         isLoading = favoriteSearchUiState.isLoading,
@@ -1194,9 +1199,9 @@ fun CommonListScreen(
                             onVideoClick(bvid, cid, coverUrl, isVertical)
                         },
                         onCollectionClick = onCollectionClick,
-                        onRetry = { favoriteViewModel.searchVideos(searchQuery, favoriteSearchScope) },
+                        onRetry = { favoriteVm.searchVideos(searchQuery, favoriteSearchScope) },
                         onLoadMore = {},
-                        onUnfavorite = { favoriteViewModel.removeVideo(it) },
+                        onUnfavorite = { favoriteVm.removeVideo(it) },
                         onUpClick = onUpClick,
                         gridState = primaryGridState,
                         pinchEnabled = pinchToZoomColumnsEnabled,
@@ -1248,29 +1253,128 @@ fun CommonListScreen(
                             }
                         }
                     )
-                } else if (favoriteViewModel != null) {
-                    // PiliPlus 结构：收藏视频 Tab 以收藏夹卡片列表呈现，点击进入收藏夹详情
-                    FavoriteFolderCardList(
-                        folders = filterFavoriteFoldersByQuery(foldersState, searchQuery),
-                        subscribedFoldersCount = subscribedFoldersState.size,
-                        searchQuery = searchQuery,
-                        padding = PaddingValues(top = headerHeightDp, bottom = commonListBottomPadding),
-                        transitionEnabled = favoriteCollectionSharedTransitionEnabled,
-                        listState = favoriteFolderListState,
-                        onFolderClick = { folder ->
-                            onFavoriteFolderClick?.invoke(
-                                resolveFavoriteFolderMediaId(folder),
-                                folder.mid,
-                                folder.title,
-                                folder.upper?.name.orEmpty()
+                } else if (favoriteContentMode == FavoriteContentMode.PAGER) {
+                    val favoriteVm = requireNotNull(favoriteViewModel)
+                    LaunchedEffect(favoriteVm, selectedFolderIndex, pagerState.pageCount) {
+                        if (pagerState.pageCount > 0) {
+                            val targetPage = selectedFolderIndex.coerceIn(
+                                minimumValue = 0,
+                                maximumValue = pagerState.pageCount - 1,
                             )
+                            if (!hasSyncedFavoritePager) {
+                                pagerState.scrollToPage(targetPage)
+                                hasSyncedFavoritePager = true
+                            } else if (
+                                pagerState.currentPage != targetPage ||
+                                pagerState.currentPageOffsetFraction != 0f
+                            ) {
+                                resolveFavoriteFolderSwitchPreJumpPage(
+                                    currentPage = pagerState.currentPage,
+                                    targetPage = targetPage,
+                                )?.let { preJumpPage ->
+                                    pagerState.scrollToPage(
+                                        preJumpPage.coerceIn(0, pagerState.pageCount - 1)
+                                    )
+                                }
+                                animatePagerSelection(pagerState, targetPage)
+                            }
+                        }
+                    }
+
+                    HorizontalPager(
+                        state = pagerState,
+                        userScrollEnabled = false,
+                        modifier = Modifier.fillMaxSize(),
+                        beyondViewportPageCount = 0,
+                    ) { page ->
+                        val folderUiState by favoriteVm.getFolderUiState(page).collectAsStateWithLifecycle()
+
+                        LaunchedEffect(page) {
+                            favoriteVm.loadFolder(page)
+                        }
+
+                        CommonListContent(
+                            items = folderUiState.items,
+                            isLoading = folderUiState.isLoading,
+                            error = folderUiState.error,
+                            searchQuery = searchQuery,
+                            columns = personalListColumns,
+                            isFavoritePersonalList = true,
+                            favoriteBatchMode = isFavoriteBatchMode && page == selectedFolderIndex,
+                            favoriteSelectedResourceIds = selectedFavoriteResourceIds,
+                            onFavoriteToggleSelect = toggleFavoriteResourceSelection,
+                            onFavoriteLongPress = enterFavoriteBatchMode,
+                            spacing = spacing.medium,
+                            padding = PaddingValues(top = headerHeightDp, bottom = commonListBottomPadding),
+                            scrollUnderHeader = commonListScrollUnderHeader,
+                            cardAnimationEnabled = homeSettings.cardAnimationEnabled,
+                            cardTransitionEnabled = homeSettings.cardTransitionEnabled,
+                            cardMotionTier = cardMotionTier,
+                            showOnlineCount = showOnlineCount,
+                            videoCardAppearance = videoCardAppearance,
+                            onVideoClick = { bvid, cid, coverUrl, _ ->
+                                playFavoriteVideo(folderUiState.items, bvid, cid, coverUrl, page, false)
+                            },
+                            onCollectionClick = onCollectionClick,
+                            onRetry = { favoriteVm.retryFolder(page) },
+                            onLoadMore = { favoriteVm.loadMoreForFolder(page) },
+                            onUnfavorite = if (folderUiState.canRemoveItems) {
+                                { video -> favoriteVm.removeVideo(video) }
+                            } else {
+                                null
+                            },
+                            onUpClick = onUpClick,
+                            gridState = favoritePagerGridStates.getOrPut(page) {
+                                androidx.compose.foundation.lazy.grid.LazyGridState()
+                            },
+                            pinchEnabled = pinchToZoomColumnsEnabled,
+                            pinchBounds = pinchColumnBounds,
+                            onPinchColumnsChange = onPinchColumnsChange,
+                            onPinchColumnsEnd = onPinchColumnsEnd,
+                        )
+                    }
+                } else if (favoriteContentMode == FavoriteContentMode.SINGLE_FOLDER) {
+                    val favoriteVm = requireNotNull(favoriteViewModel)
+                    val folderUiState by favoriteVm.getFolderUiState(0).collectAsStateWithLifecycle()
+                    LaunchedEffect(favoriteVm) {
+                        favoriteVm.loadFolder(0)
+                    }
+                    CommonListContent(
+                        items = folderUiState.items,
+                        isLoading = folderUiState.isLoading,
+                        error = folderUiState.error,
+                        searchQuery = searchQuery,
+                        columns = personalListColumns,
+                        isFavoritePersonalList = true,
+                        favoriteBatchMode = isFavoriteBatchMode,
+                        favoriteSelectedResourceIds = selectedFavoriteResourceIds,
+                        onFavoriteToggleSelect = toggleFavoriteResourceSelection,
+                        onFavoriteLongPress = enterFavoriteBatchMode,
+                        spacing = spacing.medium,
+                        padding = PaddingValues(top = headerHeightDp, bottom = commonListBottomPadding),
+                        scrollUnderHeader = commonListScrollUnderHeader,
+                        cardAnimationEnabled = homeSettings.cardAnimationEnabled,
+                        cardTransitionEnabled = homeSettings.cardTransitionEnabled,
+                        cardMotionTier = cardMotionTier,
+                        showOnlineCount = showOnlineCount,
+                        videoCardAppearance = videoCardAppearance,
+                        onVideoClick = { bvid, cid, coverUrl, _ ->
+                            playFavoriteVideo(folderUiState.items, bvid, cid, coverUrl, 0, false)
                         },
-                        onSubscribedClick = {
-                            favoriteBrowseSection = FavoriteBrowseSection.SUBSCRIBED
-                            isFavoriteBatchMode = false
-                            selectedFavoriteResourceIds = emptySet()
-                            searchQuery = ""
+                        onCollectionClick = onCollectionClick,
+                        onRetry = { favoriteVm.retryFolder(0) },
+                        onLoadMore = { favoriteVm.loadMoreForFolder(0) },
+                        onUnfavorite = if (folderUiState.canRemoveItems) {
+                            { video -> favoriteVm.removeVideo(video) }
+                        } else {
+                            null
                         },
+                        onUpClick = onUpClick,
+                        gridState = primaryGridState,
+                        pinchEnabled = pinchToZoomColumnsEnabled,
+                        pinchBounds = pinchColumnBounds,
+                        onPinchColumnsChange = onPinchColumnsChange,
+                        onPinchColumnsEnd = onPinchColumnsEnd,
                     )
                 } else {
                     if (historyViewModel != null) {
@@ -1552,6 +1656,24 @@ fun CommonListScreen(
                                     }
                                 }
                             }
+                            if (
+                                favoriteViewModel != null &&
+                                favoriteSection == FavoriteSection.VIDEO &&
+                                !isBatchActionMode &&
+                                !isSubscribedBrowse
+                            ) {
+                                VideoListLayoutToggle(
+                                    singleColumn = personalListColumns == 1,
+                                    onClick = {
+                                        val nextColumns = if (personalListColumns == 1) {
+                                            resolveVideoListColumns(false, configuration.screenWidthDp.toFloat())
+                                        } else {
+                                            1
+                                        }
+                                        pinchColumnsByWindow = pinchColumnsByWindow + (isCompactGridWindow to nextColumns)
+                                    },
+                                )
+                            }
                             if (favoriteViewModel != null && favoriteSection == FavoriteSection.VIDEO) {
                                 if (isFavoriteBatchMode) {
                                     val selectableIds = activeFavoriteItems
@@ -1568,27 +1690,31 @@ fun CommonListScreen(
                                     ) {
                                         AppText(if (allSelected) "取消全选" else "全选")
                                     }
-                                    // PiliPlus 批量操作以文字按钮平铺，删除类动作红色
-                                    AppTextButton(
+                                    AppWindowActionMenu(
                                         enabled = selectedFavoriteResourceIds.isNotEmpty() && !isFavoriteManaging,
-                                        onClick = { pendingFavoriteTransferCopy = true },
+                                        groups = listOf(
+                                            listOf(
+                                                AppWindowAction(
+                                                    label = "复制到收藏夹",
+                                                    onClick = { pendingFavoriteTransferCopy = true },
+                                                ),
+                                                AppWindowAction(
+                                                    label = "移动到收藏夹",
+                                                    onClick = { pendingFavoriteTransferCopy = false },
+                                                ),
+                                                AppWindowAction(
+                                                    label = "删除",
+                                                    onClick = { showFavoriteBatchDeleteConfirm = true },
+                                                ),
+                                            ),
+                                        ),
                                     ) {
-                                        AppText("复制")
+                                        AppIcon(Icons.Filled.MoreVert, contentDescription = "批量操作")
                                     }
                                     AppTextButton(
-                                        enabled = selectedFavoriteResourceIds.isNotEmpty() && !isFavoriteManaging,
-                                        onClick = { pendingFavoriteTransferCopy = false },
+                                        onClick = exitFavoriteBatchMode
                                     ) {
-                                        AppText("移动")
-                                    }
-                                    AppTextButton(
-                                        enabled = selectedFavoriteResourceIds.isNotEmpty() && !isFavoriteManaging,
-                                        onClick = { showFavoriteBatchDeleteConfirm = true },
-                                    ) {
-                                        AppText(
-                                            "删除",
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
+                                        AppText("完成")
                                     }
                                 } else {
                                 AppIconButton(
@@ -1948,6 +2074,32 @@ fun CommonListScreen(
                             }
                         }
                         Spacer(modifier = Modifier.height(AppSpacingTokens.Small))
+                    }
+
+                    if (
+                        favoriteViewModel != null &&
+                        favoriteSection == FavoriteSection.VIDEO &&
+                        (foldersState.isNotEmpty() || subscribedFoldersState.isNotEmpty())
+                    ) {
+                        FavoriteFolderSelector(
+                            backdrop = commonListChromeBackdrop,
+                            folders = foldersState,
+                            selectedFolderIndex = selectedFolderIndex,
+                            selectedFolderItems = selectedFolderUiState.items,
+                            subscribedSelected = isSubscribedBrowse,
+                            layout = favoriteHeaderLayout,
+                            onFolderSelected = { index ->
+                                favoriteBrowseSection = FavoriteBrowseSection.OWNED
+                                favoriteViewModel.switchFolder(index)
+                                searchQuery = ""
+                            },
+                            onSubscribedSelected = {
+                                favoriteBrowseSection = FavoriteBrowseSection.SUBSCRIBED
+                                isFavoriteBatchMode = false
+                                selectedFavoriteResourceIds = emptySet()
+                                searchQuery = ""
+                            },
+                        )
                     }
 
                     if (historyViewModel != null) {

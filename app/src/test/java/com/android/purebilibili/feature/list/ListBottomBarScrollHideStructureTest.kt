@@ -28,17 +28,19 @@ class ListBottomBarScrollHideStructureTest {
         assertTrue(commonListSource.contains("shouldAutoHideBottomBarOnScroll("))
         assertTrue(watchLaterSource.contains("shouldAutoHideBottomBarOnScroll("))
 
-        // 收藏分区与收藏夹卡片列表必须把真实滚动状态交回 CommonList 追踪。
         assertTrue(commonListSource.contains("gridState = favoriteCategoryGridState"))
-        assertTrue(commonListSource.contains("listState = favoriteFolderListState"))
+        assertTrue(commonListSource.contains("gridState = favoritePagerGridStates.getOrPut(page)"))
         assertTrue(favoriteCategorySource.contains("state = gridState"))
 
-        // 视频 Tab 卡片列表不得再被 FavoriteContentMode.PAGER 误路由到废弃网格状态。
         val activeScrollStateSource = commonListSource
             .substringAfter("val activeCommonListScrollState = remember(")
             .substringBefore("LaunchedEffect(activeCommonListScrollState)")
-        assertTrue(activeScrollStateSource.contains("CommonListScrollState.List(favoriteFolderListState)"))
-        assertFalse(activeScrollStateSource.contains("FavoriteContentMode.PAGER"))
+        assertTrue(activeScrollStateSource.contains("favoriteContentMode == FavoriteContentMode.PAGER"))
+        assertTrue(activeScrollStateSource.contains("favoritePagerGridStates[pagerState.currentPage]"))
+        assertTrue(activeScrollStateSource.contains("CommonListScrollState.List(subscribedFolderListState)"))
+        assertTrue(activeScrollStateSource.contains("CommonListScrollState.Grid(favoriteCategoryGridState)"))
+        assertTrue(activeScrollStateSource.contains("isFavoriteVideoSearchActive -> CommonListScrollState.Grid(primaryGridState)"))
+        assertFalse(activeScrollStateSource.contains("favoriteFolderListState"))
     }
 
     private fun loadSource(relativePath: String): String {
