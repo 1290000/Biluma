@@ -410,10 +410,14 @@ class PlaybackSettingsSelectionPolicyTest {
             "默认展开视频简介",
             "评论 IP 属地",
             "默认折叠视频笔记",
+            "显示 AI 总结入口",
+            "竖屏视频直达刷视频模式",
+            "竖屏刷视频仅推荐真竖屏",
+            "启动时进入竖屏视频流",
             "双击点赞",
             "调节系统亮度"
         ).forEach { title ->
-            assertFalse(source.contains(title), title)
+            assertFalse(title, source.contains(title))
         }
     }
 
@@ -443,9 +447,9 @@ class PlaybackSettingsSelectionPolicyTest {
             "TabletCinemaLayout.kt" to "success.info.bvid"
         ).forEach { (layout, videoIdentity) ->
             val source = loadSource(sourceRoot + layout)
-            assertTrue(source.contains("showNoteListSheet by remember($videoIdentity) { mutableStateOf(false) }"), layout)
-            assertTrue(source.contains("onNoteClick = { showNoteListSheet = true }"), layout)
-            assertFalse(source.contains("videoNoteDefaultCollapsed"), layout)
+            assertTrue(layout, source.contains("showNoteListSheet by remember($videoIdentity) { mutableStateOf(false) }"))
+            assertTrue(layout, source.contains("onNoteClick = { showNoteListSheet = true }"))
+            assertFalse(layout, source.contains("videoNoteDefaultCollapsed"))
         }
     }
 

@@ -295,6 +295,12 @@ class SettingsSearchPolicyTest {
     }
 
     @Test
+    fun retiredAiSummaryEntryIsNotAdvertisedInSettingsSearch() {
+        val results = resolveSettingsSearchResults("AI 总结")
+        assertTrue(results.none { it.target == SettingsSearchTarget.PLAYBACK })
+    }
+
+    @Test
     fun queryByVideoNote_hitsPlaybackInteractionEntry() {
         val results = resolveSettingsSearchResults("显示视频笔记")
 

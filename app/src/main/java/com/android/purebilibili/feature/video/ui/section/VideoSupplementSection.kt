@@ -38,25 +38,21 @@ import com.android.purebilibili.feature.video.viewmodel.AiSummaryPromptState
  */
 @Composable
 fun VideoSupplementStatsActions(
-    showAiSummary: Boolean,
     showNote: Boolean,
     onAiSummaryClick: () -> Unit,
     onNoteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (!showAiSummary && !showNote) return
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (showAiSummary) {
-            SupplementEntryIcon(
-                icon = Icons.Outlined.AutoAwesome,
-                label = "AI 总结",
-                onClick = onAiSummaryClick,
-            )
-        }
+        SupplementEntryIcon(
+            icon = Icons.Outlined.AutoAwesome,
+            label = "AI 总结",
+            onClick = onAiSummaryClick,
+        )
         if (showNote) {
             SupplementEntryIcon(
                 icon = Icons.Outlined.EditNote,

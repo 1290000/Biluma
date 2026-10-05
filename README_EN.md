@@ -29,7 +29,7 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
 | Favorites page | Restored direct folder-content browsing, the top folder dropdown, and checkbox selection from upstream [v0.2.3-alpha.5](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.3-alpha.5), retaining the four-page switch animation cap from [PR #840](https://github.com/jay3-yy/BiliPai/pull/840); tests and compilation have not been run |
-| Feature and settings reduction | All nine initial UI reductions, six playback settings/informational-entry reductions, and six home/navigation setting reductions are implemented in source; this appearance and notification settings batch and the favorites adjustments are also implemented, without runtime verification |
+| Feature and settings reduction | All nine initial UI reductions, six playback settings/informational-entry reductions, and six home/navigation setting reductions are implemented in source; this appearance and notification settings batch and the favorites adjustments are also implemented, alongside five fixed video-entry behaviors, without runtime verification |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
@@ -84,6 +84,18 @@ Unused legacy bottom-search auto-expansion and layout modes are also removed. Ac
 - The video-detail comment tab always displays its count. Retired preferences are migrated before reads, excluded from settings exports, and cannot restore removed behavior through old backups.
 
 This batch includes source changes and static checks only. Regression tests were updated and added but Gradle tests, compilation, packaging, and on-device verification were not performed. Other feature reductions and new brand visuals are outside this batch.
+
+## Fixed video behavior
+
+The following changes apply only to the main `:app` module. Their settings switches and dedicated preference accessors have been removed:
+
+- The AI summary entry is always visible; summaries still open on user interaction, not automatically.
+- Video notes start closed for each video and open in a sheet when tapped. The Show video notes setting, viewing, editing, and pagination remain available.
+- Ordinary portrait video entries open the detail page, without automatically entering the swipe feed. Manual entry into portrait browsing remains available.
+- Portrait browsing accepts both landscape and portrait recommendations, without extra direction lookups for portrait-only filtering.
+- Ordinary startup does not open the portrait feed. The user-agreement gate and external-link navigation remain intact.
+
+Retired preference values no longer control these behaviors. Old settings backups skip the corresponding keys, and new settings exports omit them. This change has received static checks only; regression tests are updated but Gradle tests, compilation, packaging, and on-device verification have not been run.
 
 ## Downloads and feedback
 

@@ -5,7 +5,7 @@ import com.android.purebilibili.navigation.isVideoCardReturnTargetRoute
 /**
  * 卡片 sharedBounds / 景深过渡的目标页：普通 VideoDetail。
  *
- * Story「竖屏直达」不是 sharedBounds 目标（全屏几何对不上）；进场走普通 FALLBACK。
+ * Story 不是 sharedBounds 目标（全屏几何对不上）；进场走普通 FALLBACK。
  */
 internal fun resolveCardMorphDestinationSourceRoute(key: BiliPaiNavKey?): String? {
     return when (key) {

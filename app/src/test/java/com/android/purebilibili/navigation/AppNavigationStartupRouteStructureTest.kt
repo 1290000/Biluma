@@ -8,20 +8,15 @@ import kotlin.test.assertTrue
 class AppNavigationStartupRouteStructureTest {
 
     @Test
-    fun cacheMissWaitsForDataStoreBeforeCreatingTheInitialBackStack() {
+    fun startupDoesNotReadRetiredPortraitFeedPreferences() {
         val navigation = sourceFile("navigation/AppNavigation.kt").readText()
         val settings = sourceFile("core/store/SettingsManager.kt").readText()
 
-        assertTrue(navigation.contains("produceState<Boolean?>"))
-        assertTrue(navigation.contains("resolvedPortraitStartupRoute ?: return"))
-        assertTrue(navigation.contains("resolveLaunchToPortraitFeedOnStartup(context)"))
-        assertFalse(navigation.contains("isLaunchToPortraitFeedOnStartupSync(context)"))
-
-        val resolver = settings
-            .substringAfter("suspend fun resolveLaunchToPortraitFeedOnStartup")
-            .substringBefore("// --- 竖屏视频判断比例")
-        assertTrue(resolver.contains("settingsDataStore.data.first()"))
-        assertFalse(resolver.contains("runBlocking"))
+        assertTrue(navigation.contains("if (agreementRequired) ScreenRoutes.Onboarding.route else ScreenRoutes.Home.route"))
+        assertFalse(navigation.contains("resolvedPortraitStartupRoute"))
+        assertFalse(navigation.contains("LaunchToPortraitFeedOnStartup"))
+        assertFalse(settings.contains("launch_to_portrait_feed_on_startup"))
+        assertFalse(settings.contains("portrait_startup_cache"))
     }
 
     private fun sourceFile(relativePath: String): File {

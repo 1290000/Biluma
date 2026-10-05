@@ -105,7 +105,6 @@ internal fun LargeScreenVideoLayout(
     predictiveBackCancelRecoveryGeneration: Int = 0,
     liveSurfaceCardTransitionEnabled: Boolean = true,
     paneControlsEnabled: Boolean = true,
-    videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
     playerContent: (@Composable (Modifier) -> Unit)? = null,
 ) {
@@ -193,7 +192,6 @@ internal fun LargeScreenVideoLayout(
                     onOwnerUploadsClick = {
                         success.info.owner.mid.takeIf { it > 0L }?.let(onUpClick)
                     },
-                    videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                     videoNoteEnabled = videoNoteEnabled,
                     modifier = modifier,
                     showRelatedVideos = showRelatedInIntro,

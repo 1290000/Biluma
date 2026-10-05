@@ -6,7 +6,3 @@ internal fun shouldLoadVideoNote(
 ): Boolean {
     return isVideoNoteEnabled && aid > 0L
 }
-
-internal fun shouldShowVideoNoteCard(isVideoNoteEnabled: Boolean): Boolean {
-    return isVideoNoteEnabled
-}

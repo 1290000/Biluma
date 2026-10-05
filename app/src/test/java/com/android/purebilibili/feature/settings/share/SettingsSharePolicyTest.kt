@@ -10,6 +10,37 @@ import kotlin.test.assertTrue
 class SettingsSharePolicyTest {
 
     @Test
+    fun retiredVideoEntryPreferencesAreSkippedOnImportAndExcludedFromExport() {
+        val retiredSettings = mapOf(
+            "video_ai_summary_entry_enabled" to JsonPrimitive(false),
+            "video_note_default_collapsed" to JsonPrimitive(false),
+            "auto_portrait_fullscreen" to JsonPrimitive(true),
+            "portrait_only_vertical_recommendations" to JsonPrimitive(true),
+            "launch_to_portrait_feed_on_startup" to JsonPrimitive(true),
+        )
+        val definitions = SettingsManager.getShareableSettingsEntryDefinitions()
+        val settings = retiredSettings + ("video_note_enabled" to JsonPrimitive(false))
+        val legacyProfile = SettingsShareProfile(
+            appVersion = "legacy",
+            exportedAtIso = "2026-10-05T00:00:00Z",
+            profileName = "Legacy video settings",
+            sections = SettingsShareSections(playback = settings),
+        )
+        val preview = resolveSettingsShareImportPreview(legacyProfile, definitions)
+        assertEquals(retiredSettings.keys.sorted(), preview.skippedKeys)
+        assertEquals(listOf(SettingsShareSection.PLAYBACK), preview.importableSections)
+
+        val exported = buildSettingsShareProfile(
+            profileName = "Video settings",
+            appVersion = "test",
+            exportedAtIso = legacyProfile.exportedAtIso,
+            rawSettings = settings,
+            definitions = definitions,
+        )
+        assertEquals(mapOf("video_note_enabled" to JsonPrimitive(false)), exported.sections.playback)
+    }
+
+    @Test
     fun exportProfile_onlyIncludesAllowlistedKeysInGroupedSections() {
         val profile = buildSettingsShareProfile(
             profileName = "我的设置",

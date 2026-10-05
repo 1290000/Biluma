@@ -270,7 +270,6 @@ internal fun TabletVideoLayout(
     predictiveBackCancelRecoveryGeneration: Int = 0,
     liveSurfaceCardTransitionEnabled: Boolean = true,
     paneControlsEnabled: Boolean = true,
-    videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
     playerContent: (@Composable (Modifier) -> Unit)? = null,
 ) {
@@ -501,7 +500,6 @@ internal fun TabletVideoLayout(
                             requestedSecondaryTabName = TabletSecondaryTab.OWNER_UPLOADS.name
                             secondaryPaneModeName = TabletSecondaryPaneMode.EXPANDED.name
                         },
-                        videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                         videoNoteEnabled = videoNoteEnabled,
                         showRelatedVideos = false,
                         modifier = Modifier
@@ -561,7 +559,6 @@ internal fun TabletVideoLayout(
                                     onOwnerUploadsClick = {
                                         requestedSecondaryTabName = TabletSecondaryTab.OWNER_UPLOADS.name
                                     },
-                                    videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                                     videoNoteEnabled = videoNoteEnabled,
                                     modifier = Modifier.fillMaxSize(),
                                 )
@@ -617,7 +614,6 @@ internal fun TabletVideoInfoPane(
     onDanmakuSendClick: () -> Unit,
     onDanmakuToggle: () -> Unit,
     onOwnerUploadsClick: () -> Unit,
-    videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
     modifier: Modifier = Modifier,
     showRelatedVideos: Boolean = true,
@@ -690,7 +686,6 @@ internal fun TabletVideoInfoPane(
         sponsorVideoLabel = success.sponsorVideoLabel,
         aiSummary = success.aiSummary,
         aiSummaryPrompt = success.aiSummaryPrompt,
-        videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
         onRetryAiSummary = playbackActions.retryAiSummary,
         onCreateNoteDraftFromAiSummary = playbackActions.createVideoNoteDraftFromAiSummary,
         onTimestampClick = { timestamp -> playbackActions.seekTo(timestamp) },
@@ -1482,7 +1477,6 @@ private fun ScrollableVideoInfoSection(
     sponsorVideoLabel: String = "",
     aiSummary: AiSummaryData? = null,
     aiSummaryPrompt: AiSummaryPromptState? = null,
-    videoAiSummaryEntryEnabled: Boolean = true,
     onRetryAiSummary: () -> Unit = {},
     onCreateNoteDraftFromAiSummary: () -> Unit = {},
     onTimestampClick: (Long) -> Unit = {},
@@ -1542,7 +1536,6 @@ private fun ScrollableVideoInfoSection(
                     sponsorLabel = sponsorVideoLabel,
                     trailingStatsContent = {
                         VideoSupplementStatsActions(
-                            showAiSummary = videoAiSummaryEntryEnabled,
                             showNote = videoNoteEnabled,
                             onAiSummaryClick = { showAiSummarySheet = true },
                             onNoteClick = { showNoteListSheet = true },

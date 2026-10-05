@@ -74,11 +74,10 @@ class VideoDetailScreenPolicyTest {
             )
         )
         assertEquals(
-            VideoDetailLocalBackTarget.NAVIGATE_BACK,
+            VideoDetailLocalBackTarget.EXIT_PORTRAIT_FULLSCREEN,
             resolveVideoDetailLocalBackTarget(
                 isLandscapeFullscreen = false,
                 isPortraitFullscreen = true,
-                directPortraitEntry = true,
             )
         )
     }
@@ -228,13 +227,10 @@ class VideoDetailScreenPolicyTest {
 
     @Test
     fun initialVerticalRouteHint_doesNotBypassInlinePresentationPolicy() {
-        assertFalse(
-            shouldStartInPortraitFullscreenFromRouteHint(
-                autoEnterPortraitFromRoute = true,
-                startAudioFromRoute = false,
-                initialVerticalFromRoute = true
-            )
-        )
+        val source = File("src/main/java/com/android/purebilibili/feature/video/screen/VideoDetailScreenStateHolder.kt")
+            .readText()
+        assertTrue(source.contains("initialPortraitFullscreen = false"))
+        assertFalse(source.contains("shouldStartInPortraitFullscreenFromRouteHint"))
     }
 
     @Test

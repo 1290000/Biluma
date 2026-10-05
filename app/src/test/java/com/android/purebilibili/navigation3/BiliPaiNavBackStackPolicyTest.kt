@@ -32,13 +32,12 @@ class BiliPaiNavBackStackPolicyTest {
     }
 
     @Test
-    fun initialBackStack_opensPortraitFeedOnStartupWhenEnabled() {
+    fun initialBackStack_doesNotOpenPortraitFeedForAnOrdinaryLaunch() {
         assertEquals(
-            listOf(BiliPaiNavKey.MainHost, BiliPaiNavKey.Story()),
+            listOf(BiliPaiNavKey.MainHost),
             resolveInitialBiliPaiBackStack(
                 firstRoute = ScreenRoutes.Home.route,
                 onboardingRequired = false,
-                openPortraitFeedOnStartup = true
             )
         )
     }

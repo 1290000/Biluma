@@ -156,7 +156,6 @@ import com.android.purebilibili.data.model.response.BgmInfo
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.rememberCoroutineScope
@@ -265,7 +264,7 @@ import java.nio.charset.StandardCharsets
 // 定义路由参数结构
 object VideoRoute {
     const val base = "video"
-    const val route = "$base/{bvid}?cid={cid}&cover={cover}&startAudio={startAudio}&autoPortrait={autoPortrait}&fullscreen={fullscreen}&resumePositionMs={resumePositionMs}&commentRootRpid={commentRootRpid}&commentTargetRpid={commentTargetRpid}&initialVertical={initialVertical}&directPortraitEntry={directPortraitEntry}"
+    const val route = "$base/{bvid}?cid={cid}&cover={cover}&startAudio={startAudio}&autoPortrait={autoPortrait}&fullscreen={fullscreen}&resumePositionMs={resumePositionMs}&commentRootRpid={commentRootRpid}&commentTargetRpid={commentTargetRpid}&initialVertical={initialVertical}"
 
     internal fun resolveVideoRoutePath(
         bvid: String,
@@ -278,11 +277,9 @@ object VideoRoute {
         commentRootRpid: Long = 0L,
         commentTargetRpid: Long = 0L,
         initialVertical: Boolean = false,
-        directPortraitEntry: Boolean = false,
     ): String {
         val initialVerticalQuery = if (initialVertical) "&initialVertical=true" else ""
-        val directPortraitQuery = if (directPortraitEntry) "&directPortraitEntry=true" else ""
-        return "$base/$bvid?cid=$cid&cover=$encodedCover&startAudio=$startAudio&autoPortrait=$autoPortrait&fullscreen=$fullscreen&resumePositionMs=${resumePositionMs.coerceAtLeast(0L)}&commentRootRpid=${commentRootRpid.coerceAtLeast(0L)}&commentTargetRpid=${commentTargetRpid.coerceAtLeast(0L)}$initialVerticalQuery$directPortraitQuery"
+        return "$base/$bvid?cid=$cid&cover=$encodedCover&startAudio=$startAudio&autoPortrait=$autoPortrait&fullscreen=$fullscreen&resumePositionMs=${resumePositionMs.coerceAtLeast(0L)}&commentRootRpid=${commentRootRpid.coerceAtLeast(0L)}&commentTargetRpid=${commentTargetRpid.coerceAtLeast(0L)}$initialVerticalQuery"
     }
 
     // 构建 helper
@@ -297,7 +294,6 @@ object VideoRoute {
         commentRootRpid: Long = 0L,
         commentTargetRpid: Long = 0L,
         initialVertical: Boolean = false,
-        directPortraitEntry: Boolean = false,
     ): String {
         val encodedCover = Uri.encode(coverUrl)
         return resolveVideoRoutePath(
@@ -311,7 +307,6 @@ object VideoRoute {
             commentRootRpid = commentRootRpid,
             commentTargetRpid = commentTargetRpid,
             initialVertical = initialVertical,
-            directPortraitEntry = directPortraitEntry,
         )
     }
 }
@@ -335,7 +330,6 @@ internal fun resolveStandardVideoRoute(
     commentRootRpid: Long = 0L,
     commentTargetRpid: Long = 0L,
     initialVertical: Boolean = false,
-    directPortraitEntry: Boolean = false,
 ): String {
     val encodedCover = URLEncoder.encode(coverUrl, StandardCharsets.UTF_8.toString())
     return VideoRoute.resolveVideoRoutePath(
@@ -349,7 +343,6 @@ internal fun resolveStandardVideoRoute(
         commentRootRpid = commentRootRpid,
         commentTargetRpid = commentTargetRpid,
         initialVertical = initialVertical,
-        directPortraitEntry = directPortraitEntry,
     )
 }
 
@@ -510,26 +503,6 @@ fun AppNavigation(
     val agreementRequired = isUserAgreementRequired(userAgreementAcked)
     val startDestination =
         if (agreementRequired) ScreenRoutes.Onboarding.route else ScreenRoutes.Home.route
-    val cachedPortraitStartupRoute = remember(context) {
-        SettingsManager.getCachedLaunchToPortraitFeedOnStartup(context)
-    }
-    val resolvedPortraitStartupRoute by produceState<Boolean?>(
-        initialValue = cachedPortraitStartupRoute,
-        key1 = context,
-    ) {
-        if (value == null) {
-            value = try {
-                SettingsManager.resolveLaunchToPortraitFeedOnStartup(context)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                false
-            }
-        }
-    }
-    // 缓存缺失时等待 DataStore 首值；先用 false 建栈会让恢复备份后的本次启动进错首页。
-    val launchToPortraitFeedOnStartupAtInit = resolvedPortraitStartupRoute ?: return
-
     val videoSharedTransitionSpeedSettings = remember(
         homeSettings.videoSharedTransitionSpeed,
         homeSettings.videoSharedTransitionCustomDurationMillis,
@@ -571,12 +544,10 @@ fun AppNavigation(
         // [新增] 全局底栏状态管理
         val initialNavigationBackStack = remember(
             startDestination,
-            launchToPortraitFeedOnStartupAtInit,
         ) {
                 resolveInitialBiliPaiBackStack(
                     firstRoute = startDestination,
                     onboardingRequired = agreementRequired,
-                    openPortraitFeedOnStartup = launchToPortraitFeedOnStartupAtInit
                 )
         }
         @Suppress("UNCHECKED_CAST")
@@ -751,9 +722,7 @@ fun AppNavigation(
             foldPosture = appWindowAdaptiveInfo.posture,
         )
         // 由所有入口共用的底栏内部显隐状态。进视频前先置为隐藏，避免返回到主入口后再补一次隐藏动画。
-        var isBottomBarVisible by remember(launchToPortraitFeedOnStartupAtInit) {
-            mutableStateOf(!launchToPortraitFeedOnStartupAtInit)
-        }
+        var isBottomBarVisible by remember { mutableStateOf(true) }
         // [修复] 平板模式下(宽度>=600dp)，进入设置页(Settings.route)时隐藏底栏
         // 因为平板设置页使用 SplitLayout，已经有自己的内部导航结构，不需要底栏
         val isTabletLayout = windowSizeClass.isTablet
@@ -997,116 +966,12 @@ fun AppNavigation(
                 searchEntryMotionKey += 1
             }
         }
-        fun navigateToPortraitStoryInNavigation3(
-            seed: PortraitStoryNavigationSeed,
-            sourceRoute: String? = null
-        ) {
-            if (!canNavigate(false)) return
-            isBottomBarVisible = false
-            val matchedVisibleCardRoute = resolveVideoCardSourceRouteForNavigation(
-                currentRoute = navigation3BackStack.lastOrNull()?.toLegacyRoute(),
-                videoBvid = seed.bvid,
-                lastClickedVideoSourceKey = CardPositionManager.lastClickedVideoSourceKey,
-                visibleBottomBarRoutes = visibleBottomBarRoutes
-            )
-            val source = resolveBiliPaiVideoSource(
-                bvid = seed.bvid,
-                explicitSourceRoute = sourceRoute ?: matchedVisibleCardRoute,
-                currentKey = navigation3BackStack.lastOrNull(),
-                previousSourceRoute = navigation3ReturnSession.lastVideoSourceRoute
-            )
-            if (source.route != null) {
-                val transitionSession = captureVideoCardTransitionSession(
-                    bvid = seed.bvid,
-                    source = source,
-                    coverIdentity = seed.coverUrl,
-                )
-                navigation3ReturnSession = navigation3ReturnSession
-                    .recordTransitionSession(
-                        session = transitionSession,
-                        preserveCurrentSession = navigation3BackStack.any {
-                            it is BiliPaiNavKey.VideoDetail
-                        },
-                    )
-                    .markDetailEntered(SystemClock.uptimeMillis())
-                prearmVideoCardOpening(transitionSession)
-            }
-            pushNavigation3Key(
-                BiliPaiNavKey.Story(
-                    seedBvid = seed.bvid,
-                    seedCid = seed.cid,
-                    seedCover = seed.coverUrl,
-                    sourceRoute = source.route,
-                    openId = SystemClock.uptimeMillis()
-                )
-            )
-        }
         fun navigateToVideoRouteInNavigation3(
             route: String,
             sourceRoute: String?,
-            skipPortraitStoryResolution: Boolean = false
         ) {
             val parsedKey = legacyRouteToBiliPaiNavKey(route)
             val videoKey = parsedKey as? BiliPaiNavKey.VideoDetail
-            val hasCommentJump = (videoKey?.commentRootRpid ?: 0L) > 0L || (videoKey?.commentTargetRpid ?: 0L) > 0L
-            if (!skipPortraitStoryResolution && !hasCommentJump) {
-                resolvePortraitStoryNavigationSeed(
-                    directPortraitStoryEntry = playerInteractionSettings.directPortraitStoryEntry,
-                    isVerticalVideo = videoKey?.initialVertical == true,
-                    startAudio = videoKey?.startAudio == true,
-                    bvid = videoKey?.bvid.orEmpty(),
-                    cid = videoKey?.cid ?: 0L,
-                    coverUrl = videoKey?.coverUrl.orEmpty(),
-                    cardTransitionEnabled = cardTransitionEnabled,
-                )?.let { seed ->
-                    navigateToPortraitStoryInNavigation3(seed, sourceRoute = sourceRoute)
-                    return
-                }
-                if (
-                    videoKey != null &&
-                    com.android.purebilibili.data.model.response.shouldResolveVerticalVideoForPortraitEntry(
-                        directPortraitStoryEntry = playerInteractionSettings.directPortraitStoryEntry,
-                        startAudio = videoKey.startAudio,
-                        bvid = videoKey.bvid,
-                        isVerticalVideo = videoKey.initialVertical,
-                        coverUrl = videoKey.coverUrl
-                    )
-                ) {
-                    coroutineScope.launch {
-                        if (com.android.purebilibili.data.repository.VideoRepository.isVerticalVideo(videoKey.bvid)) {
-                            if (cardTransitionEnabled) {
-                                navigateToVideoRouteInNavigation3(
-                                    route = videoKey.copy(
-                                        autoPortrait = true,
-                                        initialVertical = true,
-                                        directPortraitEntry = true,
-                                    ).toLegacyRoute(),
-                                    sourceRoute = sourceRoute,
-                                    skipPortraitStoryResolution = true,
-                                )
-                            } else {
-                                navigateToPortraitStoryInNavigation3(
-                                    seed = PortraitStoryNavigationSeed(
-                                        bvid = videoKey.bvid,
-                                        cid = videoKey.cid,
-                                        coverUrl = videoKey.coverUrl
-                                    ),
-                                    sourceRoute = sourceRoute
-                                )
-                            }
-                        } else {
-                            navigateToVideoRouteInNavigation3(
-                                route = route,
-                                sourceRoute = sourceRoute,
-                                skipPortraitStoryResolution = true
-                            )
-                        }
-                    }
-                    return
-                }
-            }
-            // Resolve redirects first. Reserving the debounce slot before delegating to
-            // Story (or a cached direction lookup) makes that same click reject itself.
             if (!canNavigate(false)) return
             val videoBvid = videoKey?.bvid.orEmpty()
             val matchedVisibleCardRoute = resolveVideoCardSourceRouteForNavigation(
@@ -1143,18 +1008,8 @@ fun AppNavigation(
             miniPlayerManager?.exitMiniMode(animate = false)
             val key = when (parsedKey) {
                 is BiliPaiNavKey.VideoDetail -> {
-                    val morphDirectPortrait = resolveDirectPortraitDetailMorphEntry(
-                        directPortraitStoryEntry = playerInteractionSettings.directPortraitStoryEntry,
-                        cardTransitionEnabled = cardTransitionEnabled,
-                        isVerticalVideo = parsedKey.initialVertical || parsedKey.directPortraitEntry,
-                        coverUrl = parsedKey.coverUrl,
-                        startAudio = parsedKey.startAudio,
-                    ) || parsedKey.directPortraitEntry
                     parsedKey.copy(
                         sourceRoute = source.route,
-                        autoPortrait = parsedKey.autoPortrait || morphDirectPortrait,
-                        initialVertical = parsedKey.initialVertical || morphDirectPortrait,
-                        directPortraitEntry = morphDirectPortrait,
                     )
                 }
                 else -> parsedKey
@@ -1169,31 +1024,8 @@ fun AppNavigation(
             autoPortrait: Boolean = shouldAutoEnterPortraitForStandardVideoNavigation(),
             resumePositionMs: Long = 0L,
             initialVertical: Boolean = false,
-            directPortraitEntry: Boolean = false,
             sourceRoute: String? = null,
-            skipPortraitStoryResolution: Boolean = false,
         ) {
-            val morphDirectPortrait = resolveDirectPortraitDetailMorphEntry(
-                directPortraitStoryEntry = playerInteractionSettings.directPortraitStoryEntry,
-                cardTransitionEnabled = cardTransitionEnabled,
-                isVerticalVideo = initialVertical || directPortraitEntry,
-                coverUrl = coverUrl,
-                startAudio = startAudio,
-            ) || directPortraitEntry
-            if (!skipPortraitStoryResolution) {
-                resolvePortraitStoryNavigationSeed(
-                    directPortraitStoryEntry = playerInteractionSettings.directPortraitStoryEntry,
-                    isVerticalVideo = initialVertical,
-                    startAudio = startAudio,
-                    bvid = bvid,
-                    cid = cid,
-                    coverUrl = coverUrl,
-                    cardTransitionEnabled = cardTransitionEnabled,
-                )?.let { seed ->
-                    navigateToPortraitStoryInNavigation3(seed, sourceRoute = sourceRoute)
-                    return
-                }
-            }
             val isNetworkAvailable = NetworkUtils.isNetworkAvailable(context)
             val offlineTask = com.android.purebilibili.feature.download.resolveOfflineVideoNavigationTask(
                 tasks = downloadTasks.values,
@@ -1214,60 +1046,13 @@ fun AppNavigation(
                 cid = cid,
                 coverUrl = coverUrl,
                 startAudio = startAudio,
-                autoPortrait = autoPortrait || morphDirectPortrait,
+                autoPortrait = autoPortrait,
                 resumePositionMs = resumePositionMs,
-                initialVertical = initialVertical || morphDirectPortrait,
-                directPortraitEntry = morphDirectPortrait,
+                initialVertical = initialVertical,
             )
-            if (
-                !skipPortraitStoryResolution &&
-                com.android.purebilibili.data.model.response.shouldResolveVerticalVideoForPortraitEntry(
-                    directPortraitStoryEntry = playerInteractionSettings.directPortraitStoryEntry,
-                    startAudio = startAudio,
-                    bvid = bvid,
-                    isVerticalVideo = initialVertical || morphDirectPortrait,
-                    coverUrl = coverUrl
-                )
-            ) {
-                coroutineScope.launch {
-                    if (com.android.purebilibili.data.repository.VideoRepository.isVerticalVideo(bvid)) {
-                        if (cardTransitionEnabled) {
-                            navigateToVideoInNavigation3(
-                                bvid = bvid,
-                                cid = cid,
-                                coverUrl = coverUrl,
-                                startAudio = startAudio,
-                                autoPortrait = true,
-                                resumePositionMs = resumePositionMs,
-                                initialVertical = true,
-                                directPortraitEntry = true,
-                                sourceRoute = sourceRoute,
-                                skipPortraitStoryResolution = true,
-                            )
-                        } else {
-                            navigateToPortraitStoryInNavigation3(
-                                seed = PortraitStoryNavigationSeed(
-                                    bvid = bvid.trim(),
-                                    cid = cid,
-                                    coverUrl = coverUrl
-                                ),
-                                sourceRoute = sourceRoute
-                            )
-                        }
-                    } else {
-                        navigateToVideoRouteInNavigation3(
-                            route = videoRoute,
-                            sourceRoute = sourceRoute,
-                            skipPortraitStoryResolution = true
-                        )
-                    }
-                }
-                return
-            }
             navigateToVideoRouteInNavigation3(
                 route = videoRoute,
                 sourceRoute = sourceRoute,
-                skipPortraitStoryResolution = true
             )
         }
         fun navigateToHomeVideoInNavigation3(request: HomeVideoClickRequest) {
@@ -2991,7 +2776,6 @@ fun AppNavigation(
                                 startAudioFromRoute = videoKey.startAudio,
                                 autoEnterPortraitFromRoute = videoKey.autoPortrait,
                                 initialVerticalFromRoute = videoKey.initialVertical,
-                                directPortraitEntryFromRoute = videoKey.directPortraitEntry,
                                 resumePositionMsFromRoute = videoKey.resumePositionMs,
                                 openCommentRootRpidFromRoute = videoKey.commentRootRpid,
                                 openCommentTargetRpidFromRoute = videoKey.commentTargetRpid,
@@ -3117,7 +2901,6 @@ fun AppNavigation(
                                         resolveInitialBiliPaiBackStack(
                                             firstRoute = ScreenRoutes.Home.route,
                                             onboardingRequired = false,
-                                            openPortraitFeedOnStartup = launchToPortraitFeedOnStartupAtInit
                                         )
                                     )
                                 },

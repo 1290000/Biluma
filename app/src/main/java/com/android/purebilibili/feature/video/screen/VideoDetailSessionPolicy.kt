@@ -207,9 +207,8 @@ internal fun shouldAutoEnterAudioModeFromRoute(
  * Whether the detail route should auto-jump into standalone portrait immersive pager.
  *
  * Entry decision tree (phone):
- * 1. **directPortraitEntry**（设置「竖屏直达」）→ standalone（可经详情 morph）
- * 2. **official inline**（默认）→ stay on detail; autoPortrait / initialVertical are soft hints only
- * 3. else if autoPortrait and vertical → standalone (legacy / non-inline surfaces)
+ * 1. **official inline**（默认）→ stay on detail; autoPortrait / initialVertical are soft hints only
+ * 2. else if autoPortrait and vertical → standalone (legacy / non-inline surfaces)
  *
  * Note: home always passes autoPortrait=true + initialVertical for known vertical cards so
  * shared-element transition can prefer portrait geometry. That must NOT force standalone.
@@ -225,8 +224,6 @@ internal fun shouldAutoEnterPortraitFullscreenFromRoute(
     isPortraitFullscreen: Boolean,
     hasAutoEnteredPortraitFromRoute: Boolean,
     initialVerticalFromRoute: Boolean = false,
-    directPortraitEntryFromRoute: Boolean = false,
-    directPortraitEntryEnabled: Boolean = false,
 ): Boolean {
     if (
         startAudioFromRoute ||
@@ -238,11 +235,6 @@ internal fun shouldAutoEnterPortraitFullscreenFromRoute(
     ) {
         return false
     }
-    // Route metadata can be missing or its direction preflight can fail. Once the player
-    // knows the actual orientation, honor the setting before the inline-detail fallback.
-    if (directPortraitEntryFromRoute || directPortraitEntryEnabled) {
-        return isVerticalVideo || initialVerticalFromRoute
-    }
     // 手机竖视频默认官方内联详情；autoPortrait/initialVertical 只影响过渡/布局，不自动进 pager。
     if (useOfficialInlinePortraitDetailExperience) {
         return false
@@ -251,21 +243,6 @@ internal fun shouldAutoEnterPortraitFullscreenFromRoute(
         return false
     }
     return isVerticalVideo || initialVerticalFromRoute
-}
-
-/**
- * Whether presentation should **start already** in standalone portrait fullscreen.
- * Only explicit direct-entry intent does this; soft autoPortrait / initialVertical hints must not.
- */
-@Suppress("UNUSED_PARAMETER")
-internal fun shouldStartInPortraitFullscreenFromRouteHint(
-    autoEnterPortraitFromRoute: Boolean,
-    startAudioFromRoute: Boolean,
-    initialVerticalFromRoute: Boolean,
-    directPortraitEntryFromRoute: Boolean = false,
-): Boolean {
-    if (startAudioFromRoute) return false
-    return directPortraitEntryFromRoute
 }
 
 internal fun shouldSyncMainPlayerToInternalBvid(

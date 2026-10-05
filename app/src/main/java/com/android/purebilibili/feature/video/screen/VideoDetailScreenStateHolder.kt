@@ -441,7 +441,6 @@ internal fun VideoDetailScreenStateHolder(
     startAudioFromRoute: Boolean = false,
     autoEnterPortraitFromRoute: Boolean = false,
     initialVerticalFromRoute: Boolean = false,
-    directPortraitEntryFromRoute: Boolean = false,
     resumePositionMsFromRoute: Long = 0L,
     openCommentRootRpidFromRoute: Long = 0L,
     openCommentTargetRpidFromRoute: Long = 0L,
@@ -492,9 +491,6 @@ internal fun VideoDetailScreenStateHolder(
     val view = LocalView.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val configuration = LocalConfiguration.current
-    val directPortraitEntryEnabled by com.android.purebilibili.core.store.SettingsManager
-        .getAutoPortraitFullscreen(context)
-        .collectAsStateWithLifecycle(initialValue = false)
     val homeUpBadgesVisible by com.android.purebilibili.core.store.SettingsManager
         .getHomeUpBadgesVisible(context)
         .collectAsStateWithLifecycle(initialValue = true
@@ -581,12 +577,7 @@ internal fun VideoDetailScreenStateHolder(
     val presentationState = rememberVideoDetailPresentationState(
         routeBvid = bvid,
         initialCid = 0L,
-        initialPortraitFullscreen = shouldStartInPortraitFullscreenFromRouteHint(
-            autoEnterPortraitFromRoute = autoEnterPortraitFromRoute,
-            startAudioFromRoute = startAudioFromRoute,
-            initialVerticalFromRoute = initialVerticalFromRoute,
-            directPortraitEntryFromRoute = directPortraitEntryFromRoute,
-        ),
+        initialPortraitFullscreen = false,
         initialPipMode = isInPipMode,
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -734,26 +725,6 @@ internal fun VideoDetailScreenStateHolder(
             // The retained detail entry is active again after audio mode popped. Do not leave
             // later navigation/disposal permanently classified as an audio hand-off.
             presentationState.clearNavigatingToAudioMode()
-        }
-    }
-    // 路由要求直达竖屏全屏时，立刻盖过可能被 saveable 复写的详情态。
-    LaunchedEffect(
-        bvid,
-        autoEnterPortraitFromRoute,
-        initialVerticalFromRoute,
-        directPortraitEntryFromRoute,
-        startAudioFromRoute,
-    ) {
-        if (
-            shouldStartInPortraitFullscreenFromRouteHint(
-                autoEnterPortraitFromRoute = autoEnterPortraitFromRoute,
-                startAudioFromRoute = startAudioFromRoute,
-                initialVerticalFromRoute = initialVerticalFromRoute,
-                directPortraitEntryFromRoute = directPortraitEntryFromRoute,
-            )
-        ) {
-            presentationState.setPortraitFullscreen(true)
-            hasAutoEnteredPortraitFromRoute = true
         }
     }
     var hasHandledCommentRootFromRoute by rememberSaveable(
@@ -1195,9 +1166,6 @@ internal fun VideoDetailScreenStateHolder(
             initialValue = com.android.purebilibili.core.store.TabletCommentPanelWidthPreset.STANDARD,
             lifecycle = lifecycleOwner.lifecycle
         )
-    val videoAiSummaryEntryEnabled by com.android.purebilibili.core.store.SettingsManager
-        .getVideoAiSummaryEntryEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = true, lifecycle = lifecycleOwner.lifecycle)
     val videoNoteEnabled by com.android.purebilibili.core.store.SettingsManager
         .getVideoNoteEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true, lifecycle = lifecycleOwner.lifecycle)
@@ -1644,13 +1612,7 @@ internal fun VideoDetailScreenStateHolder(
         clipShape = detailShellShape,
         role = VideoCardShellSharedBoundsRole.DetailShell,
         // 竖屏全屏（点赞/关注/发弹幕那套）：整卡展开到全屏，不要按顶部横屏播放器 TopCenter 落点。
-        fillFullscreenShell = isPortraitFullscreen ||
-            shouldStartInPortraitFullscreenFromRouteHint(
-                autoEnterPortraitFromRoute = autoEnterPortraitFromRoute,
-                startAudioFromRoute = startAudioFromRoute,
-                initialVerticalFromRoute = initialVerticalFromRoute,
-                directPortraitEntryFromRoute = directPortraitEntryFromRoute,
-            ),
+        fillFullscreenShell = isPortraitFullscreen,
     )
     val coverTakeoverBeforeBackDelayMillis = remember {
         resolveCoverTakeoverDelayBeforeBackNavigationMillis()
@@ -1992,10 +1954,9 @@ internal fun VideoDetailScreenStateHolder(
     val portraitPagerMotionSpec = remember {
         resolveStandalonePortraitPagerMotionSpec()
     }
-    val shouldAnimatePortraitPager = remember(useSharedPortraitPlayer, directPortraitEntryFromRoute) {
+    val shouldAnimatePortraitPager = remember(useSharedPortraitPlayer) {
         shouldAnimateStandalonePortraitPager(
             useSharedPlayer = useSharedPortraitPlayer,
-            directPortraitEntry = directPortraitEntryFromRoute
         )
     }
     val inlineReturnAnimMs = if (shouldAnimatePortraitPager) {
@@ -2782,17 +2743,11 @@ internal fun VideoDetailScreenStateHolder(
         useTabletLayout = useTabletLayout,
         isVerticalVideo = isVerticalVideo,
         portraitExperienceEnabled = portraitExperienceEnabled,
-        directPortraitEntry = directPortraitEntryFromRoute
     )
     val allowStandalonePortraitExperience = portraitExperienceEnabled &&
         !useOfficialInlinePortraitDetailExperience
-    // Direct morph: hide phone intro/comment body under the full-bleed shell so only
-    // card→fullscreen motion + entry cover / portrait pager are visible.
-    val suppressPhoneDetailBodyForDirectPortrait =
-        shouldSuppressPhoneDetailBodyForDirectPortraitEntry(
-            directPortraitEntry = directPortraitEntryFromRoute,
-            isPortraitFullscreen = isPortraitFullscreen
-        ) || shouldSuppressPhoneDetailBodyUnderStandalonePortraitPager(
+    val suppressPhoneDetailBodyUnderPortraitPager =
+        shouldSuppressPhoneDetailBodyUnderStandalonePortraitPager(
             portraitExperienceEnabled = portraitExperienceEnabled,
             isPortraitFullscreen = isPortraitFullscreen,
             hasPlayableState = uiState is VideoPlaybackUiState.Success ||
@@ -2822,8 +2777,6 @@ internal fun VideoDetailScreenStateHolder(
         isPortraitFullscreen,
         hasAutoEnteredPortraitFromRoute,
         initialVerticalFromRoute,
-        directPortraitEntryFromRoute,
-        directPortraitEntryEnabled,
     ) {
         if (
             shouldAutoEnterPortraitFullscreenFromRoute(
@@ -2838,8 +2791,6 @@ internal fun VideoDetailScreenStateHolder(
                 isPortraitFullscreen = isPortraitFullscreen,
                 hasAutoEnteredPortraitFromRoute = hasAutoEnteredPortraitFromRoute,
                 initialVerticalFromRoute = initialVerticalFromRoute,
-                directPortraitEntryFromRoute = directPortraitEntryFromRoute,
-                directPortraitEntryEnabled = directPortraitEntryEnabled,
             )
         ) {
             enterPortraitFullscreen()
@@ -3226,7 +3177,6 @@ internal fun VideoDetailScreenStateHolder(
     val localBackTarget = resolveVideoDetailLocalBackTarget(
         isLandscapeFullscreen = isFullscreenMode,
         isPortraitFullscreen = isPortraitFullscreen,
-        directPortraitEntry = directPortraitEntryFromRoute,
     )
     val localBackEventState = rememberNavigationEventState(NavigationEventInfo.None)
     NavigationBackHandler(
@@ -3366,7 +3316,7 @@ internal fun VideoDetailScreenStateHolder(
     val continuousPlayerUnitState = remember { mutableFloatStateOf(1f) }
     val continuousPlayerRenderer = rememberUpdatedState<@Composable (ContinuousPlayerHostLayout) -> Unit> { layout ->
         // 竖屏全屏 pager 接管共享播放器后，内联 host 必须退出 composition。
-        if (!suppressPhoneDetailBodyForDirectPortrait && !isPortraitFullscreen) {
+        if (!suppressPhoneDetailBodyUnderPortraitPager && !isPortraitFullscreen) {
             PortraitInlineVideoPlayerHost(
             modifier = layout.modifier,
             animatedViewportWidth = layout.viewportWidth,
@@ -3950,7 +3900,6 @@ internal fun VideoDetailScreenStateHolder(
                                 predictiveBackCancelRecoveryGeneration = predictiveBackCancelRecoveryGeneration,
                                 liveSurfaceCardTransitionEnabled = liveSurfaceCardTransitionEnabled,
                                 paneControlsEnabled = isTransitionFinished,
-                                videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                                 videoNoteEnabled = videoNoteEnabled,
                                 playerContent = continuousPlayerSlot,
                             )
@@ -4022,7 +3971,6 @@ internal fun VideoDetailScreenStateHolder(
                             predictiveBackCancelRecoveryGeneration = predictiveBackCancelRecoveryGeneration,
                             liveSurfaceCardTransitionEnabled = liveSurfaceCardTransitionEnabled,
                             paneControlsEnabled = isTransitionFinished,
-                            videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                             videoNoteEnabled = videoNoteEnabled,
                             playerContent = continuousPlayerSlot,
                             )
@@ -4416,7 +4364,7 @@ internal fun VideoDetailScreenStateHolder(
                             }
                         }
                         val expandedViewportHeight = when {
-                            suppressPhoneDetailBodyForDirectPortrait -> screenHeightDp
+                            suppressPhoneDetailBodyUnderPortraitPager -> screenHeightDp
                             useOfficialInlinePortraitDetailExperience -> expandedPortraitInlineSpec.heightDp.dp
                             else -> videoHeight
                         }
@@ -4713,7 +4661,7 @@ internal fun VideoDetailScreenStateHolder(
                                     enabled = continuousFullscreenTransitionEnabled,
                                     // 横屏 16:9：按真实布局宽度算高度，消除 vivo 等机型左右黑边。
                                     preferLayoutWidth16x9Inline = !useOfficialInlinePortraitDetailExperience &&
-                                        !suppressPhoneDetailBodyForDirectPortrait,
+                                        !suppressPhoneDetailBodyUnderPortraitPager,
                                     inlineTopInset = if (!useOfficialInlinePortraitDetailExperience) {
                                         playerTopInset
                                     } else {
@@ -4892,7 +4840,7 @@ internal fun VideoDetailScreenStateHolder(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
-                                    if (suppressPhoneDetailBodyForDirectPortrait) {
+                                    if (suppressPhoneDetailBodyUnderPortraitPager) {
                                         Color.Black
                                     } else {
                                         AppSurfaceTokens.background()
@@ -4988,10 +4936,9 @@ internal fun VideoDetailScreenStateHolder(
                                 }
                                 // .nestedScroll(nestedScrollConnection) // [Remove] 移除嵌套滚动，确保 Tabs 正常滑动
                         ) {
-                            // 「竖屏直达」morph 期间不绘制详情 body，避免先露出简介/评论再跳竖全屏。
                             // 错误态仍展示，避免黑屏无法重试。
                             when {
-                                suppressPhoneDetailBodyForDirectPortrait &&
+                                suppressPhoneDetailBodyUnderPortraitPager &&
                                     uiState !is VideoPlaybackUiState.Error -> Unit
                                 // 仅无实时帧的封面回退允许卸载正文；LiveMorph 内容必须保持
                                 // composition，并在 Miuix 飞行 entry 内让位给来源卡文字。
@@ -5233,7 +5180,7 @@ internal fun VideoDetailScreenStateHolder(
                         // the child's frozen cover/chrome over its related-video list.
                         miuixVisualAssetsActive &&
                         miuixCardTransitionState.enabled &&
-                        !suppressPhoneDetailBodyForDirectPortrait &&
+                        !suppressPhoneDetailBodyUnderPortraitPager &&
                         shouldDrawFlyingReconstructedSourceChrome(
                             phase = videoCardDepthBackgroundState.phaseProvider(),
                             isReturnGestureInProgress =
@@ -5291,11 +5238,7 @@ internal fun VideoDetailScreenStateHolder(
             sharedPlayer = if (useSharedPortraitPlayer) playerState.player else null,
             useTextureSurfaceForNavigation = useTextureSurfaceForNavigation,
             onBack = {
-                if (directPortraitEntryFromRoute) {
-                    handleBack()
-                } else {
-                    presentationState.setPortraitFullscreen(false)
-                }
+                presentationState.setPortraitFullscreen(false)
             },
             onHomeClick = {
                 presentationState.setPortraitFullscreen(false)

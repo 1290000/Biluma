@@ -1313,9 +1313,6 @@ private fun PlaybackInteractionSettingsSection(
     val subtitleAutoPreference by com.android.purebilibili.core.store.SettingsManager
         .getSubtitleAutoPreference(context)
         .collectAsStateWithLifecycle(initialValue = SubtitleAutoPreference.OFF)
-    val videoAiSummaryEntryEnabled by com.android.purebilibili.core.store.SettingsManager
-        .getVideoAiSummaryEntryEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = true)
     val videoNoteEnabled by com.android.purebilibili.core.store.SettingsManager
         .getVideoNoteEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true)
@@ -1535,24 +1532,6 @@ private fun PlaybackInteractionSettingsSection(
         )
         AppPreferenceDivider()
         AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.AI_SUMMARY),
-            title = "显示 AI 总结入口",
-            subtitle = if (videoAiSummaryEntryEnabled) {
-                "视频简介区展示 AI 总结按钮，点按后展开内容"
-            } else {
-                "关闭后隐藏视频简介区的 AI 总结入口"
-            },
-            checked = videoAiSummaryEntryEnabled,
-            onCheckedChange = {
-                scope.launch {
-                    com.android.purebilibili.core.store.SettingsManager
-                        .setVideoAiSummaryEntryEnabled(context, it)
-                }
-            },
-            iconTint = com.android.purebilibili.core.theme.iOSPurple
-        )
-        AppPreferenceDivider()
-        AppSwitchPreference(
             icon = rememberSettingsSemanticIcon(SettingsIconRole.VIDEO_NOTE),
             title = "显示视频笔记",
             subtitle = if (videoNoteEnabled) {
@@ -1724,13 +1703,6 @@ private fun PlaybackFullscreenGestureSettingsSection(
         .collectAsStateWithLifecycle(initialValue = false)
     val portraitSwipeToFullscreenEnabled by com.android.purebilibili.core.store.SettingsManager
         .getPortraitSwipeToFullscreenEnabled(context).collectAsStateWithLifecycle(initialValue = true)
-    val directPortraitStoryEntry by com.android.purebilibili.core.store.SettingsManager
-        .getAutoPortraitFullscreen(context).collectAsStateWithLifecycle(initialValue = false)
-    val portraitOnlyVerticalRecommendations by com.android.purebilibili.core.store.SettingsManager
-        .getPortraitOnlyVerticalRecommendations(context)
-        .collectAsStateWithLifecycle(initialValue = false)
-    val launchToPortraitFeedOnStartup by com.android.purebilibili.core.store.SettingsManager
-        .getLaunchToPortraitFeedOnStartup(context).collectAsStateWithLifecycle(initialValue = false)
     val centerSwipeToFullscreenEnabled by com.android.purebilibili.core.store.SettingsManager
         .getCenterSwipeToFullscreenEnabled(context).collectAsStateWithLifecycle(initialValue = true)
     val slideVolumeBrightnessEnabled by com.android.purebilibili.core.store.SettingsManager
@@ -1901,63 +1873,6 @@ private fun PlaybackFullscreenGestureSettingsSection(
                 scope.launch {
                     com.android.purebilibili.core.store.SettingsManager
                         .setPortraitSwipeToFullscreenEnabled(context, it)
-                }
-            },
-            iconTint = iOSTeal
-        )
-
-        AppPreferenceDivider()
-        AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.PORTRAIT_STORY_ENTRY),
-            title = "竖屏视频直达刷视频模式",
-            subtitle = if (directPortraitStoryEntry) {
-                "开启：任意入口点竖屏视频直接进竖滑全屏（可经卡片放大动画）；默认关闭时先进详情内联竖屏"
-            } else {
-                "关闭（默认）：竖屏视频先进详情页内联播放，可再点「竖屏」进刷视频"
-            },
-            checked = directPortraitStoryEntry,
-            onCheckedChange = {
-                scope.launch {
-                    com.android.purebilibili.core.store.SettingsManager
-                        .setAutoPortraitFullscreen(context, it)
-                }
-            },
-            iconTint = iOSTeal
-        )
-
-        AppPreferenceDivider()
-        AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.PORTRAIT_STORY_ENTRY),
-            title = "竖屏刷视频仅推荐真竖屏（Beta）",
-            subtitle = if (portraitOnlyVerticalRecommendations) {
-                "开启后过滤横屏视频，仅保留实际画面为竖屏的推荐"
-            } else {
-                "关闭后竖屏刷视频允许横竖屏混合推荐"
-            },
-            checked = portraitOnlyVerticalRecommendations,
-            onCheckedChange = {
-                scope.launch {
-                    com.android.purebilibili.core.store.SettingsManager
-                        .setPortraitOnlyVerticalRecommendations(context, it)
-                }
-            },
-            iconTint = iOSTeal
-        )
-
-        AppPreferenceDivider()
-        AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.STARTUP_PORTRAIT_FEED),
-            title = "启动时进入竖屏视频流",
-            subtitle = if (launchToPortraitFeedOnStartup) {
-                "打开应用后直接进入竖屏刷视频流（独立于「直达」开关）"
-            } else {
-                "关闭后仍从首页进入应用"
-            },
-            checked = launchToPortraitFeedOnStartup,
-            onCheckedChange = {
-                scope.launch {
-                    com.android.purebilibili.core.store.SettingsManager
-                        .setLaunchToPortraitFeedOnStartup(context, it)
                 }
             },
             iconTint = iOSTeal

@@ -463,25 +463,19 @@ class PortraitPagerSwitchPolicyTest {
     }
 
     @Test
-    fun verticalRecommendations_startLoadingBeforeTheShortFilteredFeedRunsOut() {
-        assertEquals(
-            4,
-            resolvePortraitRecommendationPrefetchThreshold(
-                onlyVerticalRecommendations = true,
-            )
+    fun mixedRecommendationsKeepLandscapePortraitAndUnknownDimensions() {
+        val recommendations = listOf(
+            related("BV_LANDSCAPE", aid = 1L).copy(isVertical = false),
+            related("BV_PORTRAIT", aid = 2L, ownerMid = 2L).copy(isVertical = true),
+            related("BV_UNKNOWN", aid = 3L, ownerMid = 3L).copy(isVertical = null),
         )
-        assertEquals(
-            3,
-            resolvePortraitRecommendationFetchAttemptLimit(
-                onlyVerticalRecommendations = true,
-            )
+        val appended = mergePortraitRecommendationAppendItems(
+            currentBvid = "BV_CURRENT",
+            existingBvids = setOf("BV_CURRENT"),
+            existingRecommendations = emptyList(),
+            fetchedRecommendations = recommendations,
         )
-        assertEquals(
-            1,
-            resolvePortraitRecommendationPrefetchThreshold(
-                onlyVerticalRecommendations = false,
-            )
-        )
+        assertEquals(recommendations, appended)
     }
 
     @Test

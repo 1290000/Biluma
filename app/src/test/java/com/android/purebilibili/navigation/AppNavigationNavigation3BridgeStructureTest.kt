@@ -113,15 +113,15 @@ class AppNavigationNavigation3BridgeStructureTest {
     }
 
     @Test
-    fun portraitRedirectsResolveBeforeReservingNavigationDebounce() {
+    fun videoNavigationReservesDebounceWithoutPortraitRedirects() {
         val videoNavigation = appNavigationSource()
             .substringAfter("fun navigateToVideoRouteInNavigation3(")
             .substringBefore("fun navigateToVideoInNavigation3(")
         val debounceIndex = videoNavigation.indexOf("if (!canNavigate(false)) return")
-        assertTrue(debounceIndex > videoNavigation.indexOf("navigateToPortraitStoryInNavigation3(seed"))
-        assertTrue(debounceIndex > videoNavigation.indexOf("VideoRepository.isVerticalVideo(videoKey.bvid)"))
+        assertTrue(debounceIndex >= 0)
         assertTrue(debounceIndex < videoNavigation.indexOf("pushNavigation3Key(key)"))
-        assertTrue(videoNavigation.contains("route = videoKey.copy("))
+        assertFalse(videoNavigation.contains("navigateToPortraitStoryInNavigation3"))
+        assertFalse(videoNavigation.contains("VideoRepository.isVerticalVideo"))
     }
 
     @Test

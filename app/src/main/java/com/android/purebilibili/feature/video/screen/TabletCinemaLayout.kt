@@ -167,7 +167,6 @@ internal fun TabletCinemaLayout(
     downloadProgress: Float,
     tabletCommentPanelWidthPreset: TabletCommentPanelWidthPreset,
     commentMemberDecorationsEnabled: Boolean,
-    videoAiSummaryEntryEnabled: Boolean,
     videoNoteEnabled: Boolean,
     playbackActions: VideoDetailPlaybackActions,
     engagementActions: VideoDetailEngagementActions,
@@ -347,7 +346,6 @@ internal fun TabletCinemaLayout(
                         success = success.withEngagementUiState(engagementState),
                         engagement = engagementState,
                         downloadProgress = downloadProgress,
-                        videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                         videoNoteEnabled = videoNoteEnabled,
                         modifier = Modifier.weight(1f),
                         danmakuEnabled = danmakuChrome.enabled,
@@ -630,7 +628,6 @@ private fun CinemaMetaPanel(
     success: VideoPlaybackUiState.Success,
     engagement: VideoEngagementUiState,
     downloadProgress: Float,
-    videoAiSummaryEntryEnabled: Boolean,
     videoNoteEnabled: Boolean,
     modifier: Modifier = Modifier,
     danmakuEnabled: Boolean,
@@ -835,7 +832,6 @@ private fun CinemaMetaPanel(
                     CinemaMetaPanelBlock.INTRO -> {
                         CinemaVideoIntroSection(
                             success = success,
-                            videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                             videoNoteEnabled = videoNoteEnabled,
                             onOpenBilibiliLink = onOpenBilibiliLink,
                             onBgmClick = onBgmClick,
@@ -972,7 +968,6 @@ private fun CinemaMetaUpInfo(
 @Composable
 private fun CinemaVideoIntroSection(
     success: VideoPlaybackUiState.Success,
-    videoAiSummaryEntryEnabled: Boolean,
     videoNoteEnabled: Boolean,
     onBgmClick: (BgmInfo) -> Unit = {},
     onOpenBilibiliLink: ((String) -> Unit)? = null,
@@ -1010,7 +1005,6 @@ private fun CinemaVideoIntroSection(
                 sponsorLabel = success.sponsorVideoLabel,
                 trailingStatsContent = {
                     VideoSupplementStatsActions(
-                        showAiSummary = videoAiSummaryEntryEnabled,
                         showNote = videoNoteEnabled,
                         onAiSummaryClick = { showAiSummarySheet = true },
                         onNoteClick = { showNoteListSheet = true },

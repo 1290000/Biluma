@@ -7,9 +7,8 @@ import kotlin.test.assertTrue
 class VideoNoteVisibilityPolicyTest {
 
     @Test
-    fun `disabled note setting should block note loading and card rendering`() {
+    fun `disabled note setting should block note loading`() {
         assertFalse(shouldLoadVideoNote(isVideoNoteEnabled = false, aid = 123L))
-        assertFalse(shouldShowVideoNoteCard(isVideoNoteEnabled = false))
     }
 
     @Test
