@@ -13,10 +13,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.android.purebilibili.core.ui.AppIconStyle
-import com.android.purebilibili.core.ui.AppListItemStyle
 import com.android.purebilibili.core.ui.components.AppSingleChoicePresentation
 import com.android.purebilibili.core.ui.resolveAppIconStylePreference
-import com.android.purebilibili.core.ui.resolveAppListItemStylePreference
 import com.android.purebilibili.core.ui.blur.BlurIntensity
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_TRANSITION_CUSTOM_DEFAULT_MILLIS
 import com.android.purebilibili.core.ui.transition.VideoSharedTransitionSpeed
@@ -91,12 +89,14 @@ import java.io.File
 import kotlin.math.abs
 
 // 声明 DataStore 扩展属性
-internal val Context.settingsDataStore by preferencesDataStore(name = "settings_prefs")
+internal val Context.settingsDataStore by preferencesDataStore(
+    name = "settings_prefs",
+    produceMigrations = { context -> listOf(SimplifiedSettingsMigration(context)) }
+)
 
 internal const val DEFAULT_CRASH_TRACKING_ENABLED = true
 internal const val DEFAULT_ANALYTICS_ENABLED = true
 internal const val DEFAULT_QUALITY_SWITCH_FAILURE_DIALOG_ENABLED = true
-internal const val DEFAULT_QUALITY_SWITCH_FAILURE_DIALOG_ONCE_ENABLED = false
 internal const val DEFAULT_DASH_SEGMENT_REQUESTS_ENABLED = false
 
 internal fun resolveDefaultPlayerDiagnosticLoggingEnabled(isDebugBuild: Boolean): Boolean {
@@ -732,7 +732,6 @@ data class AppThemeSettings(
     val appScreenshotCaptureMode: AppScreenshotCaptureMode =
         AppScreenshotCaptureMode.FULL_WINDOW,
     val appIconStyle: AppIconStyle = AppIconStyle.AUTO,
-    val appListItemStyle: AppListItemStyle = AppListItemStyle.AUTO,
     val singleChoicePresentation: AppSingleChoicePresentation =
         AppSingleChoicePresentation.WINDOW_POPUP,
 )
@@ -1438,7 +1437,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_APP_ICON = androidx.datastore.preferences.core.stringPreferencesKey("app_icon_key")
     private val KEY_APP_ICON_APPEARANCE = intPreferencesKey("app_icon_appearance")
     private val KEY_APP_ICON_STYLE = stringPreferencesKey("app_icon_style")
-    private val KEY_APP_LIST_ITEM_STYLE = stringPreferencesKey("app_list_item_style")
     //  [新增] 底部栏样式 (true=悬浮, false=贴底)
     private val KEY_BOTTOM_BAR_FLOATING = booleanPreferencesKey("bottom_bar_floating")
     private val KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED =
@@ -1469,26 +1467,9 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         booleanPreferencesKey("dynamic_top_actions_collapsed")
     private val KEY_LIVE_FAVORITE_TAGS = stringPreferencesKey("live_favorite_tags")
     
-    //  [新增] 开屏壁纸
-    private val KEY_SPLASH_WALLPAPER_URI = stringPreferencesKey("splash_wallpaper_uri")
-    private val KEY_SPLASH_WALLPAPER_HISTORY = stringPreferencesKey("splash_wallpaper_history")
-    private val KEY_SPLASH_RANDOM_POOL_URIS = stringPreferencesKey("splash_random_pool_uris")
-    private val KEY_SPLASH_ENABLED = booleanPreferencesKey("splash_enabled")
-    private val KEY_SPLASH_RANDOM_ENABLED = booleanPreferencesKey("splash_random_enabled")
-    private val KEY_STARTUP_ANIMATION_STYLE = stringPreferencesKey("startup_animation_style")
     private val KEY_SPLASH_ICON_ANIMATION_ENABLED = booleanPreferencesKey("splash_icon_animation_enabled")
-    private val KEY_SPLASH_ALIGNMENT_MOBILE = floatPreferencesKey("splash_alignment_mobile")
-    private val KEY_SPLASH_ALIGNMENT_TABLET = floatPreferencesKey("splash_alignment_tablet")
     private const val SPLASH_PREFS = "splash_prefs"
-    private const val SPLASH_PREFS_KEY_WALLPAPER_URI = "wallpaper_uri"
-    private const val SPLASH_PREFS_KEY_WALLPAPER_HISTORY = "wallpaper_history"
-    private const val SPLASH_PREFS_KEY_RANDOM_POOL_URIS = "random_pool_uris"
-    private const val SPLASH_PREFS_KEY_ENABLED = "enabled"
-    private const val SPLASH_PREFS_KEY_RANDOM_ENABLED = "random_enabled"
-    private const val SPLASH_PREFS_KEY_ANIMATION_STYLE = "animation_style"
     private const val SPLASH_PREFS_KEY_ICON_ANIMATION_ENABLED = "icon_animation_enabled"
-    private const val SPLASH_PREFS_KEY_ALIGNMENT_MOBILE = "alignment_mobile"
-    private const val SPLASH_PREFS_KEY_ALIGNMENT_TABLET = "alignment_tablet"
 
     //  [New] 解锁高画质 (Bypass client-side checks) - REVERTED
     // private val KEY_UNLOCK_HIGH_QUALITY = booleanPreferencesKey("unlock_high_quality")
@@ -2315,7 +2296,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 preferences[KEY_SINGLE_CHOICE_PRESENTATION]
             ),
             appIconStyle = resolveAppIconStylePreference(preferences[KEY_APP_ICON_STYLE]),
-            appListItemStyle = resolveAppListItemStylePreference(preferences[KEY_APP_LIST_ITEM_STYLE])
         )
     }
 
@@ -2400,14 +2380,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         )
     }
 
-    suspend fun setAppListItemStyle(context: Context, style: AppListItemStyle) {
-        editSettingsAndCommitPrefs(
-            context, "theme_cache",
-            editSettings = { this[KEY_APP_LIST_ITEM_STYLE] = style.name },
-            editPrefs = { putString("app_list_item_style", style.name) },
-        )
-    }
-
     suspend fun setSingleChoicePresentation(
         context: Context,
         presentation: AppSingleChoicePresentation,
@@ -2426,11 +2398,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     fun getAppIconStyle(context: Context): Flow<AppIconStyle> =
         context.settingsDataStore.data.map { preferences ->
             resolveAppIconStylePreference(preferences[KEY_APP_ICON_STYLE])
-        }
-
-    fun getAppListItemStyle(context: Context): Flow<AppListItemStyle> =
-        context.settingsDataStore.data.map { preferences ->
-            resolveAppListItemStylePreference(preferences[KEY_APP_LIST_ITEM_STYLE])
         }
 
     fun getSingleChoicePresentation(context: Context): Flow<AppSingleChoicePresentation> =
@@ -3610,128 +3577,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         )
     }
     
-    //  [新增] --- 开屏壁纸 ---
-    fun getSplashWallpaperUri(context: Context): Flow<String> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SPLASH_WALLPAPER_URI] ?: "" }
-
-    fun getSplashWallpaperHistory(context: Context): Flow<List<String>> = context.settingsDataStore.data
-        .map { preferences -> decodeSplashWallpaperHistory(preferences[KEY_SPLASH_WALLPAPER_HISTORY] ?: "") }
-
-    fun getSplashRandomPoolUris(context: Context): Flow<List<String>> = context.settingsDataStore.data
-        .map { preferences -> decodeSplashWallpaperHistory(preferences[KEY_SPLASH_RANDOM_POOL_URIS] ?: "") }
-
-    suspend fun setSplashWallpaperUri(context: Context, uri: String) {
-        var encodedHistory = ""
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_SPLASH_WALLPAPER_URI] = uri
-            val existingHistory = decodeSplashWallpaperHistory(preferences[KEY_SPLASH_WALLPAPER_HISTORY] ?: "")
-            val updatedHistory = appendSplashWallpaperHistory(existingHistory, uri)
-            encodedHistory = encodeSplashWallpaperHistory(updatedHistory)
-            preferences[KEY_SPLASH_WALLPAPER_HISTORY] = encodedHistory
-        }
-        // 同步到 SharedPreferences
-        context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(SPLASH_PREFS_KEY_WALLPAPER_URI, uri)
-            .putString(SPLASH_PREFS_KEY_WALLPAPER_HISTORY, encodedHistory)
-            .apply()
-    }
-
-    suspend fun setSplashWallpaperHistory(context: Context, history: List<String>) {
-        val encoded = encodeSplashWallpaperHistory(history)
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_SPLASH_WALLPAPER_HISTORY] = encoded
-        }
-        context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(SPLASH_PREFS_KEY_WALLPAPER_HISTORY, encoded)
-            .apply()
-    }
-
-    fun getSplashWallpaperUriSync(context: Context): String {
-        return context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .getString(SPLASH_PREFS_KEY_WALLPAPER_URI, "") ?: ""
-    }
-
-    fun getSplashWallpaperHistorySync(context: Context): List<String> {
-        val raw = context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .getString(SPLASH_PREFS_KEY_WALLPAPER_HISTORY, "")
-            .orEmpty()
-        return decodeSplashWallpaperHistory(raw)
-    }
-
-    suspend fun setSplashRandomPoolUris(context: Context, poolUris: List<String>) {
-        val encoded = encodeSplashWallpaperHistory(poolUris)
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_SPLASH_RANDOM_POOL_URIS] = encoded
-        }
-        context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(SPLASH_PREFS_KEY_RANDOM_POOL_URIS, encoded)
-            .apply()
-    }
-
-    fun getSplashRandomPoolUrisSync(context: Context): List<String> {
-        val raw = context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .getString(SPLASH_PREFS_KEY_RANDOM_POOL_URIS, "")
-            .orEmpty()
-        return decodeSplashWallpaperHistory(raw)
-    }
-
-    fun isSplashEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SPLASH_ENABLED] ?: false } // 默认关闭
-
-    fun getSplashRandomEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SPLASH_RANDOM_ENABLED] ?: false }
-
-    fun getStartupAnimationStyle(context: Context): Flow<StartupAnimationStyle> =
-        context.settingsDataStore.data.map { StartupAnimationStyle.fromValue(it[KEY_STARTUP_ANIMATION_STYLE]) }
-
-    fun getStartupAnimationStyleSync(context: Context): StartupAnimationStyle =
-        StartupAnimationStyle.fromValue(
-            context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-                .getString(SPLASH_PREFS_KEY_ANIMATION_STYLE, null)
-        )
-
-    suspend fun setStartupAnimationStyle(context: Context, value: StartupAnimationStyle) {
-        editSettingsAndCommitPrefs(
-            context, SPLASH_PREFS,
-            editSettings = { this[KEY_STARTUP_ANIMATION_STYLE] = value.value },
-            editPrefs = { putString(SPLASH_PREFS_KEY_ANIMATION_STYLE, value.value) },
-        )
-    }
-
     fun getSplashIconAnimationEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SPLASH_ICON_ANIMATION_ENABLED] ?: true }
-
-    suspend fun setSplashEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences -> 
-            preferences[KEY_SPLASH_ENABLED] = value 
-        }
-        // 同步到 SharedPreferences
-        context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .edit().putBoolean(SPLASH_PREFS_KEY_ENABLED, value).apply()
-    }
-    
-    fun isSplashEnabledSync(context: Context): Boolean {
-        return context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .getBoolean(SPLASH_PREFS_KEY_ENABLED, false)
-    }
-
-    suspend fun setSplashRandomEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_SPLASH_RANDOM_ENABLED] = value
-        }
-        context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(SPLASH_PREFS_KEY_RANDOM_ENABLED, value)
-            .apply()
-    }
-
-    fun isSplashRandomEnabledSync(context: Context): Boolean {
-        return context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .getBoolean(SPLASH_PREFS_KEY_RANDOM_ENABLED, false)
-    }
 
     suspend fun setSplashIconAnimationEnabled(context: Context, value: Boolean) {
         editSettingsAndCommitPrefs(
@@ -3746,36 +3593,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             .getBoolean(SPLASH_PREFS_KEY_ICON_ANIMATION_ENABLED, true)
     }
 
-    fun getSplashAlignment(context: Context, isTablet: Boolean): Flow<Float> = context.settingsDataStore.data
-        .map { preferences ->
-            if (isTablet) {
-                preferences[KEY_SPLASH_ALIGNMENT_TABLET] ?: 0f
-            } else {
-                preferences[KEY_SPLASH_ALIGNMENT_MOBILE] ?: 0f
-            }
-        }
-
-    suspend fun setSplashAlignment(context: Context, isTablet: Boolean, bias: Float) {
-        val coerced = bias.coerceIn(-1f, 1f)
-        context.settingsDataStore.edit { preferences ->
-            val key = if (isTablet) KEY_SPLASH_ALIGNMENT_TABLET else KEY_SPLASH_ALIGNMENT_MOBILE
-            preferences[key] = coerced
-        }
-        val prefsKey = if (isTablet) SPLASH_PREFS_KEY_ALIGNMENT_TABLET else SPLASH_PREFS_KEY_ALIGNMENT_MOBILE
-        context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putFloat(prefsKey, coerced)
-            .apply()
-    }
-
-    fun getSplashAlignmentSync(context: Context, isTablet: Boolean): Float {
-        val prefsKey = if (isTablet) SPLASH_PREFS_KEY_ALIGNMENT_TABLET else SPLASH_PREFS_KEY_ALIGNMENT_MOBILE
-        return context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .getFloat(prefsKey, 0f)
-    }
-
-
-    
     //  同步读取当前图标设置（用于 Application 启动时同步）
     fun getAppIconSync(context: Context): String {
         return normalizeAppIconKey(
@@ -7114,8 +6931,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_SHOW_FULLSCREEN_TIME = booleanPreferencesKey("show_fullscreen_time")
     private val KEY_SHOW_FULLSCREEN_ACTION_ITEMS = booleanPreferencesKey("show_fullscreen_action_items")
     private val KEY_SHOW_ONLINE_COUNT = booleanPreferencesKey("show_online_count")
-    private val KEY_SHOW_VIDEO_DETAIL_COMMENT_COUNT =
-        booleanPreferencesKey("show_video_detail_comment_count")
     private val KEY_SHOW_PROFILE_EDIT_BUTTON = booleanPreferencesKey("show_profile_edit_button")
     private val KEY_COMMENT_COLLAPSED_REPLY_PREVIEW_LIMIT =
         intPreferencesKey("comment_collapsed_reply_preview_limit")
@@ -7126,8 +6941,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_PLAYBACK_CDN_PREFERENCE = stringPreferencesKey("playback_cdn_preference")
     private val KEY_QUALITY_SWITCH_FAILURE_DIALOG_ENABLED =
         booleanPreferencesKey("quality_switch_failure_dialog_enabled")
-    private val KEY_QUALITY_SWITCH_FAILURE_DIALOG_ONCE_ENABLED =
-        booleanPreferencesKey("quality_switch_failure_dialog_once_enabled")
     private val KEY_QUALITY_SWITCH_FAILURE_DIALOG_SHOWN =
         booleanPreferencesKey("quality_switch_failure_dialog_shown")
     private val KEY_SUBTITLE_AUTO_PREFERENCE = intPreferencesKey("subtitle_auto_preference")
@@ -7507,15 +7320,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     fun getShowOnlineCount(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SHOW_ONLINE_COUNT] ?: false }
 
-    fun getShowVideoDetailCommentCount(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SHOW_VIDEO_DETAIL_COMMENT_COUNT] ?: true }
-
-    suspend fun setShowVideoDetailCommentCount(context: Context, enabled: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_SHOW_VIDEO_DETAIL_COMMENT_COUNT] = enabled
-        }
-    }
-
     suspend fun setShowOnlineCount(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->
             preferences[KEY_SHOW_ONLINE_COUNT] = enabled
@@ -7615,21 +7419,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     suspend fun setQualitySwitchFailureDialogEnabled(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->
             preferences[KEY_QUALITY_SWITCH_FAILURE_DIALOG_ENABLED] = enabled
-        }
-    }
-
-    fun getQualitySwitchFailureDialogOnceEnabled(context: Context): Flow<Boolean> =
-        context.settingsDataStore.data.map { preferences ->
-            preferences[KEY_QUALITY_SWITCH_FAILURE_DIALOG_ONCE_ENABLED]
-                ?: DEFAULT_QUALITY_SWITCH_FAILURE_DIALOG_ONCE_ENABLED
-        }
-
-    suspend fun setQualitySwitchFailureDialogOnceEnabled(context: Context, enabled: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_QUALITY_SWITCH_FAILURE_DIALOG_ONCE_ENABLED] = enabled
-            if (!enabled) {
-                preferences.remove(KEY_QUALITY_SWITCH_FAILURE_DIALOG_SHOWN)
-            }
         }
     }
 
@@ -8292,10 +8081,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             IntShareablePreferenceDefinition(KEY_TABLET_COMMENT_PANEL_WIDTH_PRESET, SettingsShareSection.PLAYBACK),
             IntShareablePreferenceDefinition(KEY_TABLET_SECONDARY_DEFAULT_TAB, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_SHOW_ONLINE_COUNT, SettingsShareSection.PLAYBACK),
-            BooleanShareablePreferenceDefinition(
-                KEY_SHOW_VIDEO_DETAIL_COMMENT_COUNT,
-                SettingsShareSection.PLAYBACK,
-            ),
             IntShareablePreferenceDefinition(KEY_COMMENT_COLLAPSED_REPLY_PREVIEW_LIMIT, SettingsShareSection.PLAYBACK),
 
             BooleanShareablePreferenceDefinition(KEY_HAPTIC_FEEDBACK_ENABLED, SettingsShareSection.GESTURE),

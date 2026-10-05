@@ -32,11 +32,9 @@ internal fun MessageAppScaffold(
     val wallpaperEnabled = LocalGlobalWallpaperBackdropVisible.current
     val homeUri by SettingsManager.getHomeWallpaperUri(context)
         .collectAsStateWithLifecycle(initialValue = "")
-    val splashUri by SettingsManager.getSplashWallpaperUri(context)
-        .collectAsStateWithLifecycle(initialValue = "")
     val mode by SettingsManager.getHomeWallpaperEffectMode(context)
         .collectAsStateWithLifecycle(initialValue = HomeWallpaperEffectMode.SOFT_BLUR)
-    val uri = resolveHomeWallpaperUri(homeUri, splashUri)
+    val uri = resolveHomeWallpaperUri(homeUri)
     val baseColor = MaterialTheme.colorScheme.background
     val dataSaver = remember(context) { SettingsManager.isDataSaverActive(context) }
     val appearance = remember(wallpaperEnabled, uri, mode, baseColor, dataSaver) {

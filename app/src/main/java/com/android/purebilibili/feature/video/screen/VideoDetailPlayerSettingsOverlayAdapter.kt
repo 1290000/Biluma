@@ -12,6 +12,7 @@ import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.feature.video.danmaku.DanmakuManager
 import com.android.purebilibili.feature.video.ui.section.resolveVideoPlayerDanmakuSettingsScope
 import com.android.purebilibili.feature.video.viewmodel.VideoPlaybackViewModel
+import kotlinx.coroutines.flow.map
 
 @Composable
 internal fun VideoDetailPlayerSettingsOverlayAdapter(
@@ -29,12 +30,10 @@ internal fun VideoDetailPlayerSettingsOverlayAdapter(
     val qualitySwitchFailureDialogEnabled by SettingsManager
         .getQualitySwitchFailureDialogEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true, lifecycle = lifecycle)
-    val qualitySwitchFailureDialogOnceEnabled by SettingsManager
-        .getQualitySwitchFailureDialogOnceEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = false, lifecycle = lifecycle)
     val qualitySwitchFailureDialogShown by SettingsManager
         .getQualitySwitchFailureDialogShown(context)
-        .collectAsStateWithLifecycle(initialValue = false, lifecycle = lifecycle)
+        .map<Boolean, Boolean?> { it }
+        .collectAsStateWithLifecycle(initialValue = null, lifecycle = lifecycle)
     val qualitySwitchDialogScope = rememberCoroutineScope()
 
     VideoDetailQualitySwitchFailureDialog(
@@ -42,7 +41,6 @@ internal fun VideoDetailPlayerSettingsOverlayAdapter(
         viewModel = viewModel,
         qualitySwitchFailureDialog = qualitySwitchFailureDialog,
         qualitySwitchFailureDialogEnabled = qualitySwitchFailureDialogEnabled,
-        qualitySwitchFailureDialogOnceEnabled = qualitySwitchFailureDialogOnceEnabled,
         qualitySwitchFailureDialogShown = qualitySwitchFailureDialogShown,
         playerDiagnosticLoggingEnabled = playerDiagnosticLoggingEnabled,
         qualitySwitchDialogScope = qualitySwitchDialogScope,

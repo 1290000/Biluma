@@ -4,7 +4,7 @@ An independently maintained third-party Bilibili Android client based on [BiliPa
 
 [简体中文](README.md) · [Repository](https://github.com/1290000/Biluma) · [Issues](https://github.com/1290000/Biluma/issues) · [Releases](https://github.com/1290000/Biluma/releases)
 
-> **This project is in early development and has no independent Biluma release yet.** The feature-reduction list has not been decided, so this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
+> **This project is in early development and has no independent Biluma release yet.** The first settings-reduction batch is underway, but the full scope is still being decided; this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
 
 ## Project identity
 
@@ -28,12 +28,22 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
-| Feature and settings reduction | Not started; decisions to retain, fix behavior, remove, or redesign features are pending |
+| Feature and settings reduction | First six settings updated in source: preset-based list items, one-time quality warnings, visible comment counts, and removal of startup animation selection and splash wallpapers |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
 
 Changes have only received static checks and an update API connectivity check. Regression test code has been added, but tests, compilation, installation, and on-device verification have not been performed. Configuration and command examples do not establish that a build succeeds.
+
+### First settings-reduction batch
+
+- List items always follow the UI preset, without an independent style override.
+- The original icon flyout is the only startup animation. Its existing on/off switch remains; the maid startup animation is no longer selectable.
+- Splash wallpapers, random selection, and their dedicated picker, alignment, and pool settings are removed. Home wallpapers and profile backgrounds remain. A home background previously inherited from a splash wallpaper is migrated to a dedicated home wallpaper without deleting its image file.
+- Quality-downgrade diagnostic dialogs always use one-time acknowledgment, preserving existing acknowledgment records and the main diagnostic-dialog switch. The dialog no longer offers a repeat-warning option.
+- The video-detail comment tab always displays its count. Retired preferences are migrated before reads, excluded from settings exports, and cannot restore removed behavior through old backups.
+
+This batch includes source changes and static checks only. Regression tests were updated and added but Gradle tests, compilation, packaging, and on-device verification were not performed. Other feature reductions and new brand visuals are outside this batch.
 
 ## Downloads and feedback
 

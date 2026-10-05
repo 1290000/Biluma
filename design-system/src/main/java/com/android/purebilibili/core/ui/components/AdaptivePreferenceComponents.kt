@@ -53,14 +53,11 @@ import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.ContainerLevel
 import com.android.purebilibili.core.ui.resolveCompactCapsuleChromeSpec
 import com.android.purebilibili.core.ui.LocalAppIconStyle
-import com.android.purebilibili.core.ui.LocalAppListItemStyle
 import com.android.purebilibili.core.ui.LocalAppThemeConfig
 import com.android.purebilibili.core.ui.LocalGlobalWallpaperBackdropVisible
 import com.android.purebilibili.core.ui.adaptiveSquircleBackground
 import com.android.purebilibili.core.ui.AppIconStyle
-import com.android.purebilibili.core.ui.AppListItemStyle
 import com.android.purebilibili.core.ui.rememberResolvedAppIconStyle
-import com.android.purebilibili.core.ui.rememberResolvedAppListItemStyle
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import com.android.purebilibili.core.ui.AppSurfaceTokens
@@ -596,8 +593,7 @@ internal fun AdaptiveSwitchPreferenceContent(
         visualSpec.iconBackgroundAlpha,
         iconStyle,
     )
-    val listItemStyle = rememberResolvedAppListItemStyle()
-    if (listItemStyle == AppListItemStyle.NATIVE && uiStyle == AppUiStyle.MATERIAL3) {
+    if (uiStyle == AppUiStyle.MATERIAL3) {
         // MD3 原生:ListItem + M3 Switch
         val haptic = LocalHapticFeedback.current
         val hapticsEnabled = LocalAppThemeConfig.current.hapticFeedbackEnabled
@@ -658,7 +654,7 @@ internal fun AdaptiveSwitchPreferenceContent(
         )
         return
     }
-    if (listItemStyle == AppListItemStyle.NATIVE && uiStyle == AppUiStyle.MIUIX) {
+    if (uiStyle == AppUiStyle.MIUIX) {
         val platformHaptic = LocalHapticFeedback.current
         val effectiveHaptic = if (LocalAppThemeConfig.current.hapticFeedbackEnabled) {
             platformHaptic
@@ -701,51 +697,6 @@ internal fun AdaptiveSwitchPreferenceContent(
             )
         }
         return
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = rowSpec.minTouchTargetHeightDp.dp)
-            .alpha(if (enabled) 1f else 0.6f)
-            .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(
-                horizontal = rowSpec.insideHorizontalPaddingDp.dp,
-                vertical = rowSpec.insideVerticalPaddingDp.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (icon != null) {
-            Box(
-                modifier = Modifier
-                    .size(visualSpec.iconContainerSizeDp.dp)
-                    .adaptiveSquircleBackground(
-                        color = effectiveIconTint.copy(alpha = iconBackgroundAlpha),
-                        cornerRadius = visualSpec.iconCornerRadiusDp.dp,
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconContentColor,
-                    modifier = Modifier.size(visualSpec.iconGlyphSizeDp.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = textColor)
-            if (subtitle != null) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = subtitleColor)
-            }
-        }
-        Spacer(modifier = Modifier.width(rowSpec.trailingSpacingDp.dp))
-        AppAdaptiveSwitch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled
-        )
     }
 }
 
@@ -1037,9 +988,7 @@ internal fun AdaptivePreferenceContent(
         showChevron = showChevron,
         centered = centered
     )
-    val listItemStyle = rememberResolvedAppListItemStyle()
-    val nativeListItem = listItemStyle == AppListItemStyle.NATIVE
-    if (nativeListItem && uiStyle == AppUiStyle.MATERIAL3) {
+    if (uiStyle == AppUiStyle.MATERIAL3) {
         Md3NativeListItemContent(
             icon = icon,
             iconPainter = iconPainter,
@@ -1062,7 +1011,7 @@ internal fun AdaptivePreferenceContent(
         )
         return
     }
-    if (nativeListItem && clickableRenderer == AppClickableItemRenderer.MIUIX_ARROW) {
+    if (clickableRenderer == AppClickableItemRenderer.MIUIX_ARROW) {
         BasicComponent(
             onClick = onClick,
             insideMargin = PaddingValues(
@@ -1161,325 +1110,92 @@ internal fun AdaptivePreferenceContent(
         }
         return
     }
-    if (clickableRenderer == AppClickableItemRenderer.MD3_BASIC) {
-        val haptic = LocalHapticFeedback.current
-        val hapticsEnabled = LocalAppThemeConfig.current.hapticFeedbackEnabled
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = rowSpec.minTouchTargetHeightDp.dp)
-                .clickable(enabled = onClick != null) {
-                    if (hapticsEnabled) {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
-                    onClick?.invoke()
-                }
-                .padding(
-                    horizontal = rowSpec.insideHorizontalPaddingDp.dp,
-                    vertical = rowSpec.insideVerticalPaddingDp.dp
-                ),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (icon != null || iconPainter != null) {
-                Box(
-                    modifier = Modifier
-                        .size(visualSpec.iconContainerSizeDp.dp)
-                        .adaptiveSquircleBackground(
-                            color = if (effectiveIconTint == Color.Unspecified) {
-                                Color.Transparent
-                            } else {
-                                effectiveIconTint.copy(alpha = iconBackgroundAlpha)
-                            },
-                            cornerRadius = visualSpec.iconCornerRadiusDp.dp,
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (icon != null) {
+    BasicComponent(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = rowSpec.minTouchTargetHeightDp.dp),
+        title = title,
+        summary = subtitle,
+        onClick = onClick,
+        insideMargin = PaddingValues(
+            horizontal = rowSpec.insideHorizontalPaddingDp.dp,
+            vertical = rowSpec.insideVerticalPaddingDp.dp
+        ),
+        startAction = {
+            when {
+                icon != null -> {
+                    Box(
+                        modifier = Modifier
+                            .size(visualSpec.iconContainerSizeDp.dp)
+                            .adaptiveSquircleBackground(
+                                color = effectiveIconTint.copy(alpha = iconBackgroundAlpha),
+                                cornerRadius = visualSpec.iconCornerRadiusDp.dp,
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
                             tint = iconContentColor,
                             modifier = Modifier.size(visualSpec.iconGlyphSizeDp.dp)
                         )
-                    } else if (iconPainter != null) {
-                        Icon(
-                            painter = iconPainter,
-                            contentDescription = null,
-                            tint = effectiveIconTint,
-                            modifier = Modifier.size(visualSpec.iconGlyphSizeDp.dp)
-                        )
                     }
                 }
-                Spacer(modifier = Modifier.width(14.dp))
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = textColor,
-                )
-                if (subtitle != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = subtitleColor,
-                    )
-                }
-            }
-            if (trailingContent != null || !value.isNullOrBlank() || (onClick != null && showChevron)) {
-                Spacer(modifier = Modifier.width(rowSpec.trailingSpacingDp.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    trailingContent?.invoke()
-                    if (!value.isNullOrBlank()) {
-                        Text(
-                            text = value,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = valueColor,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                            maxLines = APP_PREFERENCE_VALUE_MAX_LINES,
-                            softWrap = true,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .appPreferenceValueTextModifier()
-                                .onLongPressAction(
-                                    enabled = enableCopy && onCopyRequest != null,
-                                    onLongPress = { onCopyRequest?.invoke(copyValue ?: value, title) },
-                                )
-                        )
-                    }
-                    if (onClick != null && showChevron) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                            contentDescription = null,
-                            tint = chevronTint,
-                            modifier = Modifier.size(rowSpec.trailingIconSizeDp.dp)
-                        )
-                    }
-                }
-            }
-        }
-        return
-    }
-    if (clickableRenderer != AppClickableItemRenderer.MD3_BASIC) {
-        BasicComponent(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = rowSpec.minTouchTargetHeightDp.dp),
-            title = title,
-            summary = subtitle,
-            onClick = onClick,
-            insideMargin = PaddingValues(
-                horizontal = rowSpec.insideHorizontalPaddingDp.dp,
-                vertical = rowSpec.insideVerticalPaddingDp.dp
-            ),
-            startAction = {
-                when {
-                    icon != null -> {
-                        Box(
-                            modifier = Modifier
-                                .size(visualSpec.iconContainerSizeDp.dp)
-                                .adaptiveSquircleBackground(
-                                    color = effectiveIconTint.copy(alpha = iconBackgroundAlpha),
-                                    cornerRadius = visualSpec.iconCornerRadiusDp.dp,
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = iconContentColor,
-                                modifier = Modifier.size(visualSpec.iconGlyphSizeDp.dp)
-                            )
-                        }
-                    }
 
-                    iconPainter != null -> {
-                        Box(
-                            modifier = Modifier
-                                .size(visualSpec.iconContainerSizeDp.dp)
-                                .adaptiveSquircleBackground(
-                                    color = if (effectiveIconTint == Color.Unspecified) {
-                                        Color.Transparent
-                                    } else {
-                                        effectiveIconTint.copy(alpha = iconBackgroundAlpha)
-                                    },
-                                    cornerRadius = visualSpec.iconCornerRadiusDp.dp,
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = iconPainter,
-                                contentDescription = null,
-                                tint = iconContentColor,
-                                modifier = Modifier.size(visualSpec.iconGlyphSizeDp.dp)
-                            )
-                        }
-                    }
-                }
-            },
-            endActions = {
-                trailingContent?.invoke()
-                if (!value.isNullOrBlank()) {
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppSurfaceTokens.onSurfaceVariantSummary(),
-                        maxLines = APP_PREFERENCE_VALUE_MAX_LINES,
-                        softWrap = true,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                        modifier = Modifier
-                            .appPreferenceValueTextModifier()
-                            .onLongPressAction(
-                                enabled = enableCopy && onCopyRequest != null,
-                                onLongPress = { onCopyRequest?.invoke(copyValue ?: value, title) },
-                            )
-                    )
-                    Spacer(modifier = Modifier.width(rowSpec.trailingSpacingDp.dp))
-                }
-                if (onClick != null && showChevron) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = null,
-                        tint = AppSurfaceTokens.onSurfaceVariantActions(),
-                        modifier = Modifier.size(rowSpec.trailingIconSizeDp.dp)
-                    )
-                }
-            }
-        )
-        return
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = onClick != null) { onClick?.invoke() }
-            .padding(horizontal = rowSpec.insideHorizontalPaddingDp.dp, vertical = rowSpec.insideVerticalPaddingDp.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
-    ) {
-        if (!centered) {
-            if (icon != null || iconPainter != null) {
-                if (effectiveIconTint != Color.Unspecified) {
+                iconPainter != null -> {
                     Box(
                         modifier = Modifier
                             .size(visualSpec.iconContainerSizeDp.dp)
                             .adaptiveSquircleBackground(
-                                color = effectiveIconTint.copy(alpha = iconBackgroundAlpha),
-                                cornerRadius = iconCornerRadius,
+                                color = if (effectiveIconTint == Color.Unspecified) {
+                                    Color.Transparent
+                                } else {
+                                    effectiveIconTint.copy(alpha = iconBackgroundAlpha)
+                                },
+                                cornerRadius = visualSpec.iconCornerRadiusDp.dp,
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (icon != null) {
-                            Icon(
-                                icon,
-                                contentDescription = null,
-                                tint = iconContentColor,
-                                modifier = Modifier.size(visualSpec.iconGlyphSizeDp.dp)
-                            )
-                        } else if (iconPainter != null) {
-                            Icon(
-                                painter = iconPainter,
-                                contentDescription = null,
-                                tint = iconContentColor,
-                                modifier = Modifier.size(visualSpec.iconGlyphSizeDp.dp)
-                            )
-                        }
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier.size(visualSpec.iconContainerSizeDp.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (icon != null) {
-                            Icon(
-                                icon,
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(visualSpec.iconContainerSizeDp.dp)
-                            )
-                        } else if (iconPainter != null) {
-                            Icon(
-                                painter = iconPainter,
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(visualSpec.iconContainerSizeDp.dp)
-                            )
-                        }
+                        Icon(
+                            painter = iconPainter,
+                            contentDescription = null,
+                            tint = iconContentColor,
+                            modifier = Modifier.size(visualSpec.iconGlyphSizeDp.dp)
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.width(14.dp))
             }
-        }
-        
-        if (centered) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = textColor,
-                modifier = Modifier,
-                maxLines = 1,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        } else {
-            // Title stays single-line so long search labels don't wrap under the trailing section path.
-            Column(modifier = Modifier.weight(1f)) {
+        },
+        endActions = {
+            trailingContent?.invoke()
+            if (!value.isNullOrBlank()) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = textColor,
-                    maxLines = 1,
+                    text = value,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppSurfaceTokens.onSurfaceVariantSummary(),
+                    maxLines = APP_PREFERENCE_VALUE_MAX_LINES,
+                    softWrap = true,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Start
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    modifier = Modifier
+                        .appPreferenceValueTextModifier()
+                        .onLongPressAction(
+                            enabled = enableCopy && onCopyRequest != null,
+                            onLongPress = { onCopyRequest?.invoke(copyValue ?: value, title) },
+                        )
                 )
-                if (subtitle != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = subtitleColor,
-                        maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                }
+                Spacer(modifier = Modifier.width(rowSpec.trailingSpacingDp.dp))
+            }
+            if (onClick != null && showChevron) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = AppSurfaceTokens.onSurfaceVariantActions(),
+                    modifier = Modifier.size(rowSpec.trailingIconSizeDp.dp)
+                )
             }
         }
-        
-        if (!centered) {
-            Spacer(modifier = Modifier.width(rowSpec.trailingSpacingDp.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                trailingContent?.invoke()
-                if (!value.isNullOrBlank()) {
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = valueColor,
-                        maxLines = APP_PREFERENCE_VALUE_MAX_LINES,
-                        softWrap = true,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                        modifier = Modifier
-                            .appPreferenceValueTextModifier()
-                            .onLongPressAction(
-                                enabled = enableCopy && onCopyRequest != null,
-                                onLongPress = { onCopyRequest?.invoke(copyValue ?: value, title) },
-                            )
-                    )
-                }
-                if (onClick != null && showChevron) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = null,
-                        tint = chevronTint,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
-    }
+    )
 }
 
 @Composable

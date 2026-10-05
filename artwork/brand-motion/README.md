@@ -1,5 +1,11 @@
 # BiliPai 蓝雪女仆动效
 
+## Biluma 启动欢迎动画已移除（2026-10-05）
+
+Biluma 固定使用原图标飞出动画，不再提供女仆启动动画。`WELCOME` 枚举和欢迎动效已移出应用资源；Lottie 与静态图归档为本目录的 `welcome-draft.json`、`welcome-draft-static.png`，不参与应用打包或默认资源生成。其他女仆状态及原画、提示词、历史预览保留，以下上游制作记录不代表 Biluma 的品牌方向。
+
+`preview-template.html` 与生成、资源校验脚本不再包含欢迎状态；现有 `preview.html` 保留为上游制作预览，重新生成后只展示仍保留的状态。
+
 ## 关注与取关反馈（2026-10-04）
 
 已按用户确认的开心半身原画接入 `FOLLOW_SUCCESS`：张嘴开心笑、一手贴胸、另一手提裙边，1.2 秒轻欠身、眨眼、手部与发梢轻动，再停留 800ms。身份与风格使用项目精细半身女仆，不采用早期全身 Q 版或加号/爱心标牌。原画及完整提示词见 `blue-snow-maid-follow-happy-reference.png`、`follow-happy-prompt.md`。

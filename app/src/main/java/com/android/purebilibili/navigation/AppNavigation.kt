@@ -613,12 +613,9 @@ fun AppNavigation(
         val currentRoute = currentNavigation3Key?.toLegacyRoute()
         val configuredHomeWallpaperUri by SettingsManager.getHomeWallpaperUri(context).collectAsStateWithLifecycle(initialValue = ""
         )
-        val splashWallpaperUri by SettingsManager.getSplashWallpaperUri(context).collectAsStateWithLifecycle(initialValue = ""
-        )
-        val globalHomeWallpaperUri = remember(configuredHomeWallpaperUri, splashWallpaperUri) {
+        val globalHomeWallpaperUri = remember(configuredHomeWallpaperUri) {
             resolveHomeWallpaperUri(
                 homeWallpaperUri = configuredHomeWallpaperUri,
-                splashWallpaperUri = splashWallpaperUri
             )
         }
         val wallpaperPalette by com.android.purebilibili.feature.home.components.cards.WallpaperPaletteStore

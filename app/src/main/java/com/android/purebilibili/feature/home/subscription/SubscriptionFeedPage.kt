@@ -900,8 +900,6 @@ private fun SubscriptionArticleScreen(
         .collectAsStateWithLifecycle(initialValue = false)
     val configuredWallpaperUri by remember(context) { SettingsManager.getHomeWallpaperUri(context) }
         .collectAsStateWithLifecycle(initialValue = "")
-    val splashWallpaperUri by remember(context) { SettingsManager.getSplashWallpaperUri(context) }
-        .collectAsStateWithLifecycle(initialValue = "")
     val customArticleWallpaperUri by remember(context) {
         SettingsManager.getSubscriptionArticleWallpaperUri(context)
     }.collectAsStateWithLifecycle(initialValue = "")
@@ -909,7 +907,7 @@ private fun SubscriptionArticleScreen(
         .collectAsStateWithLifecycle(initialValue = HomeWallpaperEffectMode.SOFT_BLUR)
     //  [独立壁纸] RSS 阅读页可设置专属壁纸；为空时回退首页壁纸链。
     val wallpaperUri = customArticleWallpaperUri.ifBlank {
-        resolveHomeWallpaperUri(configuredWallpaperUri, splashWallpaperUri)
+        resolveHomeWallpaperUri(configuredWallpaperUri)
     }
     var wallpaperPickerVisible by remember { mutableStateOf(false) }
     val articleBackground = MaterialTheme.colorScheme.surface

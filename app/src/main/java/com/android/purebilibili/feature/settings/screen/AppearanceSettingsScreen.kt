@@ -4,7 +4,6 @@ package com.android.purebilibili.feature.settings
 
 import coil3.request.crossfade
 import com.android.purebilibili.core.ui.AppIconStyle
-import com.android.purebilibili.core.ui.AppListItemStyle
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppText
 
@@ -62,7 +61,6 @@ import com.android.purebilibili.core.store.HomeWallpaperEffectScope
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.store.ThemeModeRoleOverrides
 import com.android.purebilibili.core.store.ThemeRoleOverrides
-import coil3.compose.AsyncImage
 import com.android.purebilibili.core.theme.deleteStoredAppFont
 import com.android.purebilibili.core.theme.AppFontWeightPreset
 import com.android.purebilibili.core.theme.importAppFontFromUri
@@ -445,13 +443,7 @@ fun AppearanceSettingsContent(
     val dedicatedHomeWallpaperUri by SettingsManager
         .getHomeWallpaperUri(context)
         .collectAsStateWithLifecycle(initialValue = "")
-    val splashWallpaperFallbackUri by SettingsManager
-        .getSplashWallpaperUri(context)
-        .collectAsStateWithLifecycle(initialValue = "")
-    val resolvedHomeWallpaperUri = remember(dedicatedHomeWallpaperUri, splashWallpaperFallbackUri) {
-        dedicatedHomeWallpaperUri.ifBlank { splashWallpaperFallbackUri }.trim()
-    }
-    val homeWallpaperFollowsSplash = dedicatedHomeWallpaperUri.isBlank() && splashWallpaperFallbackUri.isNotBlank()
+    val resolvedHomeWallpaperUri = dedicatedHomeWallpaperUri.trim()
     val homeWallpaperEffectMode by SettingsManager
         .getHomeWallpaperEffectMode(context)
         .collectAsStateWithLifecycle(initialValue = HomeWallpaperEffectMode.SOFT_BLUR)
@@ -647,18 +639,6 @@ fun AppearanceSettingsContent(
                                 iconTint = iOSBlue
                             )
                         }
-
-                        AppPreferenceDivider()
-
-                        SettingsSingleChoicePreference(
-                            title = "列表条目样式",
-                            subtitle = "统一圆角条目，或跟随当前界面预设",
-                            options = resolveAppListItemStyleOptions(),
-                            selectedValue = state.appListItemStyle,
-                            onSelectionChange = { style ->
-                                viewModel.setAppListItemStyle(style)
-                            }
-                        )
 
                         AppPreferenceDivider()
 
@@ -1110,18 +1090,7 @@ fun AppearanceSettingsContent(
         item {
             Box(modifier = Modifier.entrance()) {
                 AppPreferenceGroup {
-                    val isSplashEnabled by com.android.purebilibili.core.store.SettingsManager.isSplashEnabled(context).collectAsStateWithLifecycle(initialValue = false)
-                    val splashRandomEnabled by com.android.purebilibili.core.store.SettingsManager.getSplashRandomEnabled(context).collectAsStateWithLifecycle(initialValue = false)
-                    val splashRandomPoolUris by com.android.purebilibili.core.store.SettingsManager.getSplashRandomPoolUris(context).collectAsStateWithLifecycle(initialValue = emptyList())
                     val splashIconAnimationEnabled by com.android.purebilibili.core.store.SettingsManager.getSplashIconAnimationEnabled(context).collectAsStateWithLifecycle(initialValue = true)
-                    val startupAnimationStyle by SettingsManager.getStartupAnimationStyle(context)
-                        .collectAsStateWithLifecycle(initialValue = SettingsManager.getStartupAnimationStyleSync(context))
-                    val splashWallpaperUri by com.android.purebilibili.core.store.SettingsManager.getSplashWallpaperUri(context).collectAsStateWithLifecycle(initialValue = null)
-                    val hasSplashWallpaper = !splashWallpaperUri.isNullOrBlank()
-                    val splashRandomPoolPreview = remember(splashRandomPoolUris) {
-                        resolveSplashRandomPoolPreviewState(poolUris = splashRandomPoolUris)
-                    }
-
                     // 图标设置
                     AppPreference(
                         icon = rememberSettingsSemanticIcon(SettingsIconRole.APP_ICON),
@@ -1152,191 +1121,14 @@ fun AppearanceSettingsContent(
 
                     // 开关项
                     AppSwitchPreference(
-                        icon = rememberSettingsSemanticIcon(SettingsIconRole.SPLASH_WALLPAPER),
-                        title = "使用开屏壁纸",
-                        subtitle = "应用启动时显示官方或相册壁纸",
-                        checked = isSplashEnabled,
-                        onCheckedChange = { viewModel.toggleSplashEnabled(it) },
-                        iconTint = com.android.purebilibili.core.theme.iOSBlue
-                    )
-
-                    AppPreferenceDivider()
-                    AppSwitchPreference(
-                        icon = rememberSettingsSemanticIcon(SettingsIconRole.RANDOM_WALLPAPER),
-                        title = "随机展示开屏壁纸",
-                        subtitle = "启动时从可见官方壁纸中随机展示",
-                        checked = splashRandomEnabled,
-                        onCheckedChange = { viewModel.toggleSplashRandomEnabled(it) },
-                        iconTint = com.android.purebilibili.core.theme.iOSGreen
-                    )
-
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = isSplashEnabled && splashRandomEnabled,
-                        enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
-                        exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                AppText(
-                                    text = "随机池预览",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.weight(1f))
-                                AppText(
-                                    text = "${splashRandomPoolPreview.totalCount} 张",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            if (splashRandomPoolPreview.previewUris.isEmpty()) {
-                                AppText(
-                                    text = "暂无可见壁纸，请先进入“选择开屏壁纸”加载列表",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            } else {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    splashRandomPoolPreview.previewUris.forEach { previewUri ->
-                                        AsyncImage(
-                                            model = coil3.request.ImageRequest.Builder(context)
-                                                .data(previewUri)
-                                                .crossfade(true)
-                                                .build(),
-                                            contentDescription = null,
-                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                            modifier = Modifier
-                                                .size(width = 42.dp, height = 72.dp)
-                                                .clip(AppShapes.container(ContainerLevel.Field))
-                                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        )
-                                    }
-                                }
-                                if (splashRandomPoolPreview.totalCount > splashRandomPoolPreview.previewUris.size) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    AppText(
-                                        text = "还有 ${splashRandomPoolPreview.totalCount - splashRandomPoolPreview.previewUris.size} 张",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    AppPreferenceDivider()
-                    AppSwitchPreference(
                         icon = rememberSettingsSemanticIcon(SettingsIconRole.SPLASH_ICON_ANIMATION),
                         title = "开屏图标遮罩动画",
-                        subtitle = "关闭后不播放图标飞出或蓝雪女仆动画",
+                        subtitle = "关闭后不播放图标飞出动画",
                         checked = splashIconAnimationEnabled,
                         onCheckedChange = { viewModel.toggleSplashIconAnimationEnabled(it) },
                         iconTint = com.android.purebilibili.core.theme.iOSPink
                     )
                     
-                    SettingsSingleChoicePreference(
-                        title = "启动动画样式",
-                        subtitle = "蓝雪女仆与自定义启动壁纸可同时展示",
-                        options = com.android.purebilibili.core.store.StartupAnimationStyle.entries.map {
-                            AppSegmentOption(it, it.label)
-                        },
-                        selectedValue = startupAnimationStyle,
-                        enabled = splashIconAnimationEnabled,
-                        onSelectionChange = viewModel::setStartupAnimationStyle
-                    )
-
-                    // 当开启时，显示选择壁纸入口
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = isSplashEnabled,
-                        enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
-                        exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
-                    ) {
-                        Column {
-                            AppPreferenceDivider()
-                            
-                            var showWallpaperPicker by remember { mutableStateOf(false) }
-                            
-                            // 选择壁纸按钮
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showWallpaperPicker = true }
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // 壁纸缩略图预览
-                                Box(
-                                    modifier = Modifier
-                                        .size(60.dp)
-                                        .clip(AppShapes.container(ContainerLevel.Field))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                ) {
-                                    if (hasSplashWallpaper) {
-                                        AsyncImage(
-                                            model = coil3.request.ImageRequest.Builder(context)
-                                                .data(splashWallpaperUri)
-                                                .crossfade(true)
-                                                .build(),
-                                            contentDescription = null,
-                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    } else {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            AppIcon(
-                                                com.android.purebilibili.feature.settings.rememberMaterialSymbol(com.android.purebilibili.R.drawable.ms_photo_24),
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                                
-                                Spacer(modifier = Modifier.width(16.dp))
-                                
-                                Column(modifier = Modifier.weight(1f)) {
-                                    AppText(
-                                        text = "选择开屏壁纸",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    AppText(
-                                        text = if (hasSplashWallpaper) "已设置壁纸，可从官方库或相册更换" else "从官方壁纸库或相册选择",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                
-                                AppIcon(
-                                    com.android.purebilibili.feature.settings.rememberMaterialSymbol(com.android.purebilibili.R.drawable.ms_keyboard_arrow_right_24),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                            
-                            // 壁纸选择 Sheet
-                            if (showWallpaperPicker) {
-                                com.android.purebilibili.feature.profile.SplashWallpaperPickerSheet(
-                                    onDismiss = { showWallpaperPicker = false }
-                                )
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -1662,8 +1454,7 @@ fun AppearanceSettingsContent(
                                 )
                                 AppText(
                                     text = when {
-                                        dedicatedHomeWallpaperUri.isNotBlank() -> "已单独设置首页壁纸"
-                                        homeWallpaperFollowsSplash -> "未单独设置，当前跟随开屏壁纸"
+                                        dedicatedHomeWallpaperUri.isNotBlank() -> "已设置首页壁纸"
                                         else -> "从官方壁纸库或相册选择"
                                     },
                                     style = MaterialTheme.typography.bodySmall,
@@ -1680,8 +1471,7 @@ fun AppearanceSettingsContent(
                         }
 
                         if (showHomeWallpaperPicker) {
-                            com.android.purebilibili.feature.profile.SplashWallpaperPickerSheet(
-                                target = com.android.purebilibili.feature.profile.WallpaperPickerTarget.HOME,
+                            com.android.purebilibili.feature.profile.HomeWallpaperPickerSheet(
                                 onDismiss = { showHomeWallpaperPicker = false }
                             )
                         }
@@ -1690,7 +1480,7 @@ fun AppearanceSettingsContent(
                         SettingsSingleChoicePreference(
                             title = "首页壁纸效果",
                             subtitle = when (homeWallpaperEffectMode) {
-                                HomeWallpaperEffectMode.OFF -> "首页不使用开屏壁纸作为背景"
+                                HomeWallpaperEffectMode.OFF -> "首页不使用壁纸作为背景"
                                 HomeWallpaperEffectMode.SOFT_BLUR -> "真实壁纸轻微模糊，卡片信息区半透明接入壁纸"
                                 HomeWallpaperEffectMode.STRONG_BLUR -> "更强模糊和更稳遮罩，保留壁纸色彩但降低细节干扰"
                                 HomeWallpaperEffectMode.ORIGINAL -> "直接接入真实壁纸，文字区使用更轻的保护层"

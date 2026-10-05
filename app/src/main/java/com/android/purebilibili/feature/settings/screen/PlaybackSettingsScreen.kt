@@ -40,7 +40,6 @@ import com.android.purebilibili.R
 import com.android.purebilibili.core.store.DEFAULT_DASH_SEGMENT_REQUESTS_ENABLED
 import com.android.purebilibili.core.store.DEFAULT_PLAYER_DIAGNOSTIC_LOGGING_ENABLED
 import com.android.purebilibili.core.store.DEFAULT_QUALITY_SWITCH_FAILURE_DIALOG_ENABLED
-import com.android.purebilibili.core.store.DEFAULT_QUALITY_SWITCH_FAILURE_DIALOG_ONCE_ENABLED
 import com.android.purebilibili.core.store.DEFAULT_LONG_PRESS_SPEED
 import com.android.purebilibili.core.store.DEFAULT_PLAYBACK_SPEED_OPTIONS
 import com.android.purebilibili.core.store.SettingsManager
@@ -185,9 +184,6 @@ fun PlaybackSettingsContent(
     val qualitySwitchFailureDialogEnabled by SettingsManager
         .getQualitySwitchFailureDialogEnabled(context)
         .collectAsStateWithLifecycle(initialValue = DEFAULT_QUALITY_SWITCH_FAILURE_DIALOG_ENABLED)
-    val qualitySwitchFailureDialogOnceEnabled by SettingsManager
-        .getQualitySwitchFailureDialogOnceEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = DEFAULT_QUALITY_SWITCH_FAILURE_DIALOG_ONCE_ENABLED)
     val playbackSpeedOptions by SettingsManager
         .getPlaybackSpeedOptions(context)
         .collectAsStateWithLifecycle(initialValue = DEFAULT_PLAYBACK_SPEED_OPTIONS)
@@ -978,23 +974,6 @@ fun PlaybackSettingsContent(
                             },
                             iconTint = iOSOrange
                         )
-                        AppPreferenceDivider()
-	                        AppSwitchPreference(
-	                            icon = rememberSettingsSemanticIcon(SettingsIconRole.QUALITY_WARNING_ONCE),
-                            title = "降档弹窗仅提示一次",
-                            subtitle = if (qualitySwitchFailureDialogEnabled) {
-                                "首次弹出后不再重复打断播放；关闭本项会重置提示记录"
-                            } else {
-                                "开启画质降档诊断弹窗后生效"
-                            },
-                            checked = qualitySwitchFailureDialogOnceEnabled,
-                            onCheckedChange = { enabled ->
-                                scope.launch {
-                                    SettingsManager.setQualitySwitchFailureDialogOnceEnabled(context, enabled)
-                                }
-                            },
-                            iconTint = iOSTeal
-                        )
                     }
                 }
             }
@@ -1372,9 +1351,6 @@ private fun PlaybackInteractionSettingsSection(
     val videoArgueMsgShown by com.android.purebilibili.core.store.SettingsManager
         .getVideoArgueMsgShown(context)
         .collectAsStateWithLifecycle(initialValue = true)
-    val showVideoDetailCommentCount by SettingsManager
-        .getShowVideoDetailCommentCount(context)
-        .collectAsStateWithLifecycle(initialValue = true)
     val commentFraudDetectionEnabled by com.android.purebilibili.core.store.SettingsManager
         .getCommentFraudDetectionEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true)
@@ -1635,23 +1611,6 @@ private fun PlaybackInteractionSettingsSection(
                 }
             },
             iconTint = iOSTeal,
-        )
-        AppPreferenceDivider()
-        AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.INTERACTION_COMMENT),
-            title = "视频详情显示评论数",
-            subtitle = if (showVideoDetailCommentCount) {
-                "在视频详情页“评论”标签旁显示视频评论总数"
-            } else {
-                "关闭后只显示“评论”"
-            },
-            checked = showVideoDetailCommentCount,
-            onCheckedChange = { enabled ->
-                scope.launch {
-                    SettingsManager.setShowVideoDetailCommentCount(context, enabled)
-                }
-            },
-            iconTint = com.android.purebilibili.core.theme.iOSTeal,
         )
         AppPreferenceDivider()
         val videoTagSizePreset by com.android.purebilibili.core.store.SettingsManager

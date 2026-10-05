@@ -26,7 +26,7 @@ class GalleryVisualMediaContractsStructureTest {
         val singlePickerFiles = listOf(
             "app/src/main/java/com/android/purebilibili/feature/message/ChatScreen.kt",
             "app/src/main/java/com/android/purebilibili/feature/profile/ProfileScreen.kt",
-            "app/src/main/java/com/android/purebilibili/feature/profile/SplashWallpaperPickerSheet.kt",
+            "app/src/main/java/com/android/purebilibili/feature/profile/HomeWallpaperPickerSheet.kt",
             "app/src/main/java/com/android/purebilibili/feature/settings/LiquidGlassLivePreview.kt",
         )
         val multiplePickerFiles = listOf(

@@ -48,7 +48,6 @@ enum class MaidAnimation(
     @DrawableRes val staticResource: Int,
     val loopsWhileVisible: Boolean = false
 ) {
-    WELCOME(R.raw.bilipai_maid_welcome, 1000L, R.drawable.bilipai_maid_static),
     CLEAN_COMPLETE(R.raw.bilipai_maid_clean_complete, 1200L, R.drawable.bilipai_maid_clean_static),
     CLEANING(R.raw.bilipai_maid_cleaning, 1600L, R.drawable.bilipai_maid_cleaning_static, loopsWhileVisible = true),
     RETRY(R.raw.bilipai_maid_retry, 1500L, R.drawable.bilipai_maid_retry_static),

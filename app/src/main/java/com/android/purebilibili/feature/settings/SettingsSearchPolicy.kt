@@ -63,7 +63,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "界面与主题",
         subtitle = "界面风格、主题颜色、字体、显示大小、应用图标与启动画面",
         section = "设置",
-        aliases = listOf("界面", "主题", "ui预设", "md3", "miuix", "字体", "dpi", "动态图标", "应用图标", "开屏", "开屏壁纸")
+        aliases = listOf("界面", "主题", "ui预设", "md3", "miuix", "字体", "dpi", "动态图标", "应用图标", "开屏")
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.HOME_FEED,
@@ -98,7 +98,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "互动与评论",
         subtitle = "评论发送检测、评论装扮、AI 总结、双击点赞、收藏点按、视频简介与笔记",
         section = "设置",
-        aliases = listOf("互动", "评论", "楼中楼", "评论楼中楼", "评论检测", "发评反诈", "评论发送检测", "评论装扮", "个性装扮", "视频详情评论数", "评论标签数量", "简介评论数量", "ai总结", "视频总结", "双击点赞", "收藏", "收藏夹", "快速收藏", "点按收藏", "收藏点按", "默认收藏夹", "视频简介", "简介默认展开", "视频笔记", "显示视频笔记", "默认折叠视频笔记", "笔记折叠", "视频标签", "视频标签大小", "标签大小", "标签紧凑", "标签更小", "tag")
+        aliases = listOf("互动", "评论", "楼中楼", "评论楼中楼", "评论检测", "发评反诈", "评论发送检测", "评论装扮", "个性装扮", "ai总结", "视频总结", "双击点赞", "收藏", "收藏夹", "快速收藏", "点按收藏", "收藏点按", "默认收藏夹", "视频简介", "简介默认展开", "视频笔记", "显示视频笔记", "默认折叠视频笔记", "笔记折叠", "视频标签", "视频标签大小", "标签大小", "标签紧凑", "标签更小", "tag")
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.INTERACTION_COMMENT,
@@ -139,7 +139,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
             "诊断", "开发", "崩溃追踪", "崩溃日志", "闪退", "卡死", "无响应", "anr",
             "native崩溃", "native crash", "oom", "内存不足", "系统杀进程", "进程退出原因",
             "使用情况统计", "增强诊断日志", "详细日志", "性能诊断", "隐私脱敏",
-            "播放器诊断日志", "画质降档诊断弹窗", "降档弹窗", "仅提示一次", "仅弹窗一次",
+            "播放器诊断日志", "画质降档诊断弹窗", "降档弹窗",
             "导出日志", "日志"
         )
     ),
@@ -155,7 +155,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = settingsDestinationCopy(SettingsSearchTarget.APPEARANCE).title,
         subtitle = "主题、字体、缩放、开屏与应用图标",
         section = "常规",
-        // 泛入口别名：具体子项词（主题色/hex/md3颜色/字体大小/dpi/开屏壁纸等）交由
+        // 泛入口别名：具体子项词（主题色/hex/md3颜色/字体大小/dpi/图标动画等）交由
         // 更具体的子项条目承接，避免泛条目靠堆叠别名压过具体结果。
         aliases = listOf(
             "外观",
@@ -309,8 +309,6 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
             "画质降档诊断弹窗",
             "降档弹窗",
             "高画质不可用弹窗",
-            "仅提示一次",
-            "仅弹窗一次",
             "点击视频直接播放",
             "视频简介",
             "默认展开视频简介",
@@ -578,10 +576,10 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.APPEARANCE,
-        title = "开屏壁纸 / 启动画面",
-        subtitle = "开屏壁纸、自定义壁纸、随机壁纸、图标遮罩动画",
+        title = "开屏图标遮罩动画",
+        subtitle = "控制启动时的图标飞出动画",
         section = settingsDestinationCopy(SettingsSearchTarget.APPEARANCE).title,
-        aliases = listOf("开屏壁纸", "自定义壁纸", "相册壁纸", "启动画面", "随机壁纸", "开屏图标遮罩动画", "图标遮罩动画", "显示开屏图标", "隐藏开屏图标", "开屏图标动画", "启动壁纸"),
+        aliases = listOf("启动画面", "开屏图标遮罩动画", "图标遮罩动画", "显示开屏图标", "隐藏开屏图标", "开屏图标动画"),
         focusId = SettingsSearchFocusIds.APPEARANCE_SPLASH
     ),
     SettingsSearchEntry(

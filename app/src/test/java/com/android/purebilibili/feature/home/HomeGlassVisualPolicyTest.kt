@@ -580,30 +580,27 @@ class HomeGlassVisualPolicyTest {
     }
 
     @Test
-    fun homeWallpaperUriPrefersDedicatedHomeWallpaper() {
+    fun homeWallpaperUriUsesConfiguredWallpaper() {
         val resolved = resolveHomeWallpaperUri(
             homeWallpaperUri = "content://home-wallpaper",
-            splashWallpaperUri = "file://splash-wallpaper"
         )
 
         assertEquals("content://home-wallpaper", resolved)
     }
 
     @Test
-    fun homeWallpaperUriFallsBackToSplashWallpaperUntilConfigured() {
+    fun homeWallpaperUriTrimsConfiguredWallpaper() {
         val resolved = resolveHomeWallpaperUri(
-            homeWallpaperUri = "",
-            splashWallpaperUri = "file://splash-wallpaper"
+            homeWallpaperUri = "  file://home-wallpaper  ",
         )
 
-        assertEquals("file://splash-wallpaper", resolved)
+        assertEquals("file://home-wallpaper", resolved)
     }
 
     @Test
     fun homeWallpaperUriCanBeEmptyWhenNoWallpaperExists() {
         val resolved = resolveHomeWallpaperUri(
             homeWallpaperUri = " ",
-            splashWallpaperUri = ""
         )
 
         assertEquals("", resolved)

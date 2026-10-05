@@ -1178,12 +1178,9 @@ fun HomeScreen(
     val preloadAheadCount = homePerformanceConfig.preloadAheadCount
     val configuredHomeWallpaperUri by SettingsManager.getHomeWallpaperUri(context).collectAsStateWithLifecycle(initialValue = ""
         )
-    val splashWallpaperUri by SettingsManager.getSplashWallpaperUri(context).collectAsStateWithLifecycle(initialValue = ""
-        )
-    val homeWallpaperUri = remember(configuredHomeWallpaperUri, splashWallpaperUri) {
+    val homeWallpaperUri = remember(configuredHomeWallpaperUri) {
         resolveHomeWallpaperUri(
             homeWallpaperUri = configuredHomeWallpaperUri,
-            splashWallpaperUri = splashWallpaperUri
         )
     }
     val wallpaperPalette by com.android.purebilibili.feature.home.components.cards.WallpaperPaletteStore.currentPalette.collectAsStateWithLifecycle()

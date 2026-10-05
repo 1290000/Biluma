@@ -657,17 +657,10 @@ internal fun VideoContentSection(
         !themeConfig.headerBlurEnabled
     val immersiveVideoContentChromeEnabled = progressiveCommentHeaderEnabled ||
         solidProgressiveCommentHeaderEnabled
-    val showVideoDetailCommentCount by SettingsManager
-        .getShowVideoDetailCommentCount(context)
-        .collectAsStateWithLifecycle(initialValue = true)
-    val tabs = remember(replyCount, showVideoDetailCommentCount) {
+    val tabs = remember(replyCount) {
         listOf(
             "简介",
-            if (showVideoDetailCommentCount) {
-                "评论 ${FormatUtils.formatStat(replyCount.coerceAtLeast(0).toLong())}"
-            } else {
-                "评论"
-            },
+            "评论 ${FormatUtils.formatStat(replyCount.coerceAtLeast(0).toLong())}",
         )
     }
     val scope = rememberCoroutineScope()

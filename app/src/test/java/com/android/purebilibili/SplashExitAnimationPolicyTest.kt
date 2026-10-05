@@ -64,26 +64,6 @@ class SplashExitAnimationPolicyTest {
     }
 
     @Test
-    fun allowsCustomSplashOverlayWhenFlyoutEnabledAndDataPresent() {
-        assertTrue(
-            shouldShowCustomSplashOverlay(
-                customSplashEnabled = true,
-                splashUri = "content://splash.jpg"
-            )
-        )
-    }
-
-    @Test
-    fun allowsCustomSplashOverlayWhenFlyoutDisabledAndDataPresent() {
-        assertTrue(
-            shouldShowCustomSplashOverlay(
-                customSplashEnabled = true,
-                splashUri = "content://splash.jpg"
-            )
-        )
-    }
-
-    @Test
     fun appliesRealtimeBlurOnlyAfterAnimationProgressStarts() {
         assertFalse(shouldApplySplashRealtimeBlur(useRealtimeBlur = true, progress = 0f))
         assertFalse(shouldApplySplashRealtimeBlur(useRealtimeBlur = true, progress = 0.1f))

@@ -417,8 +417,8 @@ class SettingsSearchPolicyTest {
     }
 
     @Test
-    fun queryByQualityDowngradeDialog_hitsPlaybackEntry() {
-        val results = resolveSettingsSearchResults("仅弹窗一次")
+    fun queryByQualityDowngradeDialog_hitsDiagnosticsEntry() {
+        val results = resolveSettingsSearchResults("画质降档诊断弹窗")
 
         assertTrue(results.any { it.target == SettingsSearchTarget.DIAGNOSTICS })
     }

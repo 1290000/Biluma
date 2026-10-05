@@ -431,20 +431,19 @@ internal fun VideoDetailQualitySwitchFailureDialog(
     viewModel: VideoPlaybackViewModel,
     qualitySwitchFailureDialog: QualitySwitchFailureDialogState?,
     qualitySwitchFailureDialogEnabled: Boolean,
-    qualitySwitchFailureDialogOnceEnabled: Boolean,
-    qualitySwitchFailureDialogShown: Boolean,
+    qualitySwitchFailureDialogShown: Boolean?,
     playerDiagnosticLoggingEnabled: Boolean,
     qualitySwitchDialogScope: CoroutineScope
 ) {
     LaunchedEffect(
         qualitySwitchFailureDialog?.requestedQualityId,
         qualitySwitchFailureDialogEnabled,
-        qualitySwitchFailureDialogOnceEnabled,
         qualitySwitchFailureDialogShown
     ) {
         val dialog = qualitySwitchFailureDialog ?: return@LaunchedEffect
+        if (qualitySwitchFailureDialogShown == null) return@LaunchedEffect
         val shouldSuppressDialog = !qualitySwitchFailureDialogEnabled ||
-            (qualitySwitchFailureDialogOnceEnabled && qualitySwitchFailureDialogShown)
+            qualitySwitchFailureDialogShown
         if (shouldSuppressDialog) {
             viewModel.dismissQualitySwitchFailureDialog()
         }
@@ -453,22 +452,13 @@ internal fun VideoDetailQualitySwitchFailureDialog(
     qualitySwitchFailureDialog
         ?.takeIf {
             qualitySwitchFailureDialogEnabled &&
-                !(qualitySwitchFailureDialogOnceEnabled && qualitySwitchFailureDialogShown)
+                qualitySwitchFailureDialogShown == false
         }
         ?.let { dialog ->
-            var onceForCurrentDialog by remember(dialog) {
-                mutableStateOf(qualitySwitchFailureDialogOnceEnabled)
-            }
-            LaunchedEffect(qualitySwitchFailureDialogOnceEnabled) {
-                onceForCurrentDialog = qualitySwitchFailureDialogOnceEnabled
-            }
-
             fun dismissQualitySwitchFailureDialogAfterUserChoice() {
                 qualitySwitchDialogScope.launch {
-                    if (onceForCurrentDialog) {
-                        com.android.purebilibili.core.store.SettingsManager
-                            .markQualitySwitchFailureDialogShown(context)
-                    }
+                    com.android.purebilibili.core.store.SettingsManager
+                        .markQualitySwitchFailureDialogShown(context)
                     viewModel.dismissQualitySwitchFailureDialog()
                 }
             }
@@ -496,36 +486,6 @@ internal fun VideoDetailQualitySwitchFailureDialog(
                                     "关闭诊断日志"
                                 } else {
                                     "开启诊断日志"
-                                }
-                            )
-                        }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 48.dp)
-                                .clickable {
-                                    val nextValue = !onceForCurrentDialog
-                                    onceForCurrentDialog = nextValue
-                                    qualitySwitchDialogScope.launch {
-                                        com.android.purebilibili.core.store.SettingsManager
-                                            .setQualitySwitchFailureDialogOnceEnabled(context, nextValue)
-                                    }
-                                },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            AppText(
-                                text = "仅提示一次",
-                                modifier = Modifier.weight(1f),
-                                tapToCopyEnabled = false
-                            )
-                            AppCheckbox(
-                                checked = onceForCurrentDialog,
-                                onCheckedChange = { checked ->
-                                    onceForCurrentDialog = checked
-                                    qualitySwitchDialogScope.launch {
-                                        com.android.purebilibili.core.store.SettingsManager
-                                            .setQualitySwitchFailureDialogOnceEnabled(context, checked)
-                                    }
                                 }
                             )
                         }
