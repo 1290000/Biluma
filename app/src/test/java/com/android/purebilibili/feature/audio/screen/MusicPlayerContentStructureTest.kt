@@ -15,10 +15,11 @@ class MusicPlayerContentStructureTest {
 
         assertTrue(compactBranch.contains("BottomBarLiquidSegmentedControl("))
         assertTrue(compactBranch.contains("resolveMusicPlayerPageTabs()"))
-        assertTrue(compactBranch.contains("onPageTap = openCoverPage"))
-        assertTrue(compactBranch.contains("showBottomControls = false"))
-        assertTrue(compactBranch.contains("playButtonSizeDp = 56"))
-        assertTrue(compactBranch.contains("LyricsImmersiveProgress(state = state)"))
+        assertTrue(compactBranch.contains("showBottomControls = true"))
+        assertTrue(!compactBranch.contains("onPageTap"))
+        assertTrue(!compactBranch.contains("MusicDockPagePill"))
+        assertTrue(!compactBranch.contains("LyricsImmersiveProgress("))
+        assertTrue(compactBranch.contains("showTranslations = lyricsShowTranslations"))
         assertTrue(compactBranch.contains("height = 48.dp"))
         assertTrue(compactBranch.contains("indicatorHeight = 36.dp"))
         assertTrue(compactBranch.contains("containerVerticalPadding = 6.dp"))
@@ -46,7 +47,7 @@ class MusicPlayerContentStructureTest {
         assertTrue(compactLandscape.contains("MusicProgress("))
         assertTrue(compactLandscape.contains("MusicPlayPauseButton("))
         assertTrue(compactLandscape.contains("onPlayPause = onPlayPause"))
-        assertTrue(compactLandscape.contains("progressSeekRevision += 1"))
+        assertTrue(compactLandscape.contains("onSeek = onSeek"))
         assertTrue(compactLandscape.contains("if (landscapeLyrics)"))
         assertTrue(compactLandscape.contains("val landscapeHeaderHeight = 48.dp"))
         assertTrue(compactLandscape.contains("contentAlignment = Alignment.TopCenter"))
@@ -58,23 +59,6 @@ class MusicPlayerContentStructureTest {
         val source = loadSource()
         assertTrue(source.contains("val musicBackdrop = musicBackdropSource.backdrop"))
         assertTrue(source.contains(".then(musicBackdropSource.modifier)\n                    .background(pageBackground)"))
-    }
-
-    @Test
-    fun `lyrics browsing pauses auto follow without seeking playback`() {
-        val source = loadSource()
-        val lyricsPage = source.substringAfter("private fun LyricsPage(")
-
-        assertTrue(lyricsPage.contains("collectIsDraggedAsState()"))
-        assertTrue(lyricsPage.contains("resolveLyricFocusScrollOffsetPx("))
-        assertTrue(lyricsPage.contains("回到当前歌词"))
-        assertTrue(!lyricsPage.contains("resolveDraggedLyricIndex("))
-        assertTrue(!lyricsPage.contains("snapshotFlow"))
-        assertTrue(!lyricsPage.contains("LYRIC_AUTO_FOLLOW_RESUME_DELAY_MS"))
-        assertTrue(!lyricsPage.contains("scrollToItem(currentIndex, -160)"))
-        assertTrue(!lyricsPage.contains("animateScrollToItem(currentIndex, -160)"))
-        assertTrue(source.contains("progressSeekRevision"))
-        assertTrue(lyricsPage.contains("LaunchedEffect(progressSeekRevision)"))
     }
 
     @Test
@@ -94,7 +78,6 @@ class MusicPlayerContentStructureTest {
         assertTrue(source.contains("Icons.Outlined.Repeat"))
         assertTrue(source.contains("Icons.AutoMirrored.Outlined.Comment"))
         assertTrue(source.contains("Icons.Outlined.QueueMusic"))
-        assertTrue(source.contains("AppFilledIconButton("))
         assertTrue(source.contains("MusicWavySlider("))
         assertTrue(source.contains("AppSlider("))
         assertTrue(source.contains("shouldUseNativeThemeMusicProgress("))
@@ -126,72 +109,16 @@ class MusicPlayerContentStructureTest {
     }
 
     @Test
-    fun `lyrics expose progress playback controls and immersive chrome`() {
-        val source = loadSource()
-        val lyricsPage = source.substringAfter("private fun LyricsPage(")
-        val lyricsControls = source
-            .substringAfter("private fun LyricsPrimaryControls(")
-            .substringBefore("private fun formatLyricsOffset(")
-        val topBar = source
-            .substringAfter("private fun MusicTopBar(")
-            .substringBefore("private fun GlassIconButton(")
-
-        assertTrue(lyricsPage.contains("showProgress = !immersiveLyrics"))
-        assertTrue(lyricsPage.contains("PlaybackControls("))
-        assertTrue(lyricsPage.contains("AnimatedVisibility("))
-        assertTrue(lyricsPage.contains("LyricsImmersiveProgress("))
-        assertTrue(lyricsPage.contains("!immersiveLyrics"))
-        assertTrue(lyricsPage.contains("歌词设置"))
-        assertTrue(lyricsPage.contains("收起"))
-        assertTrue(lyricsPage.contains("onControlsVisibleChange(false)"))
-        assertTrue(lyricsPage.contains("bottom = 260.dp"))
-        assertTrue(lyricsPage.contains("歌词加载失败"))
-        assertTrue(lyricsPage.contains("未找到匹配歌词"))
-        assertTrue(!lyricsControls.contains("AppSurfaceTokens.surfaceContainer()"))
-        assertTrue(lyricsControls.contains("resolveMusicImmersivePanelColor(glassTintColor, MaterialTheme.colorScheme.surface)"))
-        assertTrue(lyricsControls.contains("if (miuixBackdrop != null) Color.Transparent else panelColor"))
-        assertTrue(lyricsControls.contains("val panelShape = AppShapes.borderedContainer(ContainerLevel.Card)"))
-        assertTrue(lyricsControls.contains(".biliPaiFloatingDockShell("))
-        assertTrue(lyricsControls.contains("color = Color.Transparent"))
-        assertTrue(lyricsControls.contains("LocalMusicPlayerMaterial provides panelMaterial"))
-        assertTrue(topBar.contains("Icons.Outlined.KeyboardArrowDown"))
-        assertTrue(topBar.contains("Icons.Outlined.MoreHoriz"))
-        assertTrue(!source.contains("BottomBarMatchedReusableLiquidDock("))
-        assertTrue(!topBar.contains("?: Spacer"))
-        assertTrue(!source.contains("private fun Modifier.musicGlassSurface("))
-        assertTrue(!source.contains("bottomBarMatchedLiquidDockSurface("))
-        assertTrue(!source.contains("blurRadius = 20.dp"))
-    }
-
-    @Test
     fun `lyrics settings expose quarter second offset correction and reset`() {
         val source = loadSource()
         val settings = source
             .substringAfter("private fun LyricsSettingsContent(")
-            .substringBefore("private fun LyricLineContent(")
+            .substringBefore("private fun MusicTopBar(")
 
         assertTrue(settings.contains("onLyricsOffsetChange(-250L)"))
         assertTrue(settings.contains("onLyricsOffsetChange(250L)"))
         assertTrue(settings.contains("onLyricsOffsetChange(-lyricsOffsetMs)"))
         assertTrue(settings.contains("formatLyricsOffset(lyricsOffsetMs)"))
-    }
-
-    @Test
-    fun `lyrics ui style switches from more menu and supports karaoke fill`() {
-        val source = loadSource()
-        val lyricsPage = source.substringAfter("private fun LyricsPage(")
-
-        assertTrue(source.contains("歌词界面："))
-        assertTrue(source.contains("lyricsUiStyle.next().label"))
-        assertTrue(source.contains("SettingsManager.setMusicLyricsUiStyle"))
-        assertTrue(lyricsPage.contains("lyricsUiStyle: SettingsManager.MusicLyricsUiStyle"))
-        assertTrue(lyricsPage.contains("immersiveLyrics"))
-        assertTrue(lyricsPage.contains("resolveMusicLyricFocusStyle("))
-        assertTrue(lyricsPage.contains("immersive = immersiveLyrics"))
-        assertTrue(source.contains("appendKaraokeFill("))
-        assertTrue(source.contains("resolveSpanHighlightProgress"))
-        assertTrue(source.contains("resolveLineSweepProgress"))
-        assertTrue(source.contains("resolveCharHighlightAlpha"))
     }
 
     @Test
@@ -237,6 +164,91 @@ class MusicPlayerContentStructureTest {
         assertTrue(coverFlowSource.contains("if (reduceMotion) 0f else"))
         assertTrue(!source.contains("preview_p2"))
         assertTrue(!source.contains("(Remix)"))
+    }
+
+    @Test
+    fun `lyrics use only PR immersive layout and seek instead of returning to cover`() {
+        val source = loadSource()
+        val lyricsPage = source.substringAfter("private fun LyricsPage(")
+            .substringBefore("private fun LyricsPrimaryControls(")
+
+        assertTrue(lyricsPage.contains("AppleMusicLyricsView("))
+        assertTrue(lyricsPage.contains("currentLyricIndexAt("))
+        assertTrue(lyricsPage.contains("state.positionMs - document.offsetMs"))
+        assertTrue(lyricsPage.contains("onSeek(line.timeMs + document.offsetMs)"))
+        assertTrue(lyricsPage.contains(".padding(horizontal = 28.dp)"))
+        assertTrue(lyricsPage.contains("topContentPadding = 72.dp"))
+        assertTrue(lyricsPage.contains("bottomContentPadding = 72.dp"))
+        assertTrue(lyricsPage.contains("focusOffsetRatio = 0.24f"))
+        assertTrue(lyricsPage.contains("useFocusLeadingPadding = false"))
+        assertTrue(lyricsPage.contains("PLAYER_LYRIC_ALIGN_LEFT"))
+        assertTrue(!lyricsPage.contains("PLAYER_LYRIC_ALIGN_CENTER"))
+        assertTrue(!lyricsPage.contains("onPageTap"))
+        assertTrue(!lyricsPage.contains("LazyColumn("))
+        assertTrue(!source.contains("lyricsUiStyle"))
+        assertTrue(!source.contains("MusicLyricsUiStyle"))
+        assertTrue(!source.contains("LyricLineContent("))
+        assertTrue(!source.contains("PlayerLyricsPreview("))
+        assertTrue(source.contains("PlayerMiniLyrics("))
+        assertTrue(source.contains("PlayerLyricsPlaceholder("))
+    }
+
+    @Test
+    fun `lyrics restore original controls without a progress bar`() {
+        val source = loadSource()
+        val lyricsPage = source.substringAfter("private fun LyricsPage(")
+            .substringBefore("private fun LyricsPrimaryControls(")
+        val controls = source.substringAfter("private fun LyricsPrimaryControls(")
+            .substringBefore("private fun formatLyricsOffset(")
+        val topBar = source.substringAfter("private fun MusicTopBar(")
+            .substringBefore("private fun GlassIconButton(")
+
+        assertTrue(lyricsPage.contains("LyricsPrimaryControls("))
+        assertTrue(lyricsPage.contains("onControlsVisibleChange(false)"))
+        assertTrue(lyricsPage.contains("label = if (showTranslations)"))
+        assertTrue(lyricsPage.contains("搜索"))
+        assertTrue(lyricsPage.contains("onToggleTranslations = onToggleTranslations"))
+        assertTrue(!lyricsPage.contains("LyricsImmersiveProgress("))
+        assertTrue(!lyricsPage.contains("musicChromeHidden"))
+        assertTrue(controls.contains("PlaybackControls("))
+        assertTrue(controls.contains("resolveMusicLyricsPlayButtonSizeDp(chromeSpec.uiStyle)"))
+        assertTrue(controls.contains("if (maxWidth.value < minimumRowWidthDp)"))
+        assertTrue(controls.contains("transport(Modifier.fillMaxWidth())"))
+        assertTrue(controls.contains("useArtworkGlass = true"))
+        assertTrue(controls.contains("歌词设置"))
+        assertTrue(controls.contains("收起"))
+        assertTrue(!controls.contains("MusicProgress("))
+        assertTrue(controls.contains(".biliPaiFloatingDockShell("))
+        assertTrue(controls.contains("if (miuixBackdrop != null) Color.Transparent else panelColor"))
+        assertTrue(topBar.contains("Icons.Outlined.KeyboardArrowDown"))
+        assertTrue(topBar.contains("Icons.Outlined.MoreHoriz"))
+        assertTrue(!topBar.contains("leadingActions"))
+        assertTrue(lyricsPage.contains("歌词加载失败"))
+        assertTrue(lyricsPage.contains("未找到匹配歌词"))
+    }
+
+    @Test
+    fun `immersive renderer owns dragging and automatic follow`() {
+        val renderer = loadSource("app/src/main/java/com/android/purebilibili/feature/audio/lyrics/halcyon/AppleMusicLyricsView.kt")
+        val lyricsPage = loadSource().substringAfter("private fun LyricsPage(")
+            .substringBefore("private fun LyricsPrimaryControls(")
+
+        assertTrue(renderer.contains("collectIsDraggedAsState()"))
+        assertTrue(renderer.contains("if (userDragging || deferAutoScroll) return@LaunchedEffect"))
+        assertTrue(renderer.contains("listState.dispatchRawDelta("))
+        assertTrue(!lyricsPage.contains("rememberLazyListState("))
+        assertTrue(!lyricsPage.contains("isAutoFollowPaused"))
+    }
+
+    @Test
+    fun `removed lyric style cannot be read written or exported`() {
+        val settings = loadSource("app/src/main/java/com/android/purebilibili/core/store/SettingsManager.kt")
+        val playbackSettings = loadSource("app/src/main/java/com/android/purebilibili/feature/settings/screen/PlaybackSettingsScreen.kt")
+
+        assertTrue(!settings.contains("music_lyrics_ui_style"))
+        assertTrue(!settings.contains("MusicLyricsUiStyle"))
+        assertTrue(!playbackSettings.contains("听视频歌词界面"))
+        assertTrue(settings.contains("definition == null -> skippedKeys += key"))
     }
 
     private fun loadSource(

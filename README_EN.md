@@ -28,12 +28,14 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
-| Feature and settings reduction | Not started; decisions to retain, fix behavior, remove, or redesign features are pending |
+| Feature and settings reduction | Listen-video lyrics use only the immersive style; the classic interface and style selectors are removed. Other decisions remain pending |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
 
 Changes have only received static checks and an update API connectivity check. Regression test code has been added, but tests, compilation, installation, and on-device verification have not been performed. Configuration and command examples do not establish that a build succeeds.
+
+The immersive lyrics layout and controls are restored against commit `a28121fd9913516ab09c557299c7840591325de8` from [upstream PR #847](https://github.com/jay3-yy/BiliPai/pull/847): left-aligned lyrics, cover-flow background, original playback controls, and the cover/lyrics selector, without a progress bar on the lyrics page. Lyrics search, timing correction, translations, and later playback fixes are retained rather than rolling back the entire player. Legacy lyric-style settings are skipped during backup import; the initial cover/lyrics page behavior is unchanged. This restoration has not been compiled or visually verified on a device.
 
 ## Downloads and feedback
 

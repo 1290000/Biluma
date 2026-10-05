@@ -42,38 +42,3 @@ internal fun mergeAuxiliaryLyrics(
     }
     return merged.mapValues { (_, values) -> values.distinct() }
 }
-
-internal fun resolveActiveLyricIndex(
-    document: LyricDocument,
-    positionMs: Long
-): Int {
-    if (document.lines.isEmpty()) return -1
-    val adjustedPosition = positionMs - document.offsetMs
-    var low = 0
-    var high = document.lines.lastIndex
-    var candidate = -1
-    while (low <= high) {
-        val middle = (low + high) ushr 1
-        if (document.lines[middle].startTimeMs <= adjustedPosition) {
-            candidate = middle
-            low = middle + 1
-        } else {
-            high = middle - 1
-        }
-    }
-    for (index in candidate downTo 0) {
-        val line = document.lines[index]
-        if (adjustedPosition >= line.startTimeMs && adjustedPosition < line.endTimeMs) {
-            return index
-        }
-    }
-    return -1
-}
-
-internal fun resolveLyricFocusScrollOffsetPx(
-    viewportHeightPx: Int,
-    focusFraction: Float = 0.30f
-): Int {
-    if (viewportHeightPx <= 0) return 0
-    return -(viewportHeightPx * focusFraction.coerceIn(0f, 1f)).toInt()
-}

@@ -10,6 +10,36 @@ import kotlin.test.assertTrue
 class SettingsSharePolicyTest {
 
     @Test
+    fun removedLyricsStyleIsExcludedFromExportAndSkippedOnImport() {
+        val definitions = SettingsManager.getShareableSettingsEntryDefinitions()
+        assertFalse(definitions.any { it.storageKey == "music_lyrics_ui_style" })
+
+        listOf(0, 1).forEach { legacyStyle ->
+            val legacySettings = mapOf("music_lyrics_ui_style" to JsonPrimitive(legacyStyle))
+            val exported = buildSettingsShareProfile(
+                profileName = "歌词旧设置",
+                appVersion = "test",
+                exportedAtIso = "2026-10-05T00:00:00Z",
+                rawSettings = legacySettings,
+                definitions = definitions
+            )
+            assertTrue(exported.sections.playback.isEmpty())
+
+            val preview = resolveSettingsShareImportPreview(
+                profile = SettingsShareProfile(
+                    profileName = "歌词旧设置",
+                    appVersion = "test",
+                    exportedAtIso = "2026-10-05T00:00:00Z",
+                    sections = SettingsShareSections(playback = legacySettings)
+                ),
+                definitions = definitions
+            )
+            assertTrue("music_lyrics_ui_style" in preview.skippedKeys)
+            assertTrue(preview.importableSections.isEmpty())
+        }
+    }
+
+    @Test
     fun exportProfile_onlyIncludesAllowlistedKeysInGroupedSections() {
         val profile = buildSettingsShareProfile(
             profileName = "我的设置",
