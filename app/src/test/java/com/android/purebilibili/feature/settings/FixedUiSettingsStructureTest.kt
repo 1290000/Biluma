@@ -21,6 +21,17 @@ class FixedUiSettingsStructureTest {
         assertTrue(activity.contains("shouldShowCustomSplashOverlay"))
     }
 
+    @Test
+    fun videoTagsAlwaysUseTheSmallestSizeWithoutStoredOverrides() {
+        val settings = loadSource("core/store/SettingsManager.kt")
+        val playback = loadSource("feature/settings/screen/PlaybackSettingsScreen.kt")
+        val info = loadSource("feature/video/ui/section/VideoInfoSection.kt")
+        assertFalse(settings.contains("video_tag_size_preset"))
+        assertFalse(playback.contains("VideoTagSizePreset"))
+        assertFalse(info.contains("getVideoTagSizePreset"))
+        assertTrue(info.contains("AppTagChipSize.SMALL"))
+    }
+
     private fun loadSource(path: String): String {
         val relativePath = "src/main/java/com/android/purebilibili/$path"
         return listOf(File("app/$relativePath"), File(relativePath))

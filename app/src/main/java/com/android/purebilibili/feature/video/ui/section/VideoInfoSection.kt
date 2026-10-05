@@ -906,11 +906,7 @@ fun VideoTitleWithDesc(
                 androidx.compose.animation.ExitTransition.None
             }
         ) {
-            val videoTagSize by com.android.purebilibili.core.store.SettingsManager
-                .getVideoTagSizePreset(context)
-                .collectAsStateWithLifecycle(
-                    initialValue = com.android.purebilibili.core.ui.components.AppTagChipSize.STANDARD
-                )
+            val videoTagSize = com.android.purebilibili.core.ui.components.AppTagChipSize.SMALL
             val tagMetrics = com.android.purebilibili.core.ui.components
                 .resolveAppTagChipMetrics(videoTagSize)
             Column {
