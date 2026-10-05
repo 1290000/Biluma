@@ -4,7 +4,7 @@ An independently maintained third-party Bilibili Android client based on [BiliPa
 
 [简体中文](README.md) · [Repository](https://github.com/1290000/Biluma) · [Issues](https://github.com/1290000/Biluma/issues) · [Releases](https://github.com/1290000/Biluma/releases)
 
-> **This project is in early development and has no independent Biluma release yet.** Nine initial UI and settings reductions have been approved and are being implemented in batches; this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
+> **This project is in early development and has no independent Biluma release yet.** All nine initial UI and settings reductions are implemented in source, but tests, compilation, and on-device verification have not been performed. It is not an official release by the BiliPai authors or Bilibili.
 
 ## Project identity
 
@@ -28,7 +28,7 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
-| Feature and settings reduction | Items 1, 2, 3, 4, 5, 6, and 7 are implemented; two items remain pending, as listed below |
+| Feature and settings reduction | All nine first-round items are implemented in source, without runtime verification, as listed below |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
@@ -37,7 +37,7 @@ Changes have only received static checks and an update API connectivity check. R
 
 ## UI simplification progress
 
-This round is being implemented in batches on `feat/ui-simplification`. Approved targets and source implementation status are separate; neither implies a release or successful runtime verification.
+All nine items have been implemented in batches on `feat/ui-simplification`. Approved targets and source implementation status are separate; neither implies a release or successful runtime verification.
 
 | Item | Fixed target | Source status |
 | --- | --- | --- |
@@ -48,10 +48,10 @@ This round is being implemented in batches on `feat/ui-simplification`. Approved
 | 5. Native Miuix popups | Enabled | Implemented; switch and its disabled alternatives removed; Miuix dialogs no longer fall back to Material through this switch |
 | 6. Video tag size | Smallest | Implemented; video tags use the smallest size without settings or backup overrides; removed the unused intermediate size and retained standard tags elsewhere |
 | 7. Compact player controls | Enabled | Implemented; removed the toggle, preference, and classic layout branches; compact spacing and scrims are fixed, with sharing retained in the More menu |
-| 8. Floating bottom bar | Enabled | Pending |
-| 9. Navigation icon cross-scale | Enabled | Pending |
+| 8. Floating bottom bar | Enabled | Implemented; removed the switch, preference, old-backup field, and docked renderers; search integration, the playback mini-bar, and large-screen side navigation remain |
+| 9. Navigation icon cross-scale | Enabled | Implemented; removed the switch and disabled branch; icons scale during indicator transitions and return to their authored size when settled |
 
-The retired theme preset, liquid-glass master switch, and two popup options no longer have user-facing entries. Legacy theme and liquid-glass keys remain only at necessary migration compatibility boundaries, while runtime selection is fixed to Miuix with liquid glass enabled. Confirmation/input dialogs, slider dialogs, and hinge-safe layouts are outside this batch's removal scope; Material 3 infrastructure and unsupported-device non-glass fallbacks are also retained.
+All nine options no longer have user-facing selection entries; their dedicated alternatives and inactive child settings have been removed. Legacy theme and liquid-glass keys remain only at necessary migration compatibility boundaries, while runtime selection is fixed to Miuix with liquid glass enabled. Confirmation/input dialogs, slider dialogs, and hinge-safe layouts are outside this batch's removal scope; Material 3 infrastructure and unsupported-device non-glass fallbacks are also retained.
 
 ## Downloads and feedback
 

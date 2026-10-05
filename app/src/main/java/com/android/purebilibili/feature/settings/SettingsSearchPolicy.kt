@@ -346,7 +346,6 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
             "底栏项目",
             "底栏隐藏",
             "底栏显示",
-            "悬浮底栏"
         )
     ),
     SettingsSearchEntry(
@@ -654,16 +653,16 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.BOTTOM_BAR,
-        title = "悬浮底栏 / 搜索联动",
-        subtitle = "底栏形态、图标交叉缩放、搜索与视频小横条联动",
+        title = "底栏搜索联动",
+        subtitle = "底栏搜索与视频小横条联动",
         section = settingsDestinationCopy(SettingsSearchTarget.BOTTOM_BAR).title,
         aliases = listOf(
-            "悬浮底栏",
+
             "底栏搜索",
             "底栏搜索联动",
             "搜索入口",
             "悬浮搜索",
-            "导航图标交叉缩放",
+
             "图标放大缩小",
             "选中图标 1.10 倍",
             "视频小横条联动",

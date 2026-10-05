@@ -26,7 +26,6 @@ enum class OnboardingSettingsProfile(
 
 data class OnboardingSettingsGuidePreset(
     val profile: OnboardingSettingsProfile,
-    val bottomBarFloating: Boolean,
     val bottomBarLiquidGlassEnabled: Boolean,
     val bottomBarSearchEnabled: Boolean,
     val topTabLabelMode: Int,
@@ -58,7 +57,6 @@ fun resolveOnboardingSettingsGuidePreset(
     return when (profile) {
         OnboardingSettingsProfile.RECOMMENDED -> OnboardingSettingsGuidePreset(
             profile = profile,
-            bottomBarFloating = true,
             bottomBarLiquidGlassEnabled = true,
             bottomBarSearchEnabled = false,
             topTabLabelMode = SettingsManager.TopTabLabelMode.TEXT_ONLY,
@@ -73,7 +71,6 @@ fun resolveOnboardingSettingsGuidePreset(
 
         OnboardingSettingsProfile.PERFORMANCE -> OnboardingSettingsGuidePreset(
             profile = profile,
-            bottomBarFloating = true,
             bottomBarLiquidGlassEnabled = true,
             bottomBarSearchEnabled = false,
             topTabLabelMode = SettingsManager.TopTabLabelMode.TEXT_ONLY,
@@ -88,7 +85,6 @@ fun resolveOnboardingSettingsGuidePreset(
 
         OnboardingSettingsProfile.DATA_SAVER -> OnboardingSettingsGuidePreset(
             profile = profile,
-            bottomBarFloating = true,
             bottomBarLiquidGlassEnabled = true,
             bottomBarSearchEnabled = false,
             topTabLabelMode = SettingsManager.TopTabLabelMode.TEXT_ONLY,
@@ -109,7 +105,6 @@ suspend fun applyOnboardingSettingsGuidePreset(
 ) {
     val preset = resolveOnboardingSettingsGuidePreset(profile)
     applyOnboardingRecommendedUiStyle(context)
-    SettingsManager.setBottomBarFloating(context, preset.bottomBarFloating)
     SettingsManager.setBottomBarLiquidGlassEnabled(context, preset.bottomBarLiquidGlassEnabled)
     SettingsManager.setBottomBarSearchEnabled(context, preset.bottomBarSearchEnabled)
     SettingsManager.setTopTabLabelMode(context, preset.topTabLabelMode)

@@ -6,7 +6,6 @@ internal data class AppNavigationAppearance(
     val cardTransitionEnabled: Boolean,
     val bottomBarBlurEnabled: Boolean,
     val bottomBarLabelMode: Int,
-    val bottomBarFloating: Boolean
 )
 
 internal fun resolveEffectiveNavigationBottomBarBlur(
@@ -22,6 +21,5 @@ internal fun resolveAppNavigationAppearance(
             homeSettings = homeSettings,
         ),
         bottomBarLabelMode = homeSettings.bottomBarLabelMode,
-        bottomBarFloating = homeSettings.isBottomBarFloating
     )
 }

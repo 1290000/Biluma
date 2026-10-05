@@ -66,7 +66,6 @@ fun SettingsSearchScreen(
     val bottomInset = resolveSettingsContentBottomPadding(
         navigationBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
         bottomBarVisible = bottomBarVisible,
-        isBottomBarFloating = false,
         bottomBarLabelMode = 0,
         isTablet = windowSizeClass.isTablet,
     )

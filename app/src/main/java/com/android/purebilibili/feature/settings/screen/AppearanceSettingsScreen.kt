@@ -132,7 +132,7 @@ fun AppearanceSettingsScreen(
     val appearanceInteractionLevel = (
         displayLevel +
             if (state.headerBlurEnabled) 0.1f else 0f +
-            if (state.isBottomBarFloating) 0.1f else 0f
+            0.1f
         ).coerceIn(0f, 1f)
     val appearanceAnimationSpeed = if (state.dynamicColor) 1.1f else 1f
     

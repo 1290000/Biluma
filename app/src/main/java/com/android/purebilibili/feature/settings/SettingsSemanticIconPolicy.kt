@@ -88,7 +88,6 @@ internal enum class SettingsIconRole {
     TOP_BAR_BLUR,
     HEADER_COLLAPSE,
     BOTTOM_BAR_BLUR,
-    FLOATING_BOTTOM_BAR,
     HARDWARE_DECODER,
     PLAYBACK_SPEED,
     LONG_PRESS_SPEED_HINT,
@@ -164,7 +163,6 @@ internal enum class SettingsIconRole {
     CAST_BUTTON,
     PROGRESS_PEAK_DANMAKU,
     IMAGE_3D_PAGE,
-    NAV_ICON_CROSS_SCALE,
     SUB_REPLY_LOADED_COUNT,
     COMMENT_VISIBILITY_CHECK,
     PORTRAIT_AMBIENT_HAZE,
@@ -285,7 +283,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.TOP_BAR_BLUR -> R.drawable.ms_view_headline_24
     SettingsIconRole.HEADER_COLLAPSE -> R.drawable.ms_keyboard_arrow_up_24
     SettingsIconRole.BOTTOM_BAR_BLUR -> R.drawable.ms_blur_linear_24
-    SettingsIconRole.FLOATING_BOTTOM_BAR -> R.drawable.ms_view_agenda_24
     SettingsIconRole.HARDWARE_DECODER -> R.drawable.ms_memory_24
     SettingsIconRole.PLAYBACK_SPEED -> R.drawable.ms_speed_24
     SettingsIconRole.LONG_PRESS_SPEED_HINT -> R.drawable.ms_visibility_off_24
@@ -361,7 +358,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.CAST_BUTTON -> R.drawable.ms_cast_24
     SettingsIconRole.PROGRESS_PEAK_DANMAKU -> R.drawable.ms_graphic_eq_24
     SettingsIconRole.IMAGE_3D_PAGE -> R.drawable.ms_3d_rotation_24
-    SettingsIconRole.NAV_ICON_CROSS_SCALE -> R.drawable.ms_compare_arrows_24
     SettingsIconRole.SUB_REPLY_LOADED_COUNT -> R.drawable.ms_numbers_24
     SettingsIconRole.COMMENT_VISIBILITY_CHECK -> R.drawable.ms_fact_check_24
     SettingsIconRole.PORTRAIT_AMBIENT_HAZE -> R.drawable.ms_filter_hdr_24
@@ -553,7 +549,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.TOP_BAR_BLUR -> MiuixIcons.Background
     SettingsIconRole.HEADER_COLLAPSE -> MiuixIcons.ExpandLess
     SettingsIconRole.BOTTOM_BAR_BLUR -> MiuixIcons.Layers
-    SettingsIconRole.FLOATING_BOTTOM_BAR -> MiuixIcons.MoreCircle
     SettingsIconRole.HARDWARE_DECODER -> MiuixIcons.Settings
     SettingsIconRole.PLAYBACK_SPEED -> MiuixIcons.Stopwatch
     SettingsIconRole.LONG_PRESS_SPEED_HINT -> MiuixIcons.Stopwatch
@@ -629,7 +624,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.CAST_BUTTON -> MiuixIcons.ScreenMirroring
     SettingsIconRole.PROGRESS_PEAK_DANMAKU -> MiuixIcons.Sort
     SettingsIconRole.IMAGE_3D_PAGE -> MiuixIcons.Photos
-    SettingsIconRole.NAV_ICON_CROSS_SCALE -> MiuixIcons.Replace
     SettingsIconRole.SUB_REPLY_LOADED_COUNT -> MiuixIcons.Answer
     SettingsIconRole.COMMENT_VISIBILITY_CHECK -> MiuixIcons.Tasks
     SettingsIconRole.PORTRAIT_AMBIENT_HAZE -> MiuixIcons.Background

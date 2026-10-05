@@ -108,7 +108,6 @@ internal fun resolveSettingsBackTarget(
 
 internal fun resolveSettingsBottomBarReservedPadding(
     bottomBarVisible: Boolean,
-    isBottomBarFloating: Boolean,
     bottomBarLabelMode: Int,
     isTablet: Boolean
 ): Dp {
@@ -119,28 +118,13 @@ internal fun resolveSettingsBottomBarReservedPadding(
         2 -> if (isTablet) 56.dp else 54.dp
         else -> if (isTablet) 68.dp else 62.dp
     }
-    val dockedBodyHeight = when (bottomBarLabelMode) {
-        0 -> 72.dp
-        2 -> if (isTablet) 52.dp else 56.dp
-        else -> 64.dp
-    }
-    val floatingInset = if (isBottomBarFloating) {
-        if (isTablet) 20.dp else 16.dp
-    } else {
-        0.dp
-    }
-
-    return if (isBottomBarFloating) {
-        floatingBodyHeight + floatingInset
-    } else {
-        dockedBodyHeight
-    }
+    val floatingInset = if (isTablet) 20.dp else 16.dp
+    return floatingBodyHeight + floatingInset
 }
 
 internal fun resolveSettingsContentBottomPadding(
     navigationBarsBottom: Dp,
     bottomBarVisible: Boolean,
-    isBottomBarFloating: Boolean,
     bottomBarLabelMode: Int,
     isTablet: Boolean,
 ): Dp {
@@ -148,7 +132,6 @@ internal fun resolveSettingsContentBottomPadding(
         navigationBarsBottom = navigationBarsBottom,
         extraBottomPadding = resolveSettingsBottomBarReservedPadding(
             bottomBarVisible = bottomBarVisible,
-            isBottomBarFloating = isBottomBarFloating,
             bottomBarLabelMode = bottomBarLabelMode,
             isTablet = isTablet
         )

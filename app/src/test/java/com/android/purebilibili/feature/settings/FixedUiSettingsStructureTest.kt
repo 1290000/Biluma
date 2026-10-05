@@ -42,6 +42,20 @@ class FixedUiSettingsStructureTest {
         assertFalse(overlay.contains("onClick = onShare,"))
     }
 
+    @Test
+    fun bottomNavigationHasNoDockedRendererOrStoredSwitches() {
+        val settings = loadSource("core/store/SettingsManager.kt")
+        val bottomBar = loadSource("feature/home/components/BottomBar.kt")
+        val floatingItem = loadSource("feature/home/components/FloatingBottomBar.kt")
+        assertFalse(settings.contains("bottom_bar_floating"))
+        assertFalse(settings.contains("navigation_icon_cross_scale_enabled"))
+        assertFalse(bottomBar.contains("MiuixDockedBottomBarItem"))
+        assertFalse(bottomBar.contains("navigationIconCrossScaleEnabled"))
+        assertFalse(floatingItem.contains("iconCrossScaleEnabled"))
+        assertTrue(bottomBar.contains("BiliPaiFloatingBottomBar("))
+        assertTrue(floatingItem.contains("resolveNavigationIconCrossScale("))
+    }
+
     private fun loadSource(path: String): String {
         val relativePath = "src/main/java/com/android/purebilibili/$path"
         return listOf(File("app/$relativePath"), File(relativePath))

@@ -619,8 +619,6 @@ enum class BottomBarLiquidGlassPreset(
 
 data class HomeSettings(
     val displayMode: Int = 0,              // 展示模式 (0=网格, 1=故事卡片)
-    val isBottomBarFloating: Boolean = true,
-    val navigationIconCrossScaleEnabled: Boolean = true,
     val bottomBarLabelMode: Int = 0,       // (0=图标+文字, 1=仅图标, 2=仅文字)
     val topTabLabelMode: Int = 2,          // (0=图标+文字, 1=仅图标, 2=仅文字)
     val hideTopTabs: Boolean = false,
@@ -1431,9 +1429,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_APP_ICON_STYLE = stringPreferencesKey("app_icon_style")
     private val KEY_APP_LIST_ITEM_STYLE = stringPreferencesKey("app_list_item_style")
     //  [新增] 底部栏样式 (true=悬浮, false=贴底)
-    private val KEY_BOTTOM_BAR_FLOATING = booleanPreferencesKey("bottom_bar_floating")
-    private val KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED =
-        booleanPreferencesKey("navigation_icon_cross_scale_enabled")
     //  [新增] 底栏显示模式 (0=图标+文字, 1=仅图标, 2=仅文字)
     private val KEY_BOTTOM_BAR_LABEL_MODE = intPreferencesKey("bottom_bar_label_mode")
     //  [新增] 顶部标签显示模式 (0=图标+文字, 1=仅图标, 2=仅文字)
@@ -1738,9 +1733,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         )
         return HomeSettings(
             displayMode = preferences[KEY_DISPLAY_MODE] ?: 0,
-            isBottomBarFloating = preferences[KEY_BOTTOM_BAR_FLOATING] ?: true,
-            navigationIconCrossScaleEnabled =
-                preferences[KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED] ?: true,
             bottomBarLabelMode = preferences[KEY_BOTTOM_BAR_LABEL_MODE] ?: BottomBarLabelMode.ICON_AND_TEXT,
             topTabLabelMode = preferences[KEY_TOP_TAB_LABEL_MODE] ?: TopTabLabelMode.TEXT_ONLY,
             hideTopTabs = preferences[KEY_HIDE_TOP_TABS] ?: false,
@@ -3708,24 +3700,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     }
 
     //  [新增] --- 底部栏样式 ---
-    fun getBottomBarFloating(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_BOTTOM_BAR_FLOATING] ?: true }
-
-    suspend fun setBottomBarFloating(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences -> preferences[KEY_BOTTOM_BAR_FLOATING] = value }
-    }
-
-    fun getNavigationIconCrossScaleEnabled(context: Context): Flow<Boolean> =
-        context.settingsDataStore.data.map { preferences ->
-            preferences[KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED] ?: false
-        }
-
-    suspend fun setNavigationIconCrossScaleEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED] = value
-        }
-    }
-
     fun getSearchHotSectionEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SEARCH_HOT_SECTION_ENABLED] ?: true }
 
@@ -5605,7 +5579,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     /**
      * 启动时一次性迁移首页视觉默认值（仅在版本未迁移时覆盖）。
-     * 目标：默认开启底栏悬浮、导航图标交叉缩放、顶/底液态玻璃、顶部模糊，
+     * 目标：默认开启顶/底液态玻璃、顶部模糊，
      * 并覆盖底栏项目，确保“推荐”（HOME）恢复为第一项。版本标记写入后不再重复覆盖。
      */
     suspend fun ensureHomeVisualDefaults(context: Context) {
@@ -5613,7 +5587,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             val currentVersion = preferences[KEY_HOME_VISUAL_DEFAULTS_VERSION] ?: 0
             if (currentVersion < HOME_VISUAL_DEFAULTS_VERSION) {
                 if (currentVersion < 3) {
-                    preferences[KEY_BOTTOM_BAR_FLOATING] = true
                     preferences[KEY_LIQUID_GLASS_ENABLED] = true
                     preferences[KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED] = true
                     preferences[KEY_TOP_BAR_LIQUID_GLASS_ENABLED] = true
@@ -5622,7 +5595,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                     preferences[KEY_BOTTOM_BAR_ORDER] = DEFAULT_BOTTOM_BAR_ORDER
                     preferences[KEY_BOTTOM_BAR_VISIBLE_TABS] = DEFAULT_BOTTOM_BAR_VISIBLE_TABS
                 }
-                preferences[KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED] = true
                 preferences[KEY_HOME_VISUAL_DEFAULTS_VERSION] = HOME_VISUAL_DEFAULTS_VERSION
             }
         }
@@ -7995,11 +7967,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             IntShareablePreferenceDefinition(KEY_APP_ICON_APPEARANCE, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_APP_ICON_STYLE, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_APP_LIST_ITEM_STYLE, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(KEY_BOTTOM_BAR_FLOATING, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(
-                KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED,
-                SettingsShareSection.APPEARANCE,
-            ),
             IntShareablePreferenceDefinition(KEY_BOTTOM_BAR_LABEL_MODE, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_TOP_TAB_LABEL_MODE, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(KEY_HIDE_TOP_TABS, SettingsShareSection.APPEARANCE),

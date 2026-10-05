@@ -281,7 +281,6 @@ internal fun BottomBarFloatingSegmentedControl(
                     },
                     selected = selected,
                     itemIndex = index,
-                    iconCrossScaleEnabled = resolvedHomeSettings.navigationIconCrossScaleEnabled,
                 ) {
                     if (itemContent != null) {
                         itemContent(index, label, selected)

@@ -109,51 +109,6 @@ class BottomBarMiuixPolicyTest {
     }
 
     @Test
-    fun `official miuix navigation item is used without skin chrome`() {
-        assertTrue(
-            shouldUseMiuixOfficialNavigationBarItem(
-                skinIconPath = null,
-                labelScrimAlpha = 0f
-            )
-        )
-        assertFalse(
-            shouldUseMiuixOfficialNavigationBarItem(
-                skinIconPath = "/skin/home.png",
-                labelScrimAlpha = 0f
-            )
-        )
-        assertFalse(
-            shouldUseMiuixOfficialNavigationBarItem(
-                skinIconPath = null,
-                labelScrimAlpha = 0.4f
-            )
-        )
-    }
-
-    @Test
-    fun `docked miuix bottom item uses theme color when selected`() {
-        val themeColor = Color(0xFFE85A91)
-        val neutralColor = Color(0xFF9A9AA0)
-
-        assertEquals(
-            themeColor,
-            resolveMiuixDockedBottomBarItemColor(
-                selected = true,
-                selectedColor = themeColor,
-                unselectedColor = neutralColor
-            )
-        )
-        assertEquals(
-            neutralColor,
-            resolveMiuixDockedBottomBarItemColor(
-                selected = false,
-                selectedColor = themeColor,
-                unselectedColor = neutralColor
-            )
-        )
-    }
-
-    @Test
     fun `android native floating branch declares its own tuning entrypoint`() {
         val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
 

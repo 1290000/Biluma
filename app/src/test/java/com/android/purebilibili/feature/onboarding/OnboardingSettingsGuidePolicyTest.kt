@@ -13,7 +13,6 @@ class OnboardingSettingsGuidePolicyTest {
     fun recommendedProfileAppliesRequestedFirstInstallDefaults() {
         val preset = resolveOnboardingSettingsGuidePreset(OnboardingSettingsProfile.RECOMMENDED)
 
-        assertTrue(preset.bottomBarFloating)
         assertTrue(preset.bottomBarLiquidGlassEnabled)
         assertEquals(SettingsManager.TopTabLabelMode.TEXT_ONLY, preset.topTabLabelMode)
         assertEquals(

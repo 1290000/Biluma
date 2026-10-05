@@ -86,7 +86,6 @@ data class SettingsUiState(
     val appIcon: String = DEFAULT_APP_ICON_KEY,
     val appIconStyle: AppIconStyle = AppIconStyle.AUTO,
     val appListItemStyle: AppListItemStyle = AppListItemStyle.AUTO,
-    val isBottomBarFloating: Boolean = true,
     val bottomBarLabelMode: Int = 1,  // 0=图标+文字, 1=仅图标, 2=仅文字
     val headerBlurEnabled: Boolean = true,
     val progressiveTopBlurEnabled: Boolean = true,
@@ -167,7 +166,6 @@ data class ExtraSettings(
     val appFontDisplayName: String,
     val appUiScalePreset: AppUiScalePreset,
     val appDpiOverridePercent: Int,
-    val isBottomBarFloating: Boolean,
     val bottomBarLabelMode: Int,
     val headerBlurEnabled: Boolean,
     val progressiveTopBlurEnabled: Boolean,
@@ -243,7 +241,6 @@ private data class BaseSettings(
     val appIcon: String,
     val appIconStyle: AppIconStyle,
     val appListItemStyle: AppListItemStyle,
-    val isBottomBarFloating: Boolean,
     val bottomBarLabelMode: Int,
     val headerBlurEnabled: Boolean,
     val progressiveTopBlurEnabled: Boolean,
@@ -390,7 +387,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     
     private val uiSettingsFlow2 = combine(
-        SettingsManager.getBottomBarFloating(context).asAnyFlow(),
         SettingsManager.getBottomBarLabelMode(context).asAnyFlow(),
         SettingsManager.getDisplayMode(context).asAnyFlow(),
         SettingsManager.getCardAnimationEnabled(context).asAnyFlow(), // [Restored]
@@ -415,33 +411,31 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         SettingsManager.getGridColumnCount(context).asAnyFlow(), // [New]
         SettingsManager.getHomeFeedCardWidthPreset(context).asAnyFlow()
     ) { values ->
-        val isBottomBarFloating = values[0] as Boolean
-        val labelMode = values[1] as Int
-        val displayMode = values[2] as Int
-        val cardAnimation = values[3] as Boolean
-        val cardTransition = values[4] as Boolean
-        val videoSharedTransitionSpeed = values[5] as VideoSharedTransitionSpeed
-        val videoSharedTransitionCustomDurationMillis = values[6] as Int
-        val smartVisualGuard = values[7] as Boolean
-        val hapticFeedback = values[8] as Boolean
-        val topBarLiquidGlass = values[9] as Boolean
-        val homeSearchLiquidGlass = values[10] as Boolean
-        val bottomBarLiquidGlass = values[11] as Boolean
-        val bottomBarSearch = values[12] as Boolean
-        val bottomBarSearchAutoExpandMode = values[13] as BottomBarSearchAutoExpandMode
-        val bottomBarSearchLayoutMode = values[14] as BottomBarSearchLayoutMode
-        val androidNativeLiquidGlass = values[15] as Boolean
-        val liquidGlassStyle = values[16] as com.android.purebilibili.core.store.LiquidGlassStyle
-        val liquidGlassMode = values[17] as LiquidGlassMode
-        val liquidGlassStrength = values[18] as Float
-        val liquidGlassProgress = values[19] as Float
-        val tabletUseSidebar = values[20] as Boolean
-        val headerCollapse = values[21] as Boolean
-        val gridColumnCount = values[22] as Int
-        val homeFeedCardWidthPreset = values[23] as HomeFeedCardWidthPreset
+        val labelMode = values[0] as Int
+        val displayMode = values[1] as Int
+        val cardAnimation = values[2] as Boolean
+        val cardTransition = values[3] as Boolean
+        val videoSharedTransitionSpeed = values[4] as VideoSharedTransitionSpeed
+        val videoSharedTransitionCustomDurationMillis = values[5] as Int
+        val smartVisualGuard = values[6] as Boolean
+        val hapticFeedback = values[7] as Boolean
+        val topBarLiquidGlass = values[8] as Boolean
+        val homeSearchLiquidGlass = values[9] as Boolean
+        val bottomBarLiquidGlass = values[10] as Boolean
+        val bottomBarSearch = values[11] as Boolean
+        val bottomBarSearchAutoExpandMode = values[12] as BottomBarSearchAutoExpandMode
+        val bottomBarSearchLayoutMode = values[13] as BottomBarSearchLayoutMode
+        val androidNativeLiquidGlass = values[14] as Boolean
+        val liquidGlassStyle = values[15] as com.android.purebilibili.core.store.LiquidGlassStyle
+        val liquidGlassMode = values[16] as LiquidGlassMode
+        val liquidGlassStrength = values[17] as Float
+        val liquidGlassProgress = values[18] as Float
+        val tabletUseSidebar = values[19] as Boolean
+        val headerCollapse = values[20] as Boolean
+        val gridColumnCount = values[21] as Int
+        val homeFeedCardWidthPreset = values[22] as HomeFeedCardWidthPreset
         
         data class Ui2(
-            val f: Boolean,
             val l: Int,
             val d: Int,
             val ca: Boolean,
@@ -467,7 +461,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val hfcwp: HomeFeedCardWidthPreset
         )
         Ui2(
-            isBottomBarFloating,
             labelMode,
             displayMode,
             cardAnimation,
@@ -509,7 +502,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             appFontDisplayName = ui1.appFontDisplayName,
             appUiScalePreset = ui1.appUiScalePreset,
             appDpiOverridePercent = ui1.appDpiOverridePercent,
-            isBottomBarFloating = ui2.f,
             bottomBarLabelMode = ui2.l,
             displayMode = ui2.d,
             cardAnimationEnabled = ui2.ca,
@@ -607,7 +599,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             appIcon = extra.appIcon,
             appIconStyle = extra.appIconStyle,
             appListItemStyle = extra.appListItemStyle,
-            isBottomBarFloating = extra.isBottomBarFloating,
             bottomBarLabelMode = extra.bottomBarLabelMode,
             headerBlurEnabled = extra.headerBlurEnabled,
             progressiveTopBlurEnabled = extra.progressiveTopBlurEnabled,
@@ -675,7 +666,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             appIcon = settings.appIcon,
             appIconStyle = settings.appIconStyle,
             appListItemStyle = settings.appListItemStyle,
-            isBottomBarFloating = settings.isBottomBarFloating,
             bottomBarLabelMode = settings.bottomBarLabelMode,
             headerBlurEnabled = settings.headerBlurEnabled,
             progressiveTopBlurEnabled = settings.progressiveTopBlurEnabled,
@@ -965,9 +955,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    //  [新增] 切换底栏样式
-    fun toggleBottomBarFloating(value: Boolean) { viewModelScope.launch { SettingsManager.setBottomBarFloating(context, value) } }
-    
     //  [新增] 底栏显示模式 (0=图标+文字, 1=仅图标, 2=仅文字)
     fun setBottomBarLabelMode(mode: Int) { viewModelScope.launch { SettingsManager.setBottomBarLabelMode(context, mode) } }
     

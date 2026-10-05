@@ -184,14 +184,6 @@ internal fun resolveBottomBarMiuixSkinDockIconSize(): Dp = AppSpacingTokens.Doub
 
 internal fun resolveBottomBarCompactSkinHomeIconSize(): Dp = AppSpacingTokens.DoubleExtraLarge
 
-internal fun resolveMiuixDockedBottomBarItemHeight(hasUiSkinDecoration: Boolean): Dp {
-    return if (hasUiSkinDecoration) {
-        resolveBottomBarSkinDockHeight()
-    } else {
-        AppSpacingTokens.TripleExtraLarge + AppSpacingTokens.Large
-    }
-}
-
 @Composable
 fun rememberBottomBarUiSkinDecoration(uiSkinState: UiSkinState): BottomBarUiSkinDecoration? {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()

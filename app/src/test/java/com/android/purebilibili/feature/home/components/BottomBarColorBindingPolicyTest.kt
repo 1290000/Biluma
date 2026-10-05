@@ -12,26 +12,6 @@ import kotlin.test.assertTrue
 class BottomBarColorBindingPolicyTest {
 
     @Test
-    fun `docked skin suppresses material selected indicator`() {
-        val defaultColor = Color(0xFF765432)
-
-        assertEquals(
-            Color.Transparent,
-            resolveDockedBottomBarIndicatorColor(
-                defaultColor = defaultColor,
-                hasUiSkinDecoration = true,
-            ),
-        )
-        assertEquals(
-            defaultColor,
-            resolveDockedBottomBarIndicatorColor(
-                defaultColor = defaultColor,
-                hasUiSkinDecoration = false,
-            ),
-        )
-    }
-
-    @Test
     fun `plain floating bar reveals skin background while material modes keep their surface`() {
         val defaultColor = Color(0xFF765432)
 
@@ -295,25 +275,6 @@ class BottomBarColorBindingPolicyTest {
                 animatedContentColor = animatedColor
             )
         )
-    }
-
-    @Test
-    fun `material docked bottom bar selected icon and text use theme primary`() {
-        val themePrimary = Color(0xFF9C27B0)
-        val onSurfaceVariant = Color(0xFF5F6368)
-        val secondaryContainer = Color(0xFFEADDFF)
-
-        val colors = resolveMaterialDockedBottomBarItemColors(
-            themePrimary = themePrimary,
-            onSurfaceVariant = onSurfaceVariant,
-            secondaryContainer = secondaryContainer
-        )
-
-        assertEquals(themePrimary, colors.selectedIconColor)
-        assertEquals(themePrimary, colors.selectedTextColor)
-        assertEquals(onSurfaceVariant, colors.unselectedIconColor)
-        assertEquals(onSurfaceVariant, colors.unselectedTextColor)
-        assertEquals(secondaryContainer, colors.indicatorColor)
     }
 
     @Test
