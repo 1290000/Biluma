@@ -378,7 +378,6 @@ class BottomBarMiuixStructureTest {
         assertTrue(source.contains("BiliPaiFloatingBottomBar("))
         assertTrue(source.contains("iconStyle = sharedBarIconStyle"))
         assertTrue(source.contains("private enum class SharedFloatingBottomBarIconStyle"))
-        assertTrue(source.contains("fun Md3BottomBarDisplayMode.toAppPlatformNavigationDisplayMode()"))
         assertFalse(source.contains("import top.yukonga.miuix.kmp.basic.NavigationBar as MiuixNavigationBar"))
         assertFalse(source.contains("import top.yukonga.miuix.kmp.basic.NavigationBarItem as MiuixNavigationBarItem"))
     }

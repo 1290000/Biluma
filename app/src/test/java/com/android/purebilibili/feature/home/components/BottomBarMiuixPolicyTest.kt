@@ -1,7 +1,6 @@
 package com.android.purebilibili.feature.home.components
 
 import androidx.compose.ui.graphics.Color
-import com.android.purebilibili.core.ui.components.AppPlatformNavigationBarDisplayMode
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -70,42 +69,6 @@ class BottomBarMiuixPolicyTest {
         assertEquals(12f, spec.itemSpacingDp)
         assertEquals(1f, spec.shadowElevationDp)
         assertFalse(spec.showDivider)
-    }
-
-    @Test
-    fun `material label mode maps to matching miuix display mode`() {
-        assertEquals(
-            Md3BottomBarDisplayMode.IconAndText,
-            resolveMd3BottomBarDisplayMode(labelMode = 0)
-        )
-        assertEquals(
-            Md3BottomBarDisplayMode.IconOnly,
-            resolveMd3BottomBarDisplayMode(labelMode = 1)
-        )
-        assertEquals(
-            Md3BottomBarDisplayMode.TextOnly,
-            resolveMd3BottomBarDisplayMode(labelMode = 2)
-        )
-        assertEquals(
-            Md3BottomBarDisplayMode.IconAndText,
-            resolveMd3BottomBarDisplayMode(labelMode = 99)
-        )
-    }
-
-    @Test
-    fun `platform navigation display mode maps text-only onto icon-with-selected-label`() {
-        assertEquals(
-            AppPlatformNavigationBarDisplayMode.ICON_AND_TEXT,
-            Md3BottomBarDisplayMode.IconAndText.toAppPlatformNavigationDisplayMode()
-        )
-        assertEquals(
-            AppPlatformNavigationBarDisplayMode.ICON_ONLY,
-            Md3BottomBarDisplayMode.IconOnly.toAppPlatformNavigationDisplayMode()
-        )
-        assertEquals(
-            AppPlatformNavigationBarDisplayMode.ICON_WITH_SELECTED_LABEL,
-            Md3BottomBarDisplayMode.TextOnly.toAppPlatformNavigationDisplayMode()
-        )
     }
 
     @Test

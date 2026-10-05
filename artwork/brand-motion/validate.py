@@ -20,7 +20,7 @@ def check_keyframes(value, end):
 
 pose_bitmaps = set()
 ROOT = Path(__file__).resolve().parents[2]
-for name,frames in [('welcome',60),('clean_complete',72),('cleaning',96),('retry',90),('empty',108),('search_empty',120),('favorite_saved',72),('follow_success',72),('unfollow_complete',60),('dislike_confirmed',60),('share_ready',72),('coin_success',72),('download_complete',72),('triple_success',108)]:
+for name,frames in [('clean_complete',72),('cleaning',96),('retry',90),('empty',108),('search_empty',120),('favorite_saved',72),('follow_success',72),('unfollow_complete',60),('dislike_confirmed',60),('share_ready',72),('coin_success',72),('download_complete',72),('triple_success',108)]:
     path=ROOT/'app/src/main/res/raw'/f'bilipai_maid_{name}.json'
     data=json.loads(path.read_text())
     assert data['op']==frames and data['fr']==60
@@ -31,7 +31,7 @@ for name,frames in [('welcome',60),('clean_complete',72),('cleaning',96),('retry
     if name not in ('empty','triple_success','unfollow_complete'):
         assert any('eye' in layer_name.lower() for layer_name in names)
         assert any('closed eyelash' in layer_name for layer_name in names)
-    required={'welcome':'Greeting hand','clean_complete':'Held broom sweep','cleaning':'Held broom working sweep',
+    required={'clean_complete':'Held broom sweep','cleaning':'Held broom working sweep',
               'retry':'Disconnected connectors','empty':'Held empty collection box','search_empty':'Held looking glass','favorite_saved':'Held favorite star',
               'dislike_confirmed':'Crossed arms restrained head shake','share_ready':'Open palm invitation','coin_success':'Held white coin and pinching fingers',
               'follow_success':'Grateful chest hand','unfollow_complete':'Quiet joined hands','download_complete':'Thumbs up hand','triple_success':'Double fist happy hop'}
@@ -51,12 +51,12 @@ for name,frames in [('welcome',60),('clean_complete',72),('cleaning',96),('retry
     if name=='triple_success':
         assert {'Like success badge','Coin success badge','Favorite success badge'} <= names
         assert len([n for n in names if n.startswith('Celebration fist')])==2
-    if name!='welcome': assert 'Greeting hand' not in names
+    assert 'Greeting hand' not in names
     bitmaps=0
     for asset in assets.values():
         if 'p' in asset:
             assert asset['u']=='' and asset['e']==0 and asset['id']=='maid_bitmap'
-            fallback_name = {'welcome':'bilipai_maid_static', 'clean_complete':'bilipai_maid_clean_static','cleaning':'bilipai_maid_cleaning_static',
+            fallback_name = {'clean_complete':'bilipai_maid_clean_static','cleaning':'bilipai_maid_cleaning_static',
                              'retry':'bilipai_maid_retry_static', 'empty':'bilipai_maid_empty_static',
                              'search_empty':'bilipai_maid_search_empty_static',
                              'favorite_saved':'bilipai_maid_favorite_static','download_complete':'bilipai_maid_download_static',
@@ -84,7 +84,7 @@ for name,frames in [('welcome',60),('clean_complete',72),('cleaning',96),('retry
                 assert len(shape['v'])==len(shape['i'])==len(shape['o']) and shape['c']
                 assert mask['mode'] in ('a','s')
     print(f'{name}: {frames/60:g}s, {len(data["layers"])} layers, local PNG and references valid')
-for name in ['bilipai_maid_static','bilipai_maid_clean_static','bilipai_maid_retry_static','bilipai_maid_empty_static','bilipai_maid_search_empty_static','bilipai_maid_favorite_static','bilipai_maid_download_static','bilipai_maid_triple_static']:
+for name in ['bilipai_maid_clean_static','bilipai_maid_retry_static','bilipai_maid_empty_static','bilipai_maid_search_empty_static','bilipai_maid_favorite_static','bilipai_maid_download_static','bilipai_maid_triple_static']:
     assert (ROOT/'app/src/main/res/drawable-nodpi'/f'{name}.png').exists()
 preview=(Path(__file__).parent/'preview.html').read_text()
 assert '__ANIMATIONS__' not in preview

@@ -68,6 +68,4 @@ class VideoPlayerOverlayVisualPolicyTest {
         assertEquals(16, policy.qualitySwitchCornerRadiusDp)
         assertEquals(28, policy.interactionIconSizeDp)
     }
-
-
 }

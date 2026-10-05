@@ -7,7 +7,6 @@ import com.android.purebilibili.core.ui.rememberResolvedAppIconStyle
 import com.android.purebilibili.core.ui.AppChromeSizeTokens
 import com.android.purebilibili.core.ui.AppBottomNavigationHost
 import com.android.purebilibili.core.ui.AppSpacingTokens
-import com.android.purebilibili.core.ui.components.AppPlatformNavigationBarDisplayMode
 
 import com.android.purebilibili.core.ui.OpticalContrastPalette
 
@@ -323,12 +322,6 @@ internal data class BottomBarLayoutPolicy(
     val maxBarWidth: Dp
 )
 
-internal enum class Md3BottomBarDisplayMode {
-    IconAndText,
-    IconOnly,
-    TextOnly
-}
-
 internal data class Md3BottomBarFloatingChromeSpec(
     val cornerRadiusDp: Float,
     val horizontalOutsidePaddingDp: Float,
@@ -369,14 +362,6 @@ internal fun resolveMd3BottomBarFloatingChromeSpec(
             shadowElevationDp = 0f,
             showDivider = true
         )
-    }
-}
-
-internal fun resolveMd3BottomBarDisplayMode(labelMode: Int): Md3BottomBarDisplayMode {
-    return when (normalizeBottomBarLabelMode(labelMode)) {
-        1 -> Md3BottomBarDisplayMode.IconOnly
-        2 -> Md3BottomBarDisplayMode.TextOnly
-        else -> Md3BottomBarDisplayMode.IconAndText
     }
 }
 
@@ -1389,15 +1374,6 @@ internal fun resolveAndroidNativePanelOffsetFraction(
     return (velocity / 2200f).coerceIn(-0.18f, 0.18f)
 }
 
-internal fun Md3BottomBarDisplayMode.toAppPlatformNavigationDisplayMode(): AppPlatformNavigationBarDisplayMode {
-    return when (this) {
-        Md3BottomBarDisplayMode.IconAndText -> AppPlatformNavigationBarDisplayMode.ICON_AND_TEXT
-        Md3BottomBarDisplayMode.IconOnly -> AppPlatformNavigationBarDisplayMode.ICON_ONLY
-        Md3BottomBarDisplayMode.TextOnly -> AppPlatformNavigationBarDisplayMode.ICON_WITH_SELECTED_LABEL
-    }
-}
-
-/** Official [MiuixNavigationBarItem] cannot host skin bitmaps or label scrims. */
 internal fun resolveBottomBarFloatingHeightDp(
     labelMode: Int,
     isTablet: Boolean
@@ -2793,7 +2769,6 @@ private fun MiuixBottomBar(
             searchLayoutMode = homeSettings.bottomBarSearchLayoutMode
         )
     }
-    val displayMode = resolveMd3BottomBarDisplayMode(labelMode).toAppPlatformNavigationDisplayMode()
     val glassEnabled = resolveAndroidNativeBottomBarGlassEnabled(
         liquidGlassEnabled = sharedLiquidGlassEnabled,
         blurEnabled = blurEnabled

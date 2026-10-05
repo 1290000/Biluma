@@ -486,8 +486,6 @@ fun BottomControlBar(
     progressPlacement: PlayerProgressPlacement = PlayerProgressPlacement.ABOVE_CONTROLS,
     onPipClick: () -> Unit = {},
     onFloatingPanelVisibilityChange: (Boolean) -> Unit = {},
-    /** 紧凑布局：控制行更贴左右边缘，并更靠近进度条。 */
-
     modifier: Modifier = Modifier,
     seekPositionProvider: (() -> Long)? = null
 ) {
