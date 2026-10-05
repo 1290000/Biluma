@@ -9,9 +9,8 @@ internal enum class VideoDetailLocalBackTarget {
 internal fun resolveVideoDetailLocalBackTarget(
     isLandscapeFullscreen: Boolean,
     isPortraitFullscreen: Boolean,
-    directPortraitEntry: Boolean = false,
 ): VideoDetailLocalBackTarget = when {
-    isPortraitFullscreen && !directPortraitEntry -> VideoDetailLocalBackTarget.EXIT_PORTRAIT_FULLSCREEN
+    isPortraitFullscreen -> VideoDetailLocalBackTarget.EXIT_PORTRAIT_FULLSCREEN
     isLandscapeFullscreen -> VideoDetailLocalBackTarget.EXIT_LANDSCAPE_FULLSCREEN
     else -> VideoDetailLocalBackTarget.NAVIGATE_BACK
 }

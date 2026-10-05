@@ -20,7 +20,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -123,9 +122,6 @@ internal fun VideoDetailPortraitOverlayAdapter(
             targetOffsetY = { -(it * motionSpec.exitTranslateUpFraction).roundToInt() },
         )
     }
-    val portraitOnlyVerticalRecommendations by com.android.purebilibili.core.store.SettingsManager
-        .getPortraitOnlyVerticalRecommendations(context)
-        .collectAsStateWithLifecycle(initialValue = false)
     AnimatedVisibility(
         visible = showPortraitFullscreen && success != null,
         enter = if (shouldAnimatePortraitPager) {
@@ -161,7 +157,6 @@ internal fun VideoDetailPortraitOverlayAdapter(
                 initialBvid = initialBvidOverride ?: info.bvid,
                 initialInfo = info,
                 recommendations = portraitRecommendations,
-                onlyVerticalRecommendations = portraitOnlyVerticalRecommendations,
                 onBack = onBack,
                 onHomeClick = onHomeClick,
                 onVideoChange = onVideoChange,

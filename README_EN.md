@@ -4,7 +4,7 @@ An independently maintained third-party Bilibili Android client based on [BiliPa
 
 [简体中文](README.md) · [Repository](https://github.com/1290000/Biluma) · [Issues](https://github.com/1290000/Biluma/issues) · [Releases](https://github.com/1290000/Biluma/releases)
 
-> **This project is in early development and has no independent Biluma release yet.** The feature-reduction list has not been decided, so this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
+> **This project is in early development and has no independent Biluma release yet.** The complete feature-reduction list has not been decided, so this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
 
 ## Project identity
 
@@ -28,12 +28,24 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
-| Feature and settings reduction | Not started; decisions to retain, fix behavior, remove, or redesign features are pending |
+| Feature and settings reduction | Five video-related settings removed with fixed behavior; remaining retention, removal, and redesign decisions are pending |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
 
 Changes have only received static checks and an update API connectivity check. Regression test code has been added, but tests, compilation, installation, and on-device verification have not been performed. Configuration and command examples do not establish that a build succeeds.
+
+## Fixed video behavior
+
+The following changes apply only to the main `:app` module. Their settings switches and dedicated preference accessors have been removed:
+
+- The AI summary entry is always visible; summaries still open on user interaction, not automatically.
+- Video notes start closed for each video and open in a sheet when tapped. The Show video notes setting, viewing, editing, and pagination remain available.
+- Ordinary portrait video entries open the detail page, without automatically entering the swipe feed. Manual entry into portrait browsing remains available.
+- Portrait browsing accepts both landscape and portrait recommendations, without extra direction lookups for portrait-only filtering.
+- Ordinary startup does not open the portrait feed. The user-agreement gate and external-link navigation remain intact.
+
+Retired preference values no longer control these behaviors. Old settings backups skip the corresponding keys, and new settings exports omit them. This change has received static checks only; regression tests are updated but Gradle tests, compilation, packaging, and on-device verification have not been run.
 
 ## Downloads and feedback
 

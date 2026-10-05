@@ -53,9 +53,6 @@ fun StoryScreen(
 
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val onlyVerticalRecommendations by com.android.purebilibili.core.store.SettingsManager
-        .getPortraitOnlyVerticalRecommendations(context)
-        .collectAsStateWithLifecycle(initialValue = false)
     LaunchedEffect(context) {
         engagementViewModel.initWithContext(context)
     }
@@ -123,7 +120,6 @@ fun StoryScreen(
                     initialBvid = portraitFeed.initialInfo.bvid,
                     initialInfo = portraitFeed.initialInfo,
                     recommendations = portraitFeed.recommendations,
-                    onlyVerticalRecommendations = onlyVerticalRecommendations,
                     isActive = isActive,
                     onBack = onBack,
                     onHomeClick = onBack,

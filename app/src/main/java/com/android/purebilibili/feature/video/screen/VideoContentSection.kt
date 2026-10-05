@@ -719,7 +719,7 @@ internal fun VideoContentSection(
     // 合集展开状态
     var showCollectionSheet by remember { mutableStateOf(false) }
     var showAiSummarySheet by remember { mutableStateOf(false) }
-    var showNoteListSheet by remember { mutableStateOf(false) }
+    var showNoteListSheet by remember(info.bvid) { mutableStateOf(false) }
     var confirmDeleteNote by remember { mutableStateOf(false) }
     val onShareVideoNote: (VideoNoteEditorDocument, Boolean) -> Unit = { document, isDraft ->
         ShareUtils.shareText(
@@ -1963,10 +1963,6 @@ private fun VideoHeaderContent(
     animateVideoDetailLayout: Boolean = true
 ) {
     val context = LocalContext.current
-    val videoAiSummaryEntryEnabled by com.android.purebilibili.core.store.SettingsManager
-        .getVideoAiSummaryEntryEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = true
-        )
     val videoNoteEnabled by com.android.purebilibili.core.store.SettingsManager
         .getVideoNoteEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true
@@ -2006,7 +2002,6 @@ private fun VideoHeaderContent(
             trailingStatsContent = {
                 // PiliPlus 式：信息行右端的 AI 总结 / 视频笔记小图标，内容在底部抽屉展示
                 VideoSupplementStatsActions(
-                    showAiSummary = videoAiSummaryEntryEnabled,
                     showNote = videoNoteEnabled,
                     onAiSummaryClick = onShowAiSummarySheet,
                     onNoteClick = onShowNoteListSheet,

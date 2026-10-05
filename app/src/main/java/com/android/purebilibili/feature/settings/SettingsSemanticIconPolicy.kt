@@ -106,7 +106,6 @@ internal enum class SettingsIconRole {
     QUALITY_WARNING,
     SUBTITLE,
     COMMENT_DECORATION,
-    AI_SUMMARY,
     VIDEO_NOTE,
     LIKE_INTERACTION,
     FAVORITE_TAP_MODE,
@@ -130,10 +129,8 @@ internal enum class SettingsIconRole {
     DIRECTED_TRAFFIC,
     AUTO_HIGHEST_QUALITY,
     AUTO_PLAY_ON_OPEN,
-    STARTUP_PORTRAIT_FEED,
     HOME_HERO_AUTOPLAY,
     AUTO_PLAY_NEXT,
-    VIDEO_NOTE_COLLAPSE,
     INTERACTIVE_COMMANDS,
     PORTRAIT_SWIPE_FULLSCREEN,
     CENTER_SWIPE_FULLSCREEN,
@@ -142,7 +139,6 @@ internal enum class SettingsIconRole {
     HOME_CARD_STATS_COMPACT,
     HOME_HERO_CAROUSEL,
     HOME_ONLINE_COUNT,
-    PORTRAIT_STORY_ENTRY,
     DISPLAY_SCALE,
     UI_ENTRANCE_ANIMATION,
     FULLSCREEN_SWIPE_BACK,
@@ -305,7 +301,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.QUALITY_WARNING -> R.drawable.ms_report_problem_24
     SettingsIconRole.SUBTITLE -> R.drawable.ms_subtitles_24
     SettingsIconRole.COMMENT_DECORATION -> R.drawable.ms_mode_comment_24
-    SettingsIconRole.AI_SUMMARY -> R.drawable.ms_smart_toy_24
     SettingsIconRole.VIDEO_NOTE -> R.drawable.ms_edit_note_24
     SettingsIconRole.LIKE_INTERACTION -> R.drawable.ms_thumb_up_off_alt_24
     SettingsIconRole.FAVORITE_TAP_MODE -> R.drawable.ms_collections_bookmark_24
@@ -329,10 +324,8 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.DIRECTED_TRAFFIC -> R.drawable.ms_network_locked_24
     SettingsIconRole.AUTO_HIGHEST_QUALITY -> R.drawable.ms_settings_suggest_24
     SettingsIconRole.AUTO_PLAY_ON_OPEN -> R.drawable.ms_play_arrow_24
-    SettingsIconRole.STARTUP_PORTRAIT_FEED -> R.drawable.ms_vertical_align_top_24
     SettingsIconRole.HOME_HERO_AUTOPLAY -> R.drawable.ms_smart_display_24
     SettingsIconRole.AUTO_PLAY_NEXT -> R.drawable.ms_playlist_play_24
-    SettingsIconRole.VIDEO_NOTE_COLLAPSE -> R.drawable.ms_short_text_24
     SettingsIconRole.INTERACTIVE_COMMANDS -> R.drawable.ms_comments_disabled_24
     SettingsIconRole.PORTRAIT_SWIPE_FULLSCREEN -> R.drawable.ms_swipe_up_24
     SettingsIconRole.CENTER_SWIPE_FULLSCREEN -> R.drawable.ms_swipe_24
@@ -341,7 +334,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.HOME_CARD_STATS_COMPACT -> R.drawable.ms_stacked_bar_chart_24
     SettingsIconRole.HOME_HERO_CAROUSEL -> R.drawable.ms_view_day_24
     SettingsIconRole.HOME_ONLINE_COUNT -> R.drawable.ms_groups_24
-    SettingsIconRole.PORTRAIT_STORY_ENTRY -> R.drawable.ms_stay_current_portrait_24
     SettingsIconRole.DISPLAY_SCALE -> R.drawable.ms_zoom_out_map_24
     SettingsIconRole.UI_ENTRANCE_ANIMATION -> R.drawable.ms_motion_photos_on_24
     SettingsIconRole.FULLSCREEN_SWIPE_BACK -> R.drawable.ms_swipe_right_24
@@ -575,7 +567,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.QUALITY_WARNING -> MiuixIcons.Report
     SettingsIconRole.SUBTITLE -> MiuixIcons.Notes
     SettingsIconRole.COMMENT_DECORATION -> MiuixIcons.Community
-    SettingsIconRole.AI_SUMMARY -> MiuixIcons.MindMap
     SettingsIconRole.VIDEO_NOTE -> MiuixIcons.NotesFill
     SettingsIconRole.LIKE_INTERACTION -> MiuixIcons.FavoritesFill
     SettingsIconRole.FAVORITE_TAP_MODE -> MiuixIcons.FavoritesFill
@@ -599,10 +590,8 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.DIRECTED_TRAFFIC -> MiuixIcons.SearchDevice
     SettingsIconRole.AUTO_HIGHEST_QUALITY -> MiuixIcons.TopDownloads
     SettingsIconRole.AUTO_PLAY_ON_OPEN -> MiuixIcons.Play
-    SettingsIconRole.STARTUP_PORTRAIT_FEED -> MiuixIcons.GridView
     SettingsIconRole.HOME_HERO_AUTOPLAY -> MiuixIcons.Recording
     SettingsIconRole.AUTO_PLAY_NEXT -> MiuixIcons.Playlist
-    SettingsIconRole.VIDEO_NOTE_COLLAPSE -> MiuixIcons.MoreCircle
     SettingsIconRole.INTERACTIVE_COMMANDS -> MiuixIcons.MicSlash
     SettingsIconRole.PORTRAIT_SWIPE_FULLSCREEN -> MiuixIcons.ExpandMore
     SettingsIconRole.CENTER_SWIPE_FULLSCREEN -> MiuixIcons.ScreenCapture
@@ -611,7 +600,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.HOME_CARD_STATS_COMPACT -> MiuixIcons.Sort
     SettingsIconRole.HOME_HERO_CAROUSEL -> MiuixIcons.Album
     SettingsIconRole.HOME_ONLINE_COUNT -> MiuixIcons.ContactsBook
-    SettingsIconRole.PORTRAIT_STORY_ENTRY -> MiuixIcons.Phone
     SettingsIconRole.DISPLAY_SCALE -> MiuixIcons.ZoomOut
     SettingsIconRole.UI_ENTRANCE_ANIMATION -> MiuixIcons.Forward
     SettingsIconRole.FULLSCREEN_SWIPE_BACK -> MiuixIcons.ChevronBackward

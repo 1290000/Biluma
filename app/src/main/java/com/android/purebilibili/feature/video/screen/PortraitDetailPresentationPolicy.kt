@@ -27,10 +27,7 @@ internal fun shouldUseOfficialInlinePortraitDetailExperience(
     useTabletLayout: Boolean,
     isVerticalVideo: Boolean,
     portraitExperienceEnabled: Boolean,
-    directPortraitEntry: Boolean = false
 ): Boolean {
-    // 「竖屏直达」走 card→全屏 morph，不能先落官方内联详情再二次跳进 pager。
-    if (directPortraitEntry) return false
     return portraitExperienceEnabled && !useTabletLayout && isVerticalVideo
 }
 
@@ -90,24 +87,10 @@ internal fun shouldEnableInlinePortraitScrollTransform(
  */
 internal fun shouldAnimateStandalonePortraitPager(
     useSharedPlayer: Boolean,
-    directPortraitEntry: Boolean = false
 ): Boolean {
     @Suppress("UNUSED_PARAMETER")
     val ignored = useSharedPlayer
-    @Suppress("UNUSED_PARAMETER")
-    val ignoredDirectEntry = directPortraitEntry
     return false
-}
-
-/**
- * When true, keep the phone detail body fully suppressed from the first frame of a
- * direct-portrait morph so only the full-bleed shell + entry cover are visible.
- */
-internal fun shouldSuppressPhoneDetailBodyForDirectPortraitEntry(
-    directPortraitEntry: Boolean,
-    isPortraitFullscreen: Boolean
-): Boolean {
-    return directPortraitEntry && isPortraitFullscreen
 }
 
 /**

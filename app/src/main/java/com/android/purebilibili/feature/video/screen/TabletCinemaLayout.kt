@@ -167,9 +167,7 @@ internal fun TabletCinemaLayout(
     downloadProgress: Float,
     tabletCommentPanelWidthPreset: TabletCommentPanelWidthPreset,
     commentMemberDecorationsEnabled: Boolean,
-    videoAiSummaryEntryEnabled: Boolean,
     videoNoteEnabled: Boolean,
-    videoNoteDefaultCollapsed: Boolean,
     playbackActions: VideoDetailPlaybackActions,
     engagementActions: VideoDetailEngagementActions,
     commentActions: VideoDetailCommentActions,
@@ -348,9 +346,7 @@ internal fun TabletCinemaLayout(
                         success = success.withEngagementUiState(engagementState),
                         engagement = engagementState,
                         downloadProgress = downloadProgress,
-                        videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                         videoNoteEnabled = videoNoteEnabled,
-                        videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                         modifier = Modifier.weight(1f),
                         danmakuEnabled = danmakuChrome.enabled,
                         onDanmakuSendClick = playbackActions.showDanmakuSendDialog,
@@ -633,9 +629,7 @@ private fun CinemaMetaPanel(
     success: VideoPlaybackUiState.Success,
     engagement: VideoEngagementUiState,
     downloadProgress: Float,
-    videoAiSummaryEntryEnabled: Boolean,
     videoNoteEnabled: Boolean,
-    videoNoteDefaultCollapsed: Boolean,
     modifier: Modifier = Modifier,
     danmakuEnabled: Boolean,
     onDanmakuSendClick: () -> Unit,
@@ -839,9 +833,7 @@ private fun CinemaMetaPanel(
                     CinemaMetaPanelBlock.INTRO -> {
                         CinemaVideoIntroSection(
                             success = success,
-                            videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                             videoNoteEnabled = videoNoteEnabled,
-                            videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                             onOpenBilibiliLink = onOpenBilibiliLink,
                             onBgmClick = onBgmClick,
                             onRelatedVideoClick = onRelatedVideoClick,
@@ -977,9 +969,7 @@ private fun CinemaMetaUpInfo(
 @Composable
 private fun CinemaVideoIntroSection(
     success: VideoPlaybackUiState.Success,
-    videoAiSummaryEntryEnabled: Boolean,
     videoNoteEnabled: Boolean,
-    videoNoteDefaultCollapsed: Boolean,
     onBgmClick: (BgmInfo) -> Unit = {},
     onOpenBilibiliLink: ((String) -> Unit)? = null,
     onRelatedVideoClick: (String, android.os.Bundle?) -> Unit = { _, _ -> },
@@ -995,7 +985,7 @@ private fun CinemaVideoIntroSection(
 ) {
     val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     var showAiSummarySheet by remember { mutableStateOf(false) }
-    var showNoteListSheet by remember { mutableStateOf(false) }
+    var showNoteListSheet by remember(info.bvid) { mutableStateOf(false) }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -1016,7 +1006,6 @@ private fun CinemaVideoIntroSection(
                 sponsorLabel = success.sponsorVideoLabel,
                 trailingStatsContent = {
                     VideoSupplementStatsActions(
-                        showAiSummary = videoAiSummaryEntryEnabled,
                         showNote = videoNoteEnabled,
                         onAiSummaryClick = { showAiSummarySheet = true },
                         onNoteClick = { showNoteListSheet = true },

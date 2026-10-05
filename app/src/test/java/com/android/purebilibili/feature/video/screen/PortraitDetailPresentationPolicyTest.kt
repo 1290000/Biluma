@@ -25,18 +25,6 @@ class PortraitDetailPresentationPolicyTest {
     }
 
     @Test
-    fun officialInlinePortraitMode_disabledForDirectPortraitEntry() {
-        assertFalse(
-            shouldUseOfficialInlinePortraitDetailExperience(
-                useTabletLayout = false,
-                isVerticalVideo = true,
-                portraitExperienceEnabled = true,
-                directPortraitEntry = true
-            )
-        )
-    }
-
-    @Test
     fun officialInlinePortraitMode_disabledForTabletLayout() {
         assertFalse(
             shouldUseOfficialInlinePortraitDetailExperience(
@@ -49,34 +37,8 @@ class PortraitDetailPresentationPolicyTest {
 
     @Test
     fun standalonePortraitPager_alwaysEntersDirectlyWithoutCenteredCrossfade() {
-        assertFalse(
-            shouldAnimateStandalonePortraitPager(
-                useSharedPlayer = true,
-                directPortraitEntry = true
-            )
-        )
-        assertFalse(
-            shouldAnimateStandalonePortraitPager(
-                useSharedPlayer = true,
-                directPortraitEntry = false
-            )
-        )
-    }
-
-    @Test
-    fun directPortraitEntry_suppressesPhoneDetailBodyWhileFullscreen() {
-        assertTrue(
-            shouldSuppressPhoneDetailBodyForDirectPortraitEntry(
-                directPortraitEntry = true,
-                isPortraitFullscreen = true
-            )
-        )
-        assertFalse(
-            shouldSuppressPhoneDetailBodyForDirectPortraitEntry(
-                directPortraitEntry = true,
-                isPortraitFullscreen = false
-            )
-        )
+        assertFalse(shouldAnimateStandalonePortraitPager(useSharedPlayer = true))
+        assertFalse(shouldAnimateStandalonePortraitPager(useSharedPlayer = false))
     }
 
     @Test
@@ -118,7 +80,7 @@ class PortraitDetailPresentationPolicyTest {
         ).readText()
 
         assertTrue(source.contains("shouldSuppressPhoneDetailBodyUnderStandalonePortraitPager"))
-        assertTrue(source.contains("if (!suppressPhoneDetailBodyForDirectPortrait && !isPortraitFullscreen)"))
+        assertTrue(source.contains("if (!suppressPhoneDetailBodyUnderPortraitPager && !isPortraitFullscreen)"))
         assertTrue(source.contains("shouldCommitPortraitProgressToDetailState("))
     }
 

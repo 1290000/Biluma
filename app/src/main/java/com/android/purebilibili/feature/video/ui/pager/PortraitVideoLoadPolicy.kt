@@ -177,7 +177,7 @@ internal fun resolvePortraitPageOwnerMid(item: Any): Long {
 }
 
 /**
- * Story / 竖屏直达 seeds often only carry bvid+cover (no owner). After playurl bootstrap
+ * Story seeds often only carry bvid+cover (no owner). After playurl bootstrap
  * succeeds, merge owner/title/pic from [loaded] so the chrome can render `@UP名`.
  */
 internal fun enrichPortraitPageItemWithLoadedInfo(

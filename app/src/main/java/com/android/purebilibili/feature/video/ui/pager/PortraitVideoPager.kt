@@ -268,7 +268,6 @@ fun PortraitVideoPager(
     initialBvid: String,
     initialInfo: ViewInfo,
     recommendations: List<RelatedVideo>,
-    onlyVerticalRecommendations: Boolean = true,
     isActive: Boolean = true,
     onBack: () -> Unit,
     onHomeClick: () -> Unit = onBack,
@@ -515,7 +514,6 @@ fun PortraitVideoPager(
     }
     var seededInitialRecommendations by remember(
         initialInfo.bvid,
-        onlyVerticalRecommendations,
     ) { mutableStateOf(false) }
     val knownVideoAspectRatios = remember(initialInfo.bvid) {
         mutableStateMapOf<String, Float>().apply {
@@ -535,15 +533,11 @@ fun PortraitVideoPager(
         mutableStateOf(initialInfo.bvid)
     }
 
-    LaunchedEffect(initialInfo.bvid, recommendations, onlyVerticalRecommendations) {
-        val filteredRecommendations = filterPortraitOnlyVerticalRecommendations(
-            recommendations = recommendations,
-            enabled = onlyVerticalRecommendations,
-        )
+    LaunchedEffect(initialInfo.bvid, recommendations) {
         if (!seededInitialRecommendations) {
             val seeded = shufflePortraitRecommendations(
                 seed = recommendationShuffleSeed,
-                recommendations = filteredRecommendations,
+                recommendations = recommendations,
                 precedingOwnerMid = initialInfo.owner.mid
             )
             recommendationItems.clear()
@@ -558,7 +552,7 @@ fun PortraitVideoPager(
         val appendItems = resolvePortraitExternalRecommendationAppendItems(
             currentInitialBvid = initialInfo.bvid,
             existingBvids = existingBvids,
-            externalRecommendations = filteredRecommendations
+            externalRecommendations = recommendations
         )
         if (appendItems.isEmpty()) return@LaunchedEffect
         val shuffledAppend = shufflePortraitRecommendations(
@@ -593,15 +587,12 @@ fun PortraitVideoPager(
             }
     }
 
-    LaunchedEffect(watchLaterVideos, onlyVerticalRecommendations) {
+    LaunchedEffect(watchLaterVideos) {
         if (watchLaterVideos.isEmpty()) return@LaunchedEffect
         val existingBvids = withContext(Dispatchers.Main.immediate) {
             snapshotPortraitPageBvids(pageItems)
         }
-        val appendItems = filterPortraitOnlyVerticalRecommendations(
-            recommendations = watchLaterVideos.filter { it.bvid !in existingBvids },
-            enabled = onlyVerticalRecommendations,
-        )
+        val appendItems = watchLaterVideos.filter { it.bvid !in existingBvids }
         if (appendItems.isNotEmpty()) {
             withContext(Dispatchers.Main.immediate) {
                 pageItems.addAll(
@@ -624,23 +615,19 @@ fun PortraitVideoPager(
     val pagerState = rememberPagerState(initialPage = initialPageIndex) {
         pageItems.size
     }
-    LaunchedEffect(initialInfo.bvid, onlyVerticalRecommendations) {
+    LaunchedEffect(initialInfo.bvid) {
         val discoveryRecommendations = VideoRepository.getHomeVideos(idx = 0)
             .getOrNull()
             .orEmpty()
             .mapNotNull(::toRelatedVideoForPortraitRecommendation)
         if (discoveryRecommendations.isEmpty()) return@LaunchedEffect
 
-        val filteredDiscoveryRecommendations = filterPortraitOnlyVerticalRecommendations(
-            recommendations = discoveryRecommendations,
-            enabled = onlyVerticalRecommendations,
-        )
         val shuffledDiscoveryRecommendations = shufflePortraitRecommendations(
             seed = resolvePortraitRecommendationAppendSeed(
                 baseSeed = recommendationShuffleSeed,
                 currentBvid = initialInfo.bvid
             ),
-            recommendations = filteredDiscoveryRecommendations,
+            recommendations = discoveryRecommendations,
             precedingOwnerMid = initialInfo.owner.mid
         )
         val insertion = withContext(Dispatchers.Main.immediate) {
@@ -1172,24 +1159,17 @@ fun PortraitVideoPager(
                             identity?.bvid == bvid &&
                                 (requestedCid <= 0L || identity.cid == requestedCid || identity.cid <= 0L)
                         }.takeIf { it >= 0 } ?: pagerState.currentPage
-                        // Story / 竖屏直达 seed 常无 owner；用详情回填，避免只显示 `@`
+                        // Story seed 常无 owner；用详情回填，避免只显示 `@`
                         pageItems.getOrNull(currentPageIndex)?.let { existing ->
                             pageItems[currentPageIndex] = enrichPortraitPageItemWithLoadedInfo(
                                 existing = existing,
                                 loaded = info
                             )
                         }
-                        val followUps = if (
-                            onlyVerticalRecommendations &&
-                            info.dimension?.isVertical != true
-                        ) {
-                            emptyList()
-                        } else {
-                            resolvePortraitCollectionFollowUps(
-                                info = info,
-                                currentCid = resolvedCid,
-                            )
-                        }
+                        val followUps = resolvePortraitCollectionFollowUps(
+                            info = info,
+                            currentCid = resolvedCid,
+                        )
                         val injectItems = resolvePortraitCollectionInjectionPlan(
                             pageItems = pageItems.toList(),
                             currentPage = currentPageIndex,
@@ -1389,9 +1369,6 @@ fun PortraitVideoPager(
                         committedPage = committedPage,
                         totalItemsCount = pageItems.size,
                         isLoadingMoreRecommendations = isLoadingMoreRecommendations,
-                        prefetchThreshold = resolvePortraitRecommendationPrefetchThreshold(
-                            onlyVerticalRecommendations = onlyVerticalRecommendations,
-                        ),
                     ) &&
                     bvid !in appendedRecommendationSeeds
                 ) {
@@ -1406,48 +1383,24 @@ fun PortraitVideoPager(
                                     recommendationFeedCursor
                                 )
                             }
-                            val verifiedHomeRecommendations = mutableListOf<RelatedVideo>()
-                            var nextFeedCursor = startingFeedCursor
-                            var fetchAttempts = 0
-                            val fetchAttemptLimit = resolvePortraitRecommendationFetchAttemptLimit(
-                                onlyVerticalRecommendations = onlyVerticalRecommendations,
-                            )
-                            while (
-                                fetchAttempts < fetchAttemptLimit &&
-                                verifiedHomeRecommendations.size < 8
-                            ) {
-                                val homeFeedPage = VideoRepository.getHomeVideos(idx = nextFeedCursor)
-                                    .getOrNull()
-                                    .orEmpty()
-                                    .mapNotNull(::toRelatedVideoForPortraitRecommendation)
-                                nextFeedCursor += 1
-                                fetchAttempts += 1
-                                verifiedHomeRecommendations +=
-                                    filterPortraitOnlyVerticalRecommendations(
-                                        recommendations = homeFeedPage,
-                                        enabled = onlyVerticalRecommendations,
-                                    )
-                            }
+                            val homeRecommendations = VideoRepository.getHomeVideos(idx = startingFeedCursor)
+                                .getOrNull()
+                                .orEmpty()
+                                .mapNotNull(::toRelatedVideoForPortraitRecommendation)
                             withContext(Dispatchers.Main.immediate) {
-                                recommendationFeedCursor = nextFeedCursor
+                                recommendationFeedCursor = startingFeedCursor + 1
                             }
-                            val relatedFallbackRecommendations = if (verifiedHomeRecommendations.size < 8) {
+                            val relatedFallbackRecommendations = if (homeRecommendations.size < 8) {
                                 VideoRepository.getRelatedVideos(bvid)
                             } else {
                                 emptyList()
                             }
-                            val verticalFetchedRecommendations =
-                                filterPortraitOnlyVerticalRecommendations(
-                                    recommendations =
-                                        verifiedHomeRecommendations + relatedFallbackRecommendations,
-                                    enabled = onlyVerticalRecommendations,
-                                )
                             val shuffledFetchedRecommendations = shufflePortraitRecommendations(
                                 seed = resolvePortraitRecommendationAppendSeed(
                                     baseSeed = recommendationShuffleSeed,
                                     currentBvid = bvid
                                 ),
-                                recommendations = verticalFetchedRecommendations,
+                                recommendations = homeRecommendations + relatedFallbackRecommendations,
                                 precedingOwnerMid = withContext(Dispatchers.Main.immediate) {
                                     pageItems.lastOrNull()?.let(::resolvePortraitPageOwnerMid) ?: 0L
                                 }

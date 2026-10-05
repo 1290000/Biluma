@@ -105,9 +105,7 @@ internal fun LargeScreenVideoLayout(
     predictiveBackCancelRecoveryGeneration: Int = 0,
     liveSurfaceCardTransitionEnabled: Boolean = true,
     paneControlsEnabled: Boolean = true,
-    videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
-    videoNoteDefaultCollapsed: Boolean = true,
     playerContent: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val pageColor = AppSurfaceTokens.chromeBackground()
@@ -194,9 +192,7 @@ internal fun LargeScreenVideoLayout(
                     onOwnerUploadsClick = {
                         success.info.owner.mid.takeIf { it > 0L }?.let(onUpClick)
                     },
-                    videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                     videoNoteEnabled = videoNoteEnabled,
-                    videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                     modifier = modifier,
                     showRelatedVideos = showRelatedInIntro,
                 )

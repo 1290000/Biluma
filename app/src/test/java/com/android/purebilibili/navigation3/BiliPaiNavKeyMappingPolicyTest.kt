@@ -8,6 +8,19 @@ import kotlin.test.assertNotEquals
 
 class BiliPaiNavKeyMappingPolicyTest {
     @Test
+    fun legacyDirectPortraitFlagIsIgnoredWithoutDroppingVideoOrCommentTargets() {
+        val route = "video/BV_LEGACY?cid=42&initialVertical=true&commentRootRpid=11&commentTargetRpid=22"
+        val standard = legacyRouteToBiliPaiNavKey(route)
+        val legacy = legacyRouteToBiliPaiNavKey("$route&directPortraitEntry=true")
+        assertEquals(standard, legacy)
+        val video = assertIs<BiliPaiNavKey.VideoDetail>(legacy)
+        assertEquals("BV_LEGACY", video.bvid)
+        assertEquals(42L, video.cid)
+        assertEquals(11L, video.commentRootRpid)
+        assertEquals(22L, video.commentTargetRpid)
+    }
+
+    @Test
     fun weeklySeriesKeysPreservePeriodAcrossRouteRestoration() {
         for (key in listOf(BiliPaiNavKey.WeeklySeries(), BiliPaiNavKey.WeeklySeries(133))) {
             assertEquals(key, legacyRouteToBiliPaiNavKey(key.toLegacyRoute()))

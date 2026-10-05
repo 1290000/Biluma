@@ -270,9 +270,7 @@ internal fun TabletVideoLayout(
     predictiveBackCancelRecoveryGeneration: Int = 0,
     liveSurfaceCardTransitionEnabled: Boolean = true,
     paneControlsEnabled: Boolean = true,
-    videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
-    videoNoteDefaultCollapsed: Boolean = true,
     playerContent: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val adaptiveInfo = com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo.current
@@ -503,9 +501,7 @@ internal fun TabletVideoLayout(
                             requestedSecondaryTabName = TabletSecondaryTab.OWNER_UPLOADS.name
                             secondaryPaneModeName = TabletSecondaryPaneMode.EXPANDED.name
                         },
-                        videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                         videoNoteEnabled = videoNoteEnabled,
-                        videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                         showRelatedVideos = false,
                         modifier = Modifier
                             .weight(1f)
@@ -564,9 +560,7 @@ internal fun TabletVideoLayout(
                                     onOwnerUploadsClick = {
                                         requestedSecondaryTabName = TabletSecondaryTab.OWNER_UPLOADS.name
                                     },
-                                    videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                                     videoNoteEnabled = videoNoteEnabled,
-                                    videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
@@ -621,9 +615,7 @@ internal fun TabletVideoInfoPane(
     onDanmakuSendClick: () -> Unit,
     onDanmakuToggle: () -> Unit,
     onOwnerUploadsClick: () -> Unit,
-    videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
-    videoNoteDefaultCollapsed: Boolean = true,
     modifier: Modifier = Modifier,
     showRelatedVideos: Boolean = true,
 ) {
@@ -695,14 +687,12 @@ internal fun TabletVideoInfoPane(
         sponsorVideoLabel = success.sponsorVideoLabel,
         aiSummary = success.aiSummary,
         aiSummaryPrompt = success.aiSummaryPrompt,
-        videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
         onRetryAiSummary = playbackActions.retryAiSummary,
         onCreateNoteDraftFromAiSummary = playbackActions.createVideoNoteDraftFromAiSummary,
         onTimestampClick = { timestamp -> playbackActions.seekTo(timestamp) },
         videoNoteState = success.videoNoteState,
         isLoggedIn = success.isLoggedIn,
         videoNoteEnabled = videoNoteEnabled,
-        videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
         onOpenVideoNoteEditor = playbackActions.openVideoNoteEditor,
         onRetryVideoNote = playbackActions.retryVideoNote,
         onLoadMoreVideoNotes = playbackActions.loadMorePublicVideoNotes,
@@ -1488,14 +1478,12 @@ private fun ScrollableVideoInfoSection(
     sponsorVideoLabel: String = "",
     aiSummary: AiSummaryData? = null,
     aiSummaryPrompt: AiSummaryPromptState? = null,
-    videoAiSummaryEntryEnabled: Boolean = true,
     onRetryAiSummary: () -> Unit = {},
     onCreateNoteDraftFromAiSummary: () -> Unit = {},
     onTimestampClick: (Long) -> Unit = {},
     videoNoteState: VideoNoteUiState = VideoNoteUiState(),
     isLoggedIn: Boolean = false,
     videoNoteEnabled: Boolean = true,
-    videoNoteDefaultCollapsed: Boolean = true,
     onOpenVideoNoteEditor: () -> Unit = {},
     onRetryVideoNote: () -> Unit = {},
     onLoadMoreVideoNotes: () -> Unit = {},
@@ -1549,7 +1537,6 @@ private fun ScrollableVideoInfoSection(
                     sponsorLabel = sponsorVideoLabel,
                     trailingStatsContent = {
                         VideoSupplementStatsActions(
-                            showAiSummary = videoAiSummaryEntryEnabled,
                             showNote = videoNoteEnabled,
                             onAiSummaryClick = { showAiSummarySheet = true },
                             onNoteClick = { showNoteListSheet = true },
