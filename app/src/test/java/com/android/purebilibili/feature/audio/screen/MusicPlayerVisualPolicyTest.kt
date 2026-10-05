@@ -1,10 +1,5 @@
 package com.android.purebilibili.feature.audio.screen
 
-import com.android.purebilibili.feature.audio.lyrics.parseSplLyrics
-import com.android.purebilibili.feature.audio.lyrics.LyricDocument
-import com.android.purebilibili.feature.audio.lyrics.LyricLine
-import com.android.purebilibili.feature.audio.lyrics.resolveActiveLyricIndex
-import com.android.purebilibili.feature.audio.lyrics.resolveLyricFocusScrollOffsetPx
 import com.android.purebilibili.feature.video.player.PlayMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,6 +7,14 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MusicPlayerVisualPolicyTest {
+
+    @Test
+    fun `lyrics restore PR transport sizes without changing cover controls`() {
+        assertEquals(72, resolveMusicLyricsPlayButtonSizeDp(com.android.purebilibili.core.theme.AppUiStyle.MIUIX))
+        assertEquals(80, resolveMusicLyricsPlayButtonSizeDp(com.android.purebilibili.core.theme.AppUiStyle.MATERIAL3))
+        assertEquals(68, resolveMusicPlayerChromeSpec(com.android.purebilibili.core.theme.AppUiStyle.MIUIX, true).playButtonSizeDp)
+        assertEquals(76, resolveMusicPlayerChromeSpec(com.android.purebilibili.core.theme.AppUiStyle.MATERIAL3, false).playButtonSizeDp)
+    }
 
     @Test
     fun `cover flow fades distant covers completely while preserving focus`() {
@@ -85,115 +88,11 @@ class MusicPlayerVisualPolicyTest {
     }
 
     @Test
-    fun `current lyric line follows offset adjusted playback time`() {
-        val document = parseSplLyrics(
-            """
-            [00:01.00]One
-            [00:03.00]Two
-            [00:05.00]Three
-            """.trimIndent()
-        ).withOffset(500L)
-
-        assertEquals(-1, resolveActiveLyricIndex(document, positionMs = 1_000L))
-        assertEquals(0, resolveActiveLyricIndex(document, positionMs = 1_600L))
-        assertEquals(1, resolveActiveLyricIndex(document, positionMs = 3_500L))
-        assertEquals(2, resolveActiveLyricIndex(document, positionMs = 8_000L))
-        assertEquals(-1, resolveActiveLyricIndex(document, positionMs = 15_501L))
-    }
-
-    @Test
-    fun `explicit lyric ending leaves long instrumental gap unfocused`() {
-        val document = parseSplLyrics(
-            """
-            [00:01.00]Short line<00:02.00>
-            [00:10.00]After gap
-            """.trimIndent()
-        )
-
-        assertEquals(0, resolveActiveLyricIndex(document, 1_500L))
-        assertEquals(-1, resolveActiveLyricIndex(document, 5_000L))
-        assertEquals(1, resolveActiveLyricIndex(document, 10_000L))
-    }
-
-    @Test
-    fun `overlapping lyrics prefer latest active line`() {
-        val document = LyricDocument(
-            lines = listOf(
-                LyricLine(1_000L, 8_000L, "Long"),
-                LyricLine(3_000L, 4_000L, "Short")
-            )
-        )
-
-        assertEquals(1, resolveActiveLyricIndex(document, 3_500L))
-        assertEquals(0, resolveActiveLyricIndex(document, 5_000L))
-    }
-
-    @Test
-    fun `lyric focus offset scales with viewport instead of density constants`() {
-        assertEquals(-300, resolveLyricFocusScrollOffsetPx(viewportHeightPx = 1_000))
-        assertEquals(-600, resolveLyricFocusScrollOffsetPx(viewportHeightPx = 2_000))
-        assertEquals(0, resolveLyricFocusScrollOffsetPx(viewportHeightPx = 0))
-    }
-
-    @Test
-    fun `lyric focus keeps current line sharp and progressively blurs distant lines`() {
-        assertEquals(
-            MusicLyricFocusStyle(blurRadiusDp = 0, alphaPercent = 100),
-            resolveMusicLyricFocusStyle(lineIndex = 4, currentIndex = 4, blurEnabled = true)
-        )
-        assertEquals(
-            MusicLyricFocusStyle(blurRadiusDp = 1, alphaPercent = 62),
-            resolveMusicLyricFocusStyle(lineIndex = 5, currentIndex = 4, blurEnabled = true)
-        )
-        assertEquals(
-            MusicLyricFocusStyle(blurRadiusDp = 7, alphaPercent = 20),
-            resolveMusicLyricFocusStyle(lineIndex = 8, currentIndex = 4, blurEnabled = true)
-        )
-    }
-
-    @Test
-    fun `immersive lyric focus uses stronger alpha contrast and lighter blur`() {
-        assertEquals(
-            MusicLyricFocusStyle(blurRadiusDp = 0, alphaPercent = 100),
-            resolveMusicLyricFocusStyle(
-                lineIndex = 4,
-                currentIndex = 4,
-                blurEnabled = true,
-                immersive = true,
-            )
-        )
-        assertEquals(
-            MusicLyricFocusStyle(blurRadiusDp = 0, alphaPercent = 48),
-            resolveMusicLyricFocusStyle(
-                lineIndex = 5,
-                currentIndex = 4,
-                blurEnabled = true,
-                immersive = true,
-            )
-        )
-        assertEquals(
-            MusicLyricFocusStyle(blurRadiusDp = 5, alphaPercent = 14),
-            resolveMusicLyricFocusStyle(
-                lineIndex = 8,
-                currentIndex = 4,
-                blurEnabled = true,
-                immersive = true,
-            )
-        )
-        assertEquals(0.38f, resolveMusicLyricFocusFraction(immersive = true))
-        assertEquals(0.30f, resolveMusicLyricFocusFraction(immersive = false))
-    }
-
-    @Test
     fun `lyric blur falls back to opacity when renderer or motion policy disables it`() {
         assertFalse(resolveMusicLyricsBlurEnabled(sdkInt = 30, effectsEnabled = true, reduceMotion = false))
         assertTrue(resolveMusicLyricsBlurEnabled(sdkInt = 31, effectsEnabled = true, reduceMotion = false))
         assertFalse(resolveMusicLyricsBlurEnabled(sdkInt = 35, effectsEnabled = false, reduceMotion = false))
         assertFalse(resolveMusicLyricsBlurEnabled(sdkInt = 35, effectsEnabled = true, reduceMotion = true))
-        assertEquals(
-            MusicLyricFocusStyle(blurRadiusDp = 0, alphaPercent = 62),
-            resolveMusicLyricFocusStyle(lineIndex = 5, currentIndex = 4, blurEnabled = false)
-        )
     }
 
     @Test

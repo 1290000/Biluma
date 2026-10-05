@@ -30,6 +30,7 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
 | Favorites page | Restored direct folder-content browsing, the top folder dropdown, and checkbox selection from upstream [v0.2.3-alpha.5](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.3-alpha.5), retaining the four-page switch animation cap from [PR #840](https://github.com/jay3-yy/BiliPai/pull/840); tests and compilation have not been run |
 | Feature and settings reduction | All nine initial UI reductions, six playback settings/informational-entry reductions, and six home/navigation setting reductions are implemented in source; this appearance and notification settings batch and the favorites adjustments are also implemented, alongside five fixed video-entry behaviors, without runtime verification |
+| Listen-video lyrics | Fixed to the immersive style, with classic UI and selectors removed; lyrics layout and controls restored against PR #847. Tests and compilation have not been run |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
@@ -96,6 +97,10 @@ The following changes apply only to the main `:app` module. Their settings switc
 - Ordinary startup does not open the portrait feed. The user-agreement gate and external-link navigation remain intact.
 
 Retired preference values no longer control these behaviors. Old settings backups skip the corresponding keys, and new settings exports omit them. This change has received static checks only; regression tests are updated but Gradle tests, compilation, packaging, and on-device verification have not been run.
+
+## Immersive listen-video lyrics
+
+The immersive lyrics layout and controls are restored against commit `a28121fd9913516ab09c557299c7840591325de8` from [upstream PR #847](https://github.com/jay3-yy/BiliPai/pull/847): left-aligned lyrics, cover-flow background, original playback controls, and the cover/lyrics selector, without a progress bar on the lyrics page. Lyrics search, timing correction, translations, and later playback fixes are retained rather than rolling back the entire player. Legacy lyric-style settings are skipped during backup import; the initial cover/lyrics page behavior is unchanged. This restoration has not been compiled or visually verified on a device.
 
 ## Downloads and feedback
 

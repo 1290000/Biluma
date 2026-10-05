@@ -1,50 +1,6 @@
 package com.android.purebilibili.feature.audio.lyrics
 
 /**
- * Last line whose start is at or before [positionMs].
- * Unlike [resolveActiveLyricIndex] this never fails on inter-line gaps.
- */
-internal fun resolveLastStartedLyricIndex(
-    lines: List<LyricLine>,
-    positionMs: Long,
-): Int {
-    if (lines.isEmpty()) return -1
-    if (positionMs < lines.first().startTimeMs) return 0
-    var candidate = 0
-    for (index in lines.indices) {
-        if (lines[index].startTimeMs <= positionMs) {
-            candidate = index
-        } else {
-            break
-        }
-    }
-    return candidate
-}
-
-/**
- * Gap-safe active index with backward hysteresis so 10 Hz samples do not flicker
- * between neighboring rows. Forward seeks apply immediately.
- */
-internal fun resolveStableLyricIndex(
-    lines: List<LyricLine>,
-    positionMs: Long,
-    previousIndex: Int,
-    backwardHysteresisMs: Long = 220L,
-): Int {
-    if (lines.isEmpty()) return -1
-    val raw = resolveLastStartedLyricIndex(lines, positionMs)
-    if (previousIndex < 0 || previousIndex > lines.lastIndex) return raw
-    if (raw >= previousIndex) return raw
-    // Moving backward: keep the previous row until playback is clearly before its start.
-    val previousStart = lines[previousIndex].startTimeMs
-    return if (positionMs + backwardHysteresisMs >= previousStart) {
-        previousIndex
-    } else {
-        raw
-    }
-}
-
-/**
  * Clamp word/line end times so karaoke fill cannot run past the next row.
  * Prevents "still singing" from bleeding into the following lyric.
  */

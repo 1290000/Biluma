@@ -33,3 +33,6 @@ internal fun resolveMusicPlayerChromeSpec(
         coverStyle = coverStyle
     )
 }
+
+internal fun resolveMusicLyricsPlayButtonSizeDp(uiStyle: AppUiStyle): Int =
+    if (uiStyle == AppUiStyle.MIUIX) 72 else 80

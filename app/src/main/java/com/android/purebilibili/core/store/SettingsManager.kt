@@ -1604,7 +1604,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         booleanPreferencesKey("audio_now_playing_bar_immersive_enabled")
     private val KEY_AUDIO_NOW_PLAYING_BAR_OPENS_AUDIO_MODE =
         booleanPreferencesKey("audio_now_playing_bar_opens_audio_mode")
-    private val KEY_MUSIC_LYRICS_UI_STYLE = intPreferencesKey("music_lyrics_ui_style")
     private val KEY_VIDEO_NOTE_ENABLED = booleanPreferencesKey("video_note_enabled")
     private val KEY_VIDEO_ARGUE_MSG_SHOWN = booleanPreferencesKey("video_argue_msg_shown")
     private val KEY_VIDEO_DETAIL_CHROME_SCROLL_HIDE_ENABLED =
@@ -6113,41 +6112,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         }
     }
 
-    /**
-     * 听视频歌词界面风格。
-     * - CLASSIC: 现有全屏歌词列
-     * - IMMERSIVE: 沉浸式大字歌词（Halcyon 风格）
-     */
-    enum class MusicLyricsUiStyle(val value: Int, val label: String) {
-        CLASSIC(0, "经典"),
-        IMMERSIVE(1, "沉浸");
-
-        fun next(): MusicLyricsUiStyle = when (this) {
-            CLASSIC -> IMMERSIVE
-            IMMERSIVE -> CLASSIC
-        }
-
-        companion object {
-            fun fromValue(value: Int): MusicLyricsUiStyle = when (value) {
-                1 -> IMMERSIVE
-                else -> CLASSIC
-            }
-        }
-    }
-
-    fun getMusicLyricsUiStyle(context: Context): Flow<MusicLyricsUiStyle> =
-        context.settingsDataStore.data.map { preferences ->
-            MusicLyricsUiStyle.fromValue(
-                preferences[KEY_MUSIC_LYRICS_UI_STYLE] ?: MusicLyricsUiStyle.CLASSIC.value
-            )
-        }
-
-    suspend fun setMusicLyricsUiStyle(context: Context, style: MusicLyricsUiStyle) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_MUSIC_LYRICS_UI_STYLE] = style.value
-        }
-    }
-
     internal fun shouldEnableAudioModeAutoPipToggle(mode: MiniPlayerMode): Boolean {
         return mode.supportsSystemPip
     }
@@ -7574,7 +7538,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 KEY_AUDIO_NOW_PLAYING_BAR_OPENS_AUDIO_MODE,
                 SettingsShareSection.PLAYBACK,
             ),
-            IntShareablePreferenceDefinition(KEY_MUSIC_LYRICS_UI_STYLE, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_VIDEO_NOTE_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_VIDEO_ARGUE_MSG_SHOWN, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(

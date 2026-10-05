@@ -1,12 +1,6 @@
 package com.android.purebilibili.feature.audio.screen
 
 import com.android.purebilibili.feature.video.player.PlayMode
-import kotlin.math.abs
-
-internal data class MusicLyricFocusStyle(
-    val blurRadiusDp: Int,
-    val alphaPercent: Int
-)
 
 internal fun resolveMusicPagerIndicatorPosition(
     currentPage: Int,
@@ -71,53 +65,6 @@ internal fun resolveMusicLyricsBlurEnabled(
     effectsEnabled: Boolean,
     reduceMotion: Boolean
 ): Boolean = sdkInt >= 31 && effectsEnabled && !reduceMotion
-
-internal fun resolveMusicLyricFocusStyle(
-    lineIndex: Int,
-    currentIndex: Int,
-    blurEnabled: Boolean,
-    immersive: Boolean = false,
-): MusicLyricFocusStyle {
-    val distance = abs(lineIndex - currentIndex)
-    val alphaPercent = if (immersive) {
-        when (distance) {
-            0 -> 100
-            1 -> 48
-            2 -> 28
-            else -> 14
-        }
-    } else {
-        when (distance) {
-            0 -> 100
-            1 -> 62
-            2 -> 40
-            else -> 20
-        }
-    }
-    val blurRadiusDp = if (!blurEnabled) {
-        0
-    } else if (immersive) {
-        // Size hierarchy already separates lines; keep blur light so large text stays crisp.
-        when (distance) {
-            0 -> 0
-            1 -> 0
-            2 -> 2
-            else -> 5
-        }
-    } else {
-        when (distance) {
-            0 -> 0
-            1 -> 1
-            2 -> 3
-            else -> 7
-        }
-    }
-    return MusicLyricFocusStyle(blurRadiusDp, alphaPercent)
-}
-
-/** Immersive lyrics sit closer to vertical center than the classic list. */
-internal fun resolveMusicLyricFocusFraction(immersive: Boolean): Float =
-    if (immersive) 0.38f else 0.30f
 
 internal fun resolveMusicLiquidGlassEnabled(
     sdkInt: Int,

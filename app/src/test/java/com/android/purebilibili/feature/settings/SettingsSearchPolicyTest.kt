@@ -8,6 +8,14 @@ import kotlin.test.assertTrue
 class SettingsSearchPolicyTest {
 
     @Test
+    fun removedLyricsStyleHasNoSettingsSearchEntry() {
+        listOf("歌词界面", "经典歌词", "halcyon").forEach { query ->
+            assertTrue(resolveSettingsSearchResults(query).isEmpty())
+        }
+        assertTrue(resolveSettingsSearchResults("后台播放").isNotEmpty())
+    }
+
+    @Test
     fun bilumaFeedbackIsSearchableByNameAndIssues() {
         listOf("问题反馈", "issues", "Biluma", "羽哩").forEach { query ->
             assertTrue(resolveSettingsSearchResults(query).any { result -> result.target == SettingsSearchTarget.FEEDBACK })

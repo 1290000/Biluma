@@ -159,9 +159,6 @@ fun PlaybackSettingsContent(
     val audioNowPlayingBarOpensAudioMode by SettingsManager
         .getAudioNowPlayingBarOpensAudioMode(context)
         .collectAsStateWithLifecycle(initialValue = false)
-    val musicLyricsUiStyle by SettingsManager
-        .getMusicLyricsUiStyle(context)
-        .collectAsStateWithLifecycle(initialValue = SettingsManager.MusicLyricsUiStyle.CLASSIC)
     val loudnessNormalizationEnabled by com.android.purebilibili.core.store.SettingsManager
         .getLoudnessNormalizationEnabled(context).collectAsStateWithLifecycle(initialValue = false)
     val startupAutoPlayEnabled by com.android.purebilibili.core.store.SettingsManager
@@ -736,34 +733,6 @@ fun PlaybackSettingsContent(
                             },
                             iconTint = iOSOrange
                         )
-                        AppPreferenceDivider()
-                        SettingsSingleChoicePreference(
-                            title = "听视频歌词界面：${musicLyricsUiStyle.label}",
-                            subtitle = when (musicLyricsUiStyle) {
-                                SettingsManager.MusicLyricsUiStyle.CLASSIC ->
-                                    "经典全屏歌词；可在听视频右上角更多菜单临时切换"
-                                SettingsManager.MusicLyricsUiStyle.IMMERSIVE ->
-                                    "沉浸式大字歌词，支持逐字推进高亮（Halcyon 风格）"
-                            },
-                            options = listOf(
-                                AppSegmentOption(
-                                    SettingsManager.MusicLyricsUiStyle.CLASSIC,
-                                    SettingsManager.MusicLyricsUiStyle.CLASSIC.label
-                                ),
-                                AppSegmentOption(
-                                    SettingsManager.MusicLyricsUiStyle.IMMERSIVE,
-                                    SettingsManager.MusicLyricsUiStyle.IMMERSIVE.label
-                                ),
-                            ),
-                            selectedValue = musicLyricsUiStyle,
-                            onSelectionChange = { style ->
-                                scope.launch {
-                                    SettingsManager.setMusicLyricsUiStyle(context, style)
-                                }
-                            },
-                            iconTint = iOSOrange
-                        )
-
                         //  权限提示（仅当选择支持系统 PiP 的模式且无权限时显示）
                         if (modeControlsEnabled &&
                             miniPlayerMode.supportsSystemPip
