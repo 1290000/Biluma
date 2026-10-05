@@ -33,20 +33,24 @@ class FavoriteContentModeResolverTest {
     }
 
     @Test
-    fun favoriteVideoTabShowsFolderCardsWithSubscribedEntry() {
+    fun noFoldersUsesBaseMode() {
+        assertEquals(
+            FavoriteContentMode.BASE_LIST,
+            resolveFavoriteContentMode(isFavoritePage = true, folderCount = 0)
+        )
+    }
+
+    @Test
+    fun favoriteVideoTabRendersFolderContentsAndSubscribedListSeparately() {
         val listSource = loadSource(
             "app/src/main/java/com/android/purebilibili/feature/list/CommonListScreen.kt"
         )
-        val cardListSource = loadSource(
-            "app/src/main/java/com/android/purebilibili/feature/list/FavoriteFolderCardList.kt"
-        )
 
-        assertTrue(listSource.contains("FavoriteFolderCardList("))
-        assertTrue(cardListSource.contains("订阅收藏夹"))
-        assertTrue(cardListSource.contains("onSubscribedClick"))
-        assertFalse(listSource.contains("selectedValue = favoriteBrowseSection"))
-        assertFalse(listSource.contains("FavoriteFolderSummary("))
-        assertFalse(listSource.contains("AppSegmentOption(FavoriteBrowseSection.OWNED"))
+        assertTrue(listSource.contains("} else if (favoriteContentMode == FavoriteContentMode.PAGER)"))
+        assertTrue(listSource.contains("} else if (favoriteContentMode == FavoriteContentMode.SINGLE_FOLDER)"))
+        assertTrue(listSource.contains("FavoriteSubscribedFolderList("))
+        assertTrue(listSource.contains("FavoriteCategoryRoute("))
+        assertFalse(listSource.contains("FavoriteFolderCardList("))
     }
 
     @Test

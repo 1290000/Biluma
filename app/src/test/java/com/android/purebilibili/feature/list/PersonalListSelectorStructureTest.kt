@@ -8,18 +8,20 @@ import kotlin.test.assertTrue
 class PersonalListSelectorStructureTest {
 
     @Test
-    fun favoriteFolderList_showsFoldersAsCardsInsteadOfChipSelector() {
+    fun favoriteFolderSelector_restoresAlpha5Dropdown() {
         val source = loadSource("app/src/main/java/com/android/purebilibili/feature/list/CommonListScreen.kt")
-        val listSource = loadSource(
-            "app/src/main/java/com/android/purebilibili/feature/list/FavoriteFolderCardList.kt",
+        val selectorSource = loadSource(
+            "app/src/main/java/com/android/purebilibili/feature/list/FavoriteFolderSelector.kt",
         )
 
-        // PiliPlus 结构：收藏夹以卡片列表呈现，chip 选择器退役
-        assertFalse(source.contains("FavoriteFolderSelector("))
-        assertTrue(source.contains("FavoriteFolderCardList("))
-        assertTrue(listSource.contains("fun FavoriteFolderCardList("))
-        assertTrue(listSource.contains("aspectRatio(16f / 10f)"))
-        assertTrue(listSource.contains("个内容"))
+        assertTrue(source.contains("FavoriteFolderSelector("))
+        assertFalse(source.contains("FavoriteFolderCardList("))
+        assertTrue(selectorSource.contains("BottomBarMatchedReusableLiquidDock("))
+        assertTrue(selectorSource.contains("AppDropdownMenu("))
+        assertTrue(selectorSource.contains("folders.forEachIndexed"))
+        assertTrue(selectorSource.contains("onFolderSelected(index)"))
+        assertTrue(selectorSource.contains("onSubscribedSelected()"))
+        assertTrue(selectorSource.contains("heightIn(min = AppChromeSizeTokens.MinimumTouchTarget)"))
     }
 
     @Test
@@ -54,16 +56,21 @@ class PersonalListSelectorStructureTest {
     }
 
     @Test
-    fun favoriteFolderNavigation_routesToFolderDetailPage() {
+    fun ownedFoldersSwitchInlineAndSubscribedFoldersKeepDetailNavigation() {
         val source = loadSource(
             "app/src/main/java/com/android/purebilibili/feature/list/CommonListScreen.kt",
         )
+        val selectorCall = source.substringAfter("FavoriteFolderSelector(")
+            .substringBefore("if (historyViewModel != null)")
+        val subscribedContent = source.substringAfter("} else if (isSubscribedBrowse) {")
+            .substringBefore("} else if (favoriteContentMode == FavoriteContentMode.PAGER)")
 
-        // 收藏夹卡片点击进入独立收藏夹详情页（SeasonSeriesDetail type=favorite）
-        assertTrue(source.contains("onFavoriteFolderClick?.invoke("))
-        assertTrue(source.contains("resolveFavoriteFolderMediaId(folder)"))
-        assertFalse(source.contains("FavoriteFolderSummary("))
-        assertFalse(source.contains("selectedValue = favoriteBrowseSection"))
+        assertTrue(selectorCall.contains("favoriteViewModel.switchFolder(index)"))
+        assertTrue(selectorCall.contains("favoriteBrowseSection = FavoriteBrowseSection.OWNED"))
+        assertFalse(selectorCall.contains("onFavoriteFolderClick"))
+        assertTrue(subscribedContent.contains("onFavoriteFolderClick?.invoke("))
+        assertTrue(subscribedContent.contains("onCollectionClick?.invoke(collectionRoute)"))
+        assertTrue(subscribedContent.contains("resolveFavoriteFolderMediaId(folder)"))
     }
 
     @Test
