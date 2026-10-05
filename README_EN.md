@@ -29,7 +29,7 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
 | Favorites page | Restored direct folder-content browsing, the top folder dropdown, and checkbox selection from upstream [v0.2.3-alpha.5](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.3-alpha.5), retaining the four-page switch animation cap from [PR #840](https://github.com/jay3-yy/BiliPai/pull/840); tests and compilation have not been run |
-| Feature and settings reduction | All nine initial UI reductions, six playback settings/informational-entry reductions, and six home/navigation setting reductions are implemented in source; favorites are adjusted, without runtime verification |
+| Feature and settings reduction | All nine initial UI reductions, six playback settings/informational-entry reductions, and six home/navigation setting reductions are implemented in source; this appearance and notification settings batch and the favorites adjustments are also implemented, without runtime verification |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
@@ -45,7 +45,7 @@ All nine items have been implemented in batches and merged into `main`. Approved
 | 1. UI preset | Miuix only; remove MD3-specific UI | Implemented; removed the user-facing preset entry and related resources, fixed runtime selection to Miuix, and retained Material 3 infrastructure for compatibility and fallback |
 | 2. Liquid glass | Enabled; retain non-glass UI and compatibility/performance fallbacks | Implemented; removed the global switch, search entry, and old-backup share entry; runtime is fixed on, with non-glass fallback on unsupported devices |
 | 3. Single-choice presentation | Anchored popup | Implemented; centered single-choice dialog, setting, and preference access removed |
-| 4. Splash icon mask animation | Disabled | Implemented; removed the toggle, animation styles, and startup-only assets; system splash icons are transparent, while wallpaper, preloading, and launcher compatibility entries remain |
+| 4. Splash icon mask animation | Disabled | Implemented; removed the toggle, animation styles, and startup-only assets; system splash icons are transparent, while the system splash background, preloading, and launcher compatibility entries remain |
 | 5. Native Miuix popups | Enabled | Implemented; switch and its disabled alternatives removed; Miuix dialogs no longer fall back to Material through this switch |
 | 6. Video tag size | Smallest | Implemented; video tags use the smallest size without settings or backup overrides; removed the unused intermediate size and retained standard tags elsewhere |
 | 7. Compact player controls | Enabled | Implemented; removed the toggle, preference, and classic layout branches; compact spacing and scrims are fixed, with sharing retained in the More menu |
@@ -74,6 +74,16 @@ The main app no longer exposes these switches. Legacy preferences, shared settin
 - The sidebar account-switch entry is always available when using the sidebar; sidebar navigation itself is not forced on.
 
 Unused legacy bottom-search auto-expansion and layout modes are also removed. Active search input, search-page transitions, playback-strip state transitions, and shared navigation visuals remain. The TV module is unchanged. Regression tests are added and static checks are performed; tests, compilation, and on-device verification have not been run for this batch.
+
+## Appearance and notification settings
+
+- List items always follow the current UI style (fixed to Miuix in the main app), without an independent style override.
+- Startup animation selection is removed. As on main, neither icon flyout nor maid welcome animation plays; the system splash background and preloading remain.
+- Splash wallpapers, random selection, and their dedicated picker, alignment, and pool settings are removed. Home wallpapers and profile backgrounds remain. A home background previously inherited from a splash wallpaper is migrated to a dedicated home wallpaper without deleting its image file.
+- Quality-downgrade diagnostic dialogs always use one-time acknowledgment, preserving existing acknowledgment records and the main diagnostic-dialog switch. The dialog no longer offers a repeat-warning option.
+- The video-detail comment tab always displays its count. Retired preferences are migrated before reads, excluded from settings exports, and cannot restore removed behavior through old backups.
+
+This batch includes source changes and static checks only. Regression tests were updated and added but Gradle tests, compilation, packaging, and on-device verification were not performed. Other feature reductions and new brand visuals are outside this batch.
 
 ## Downloads and feedback
 

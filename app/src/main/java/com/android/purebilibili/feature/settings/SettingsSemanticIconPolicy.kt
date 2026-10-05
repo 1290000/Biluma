@@ -63,8 +63,6 @@ internal enum class SettingsIconRole {
     COLOR_SPEC,
     APP_LANGUAGE,
     FONT_FILE,
-    SPLASH_WALLPAPER,
-    RANDOM_WALLPAPER,
     DISPLAY_STYLE,
     HOME_COVER_GLASS,
     VIDEO_DURATION_BADGES,
@@ -122,7 +120,6 @@ internal enum class SettingsIconRole {
     PRIVACY_CONTENT_AUTHENTICATION,
     PLAYER_STATS,
     PLAYER_DIAGNOSTIC_LOGS,
-    QUALITY_WARNING_ONCE,
     DIRECTED_TRAFFIC,
     AUTO_HIGHEST_QUALITY,
     AUTO_PLAY_ON_OPEN,
@@ -251,8 +248,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.COLOR_SPEC -> R.drawable.ms_auto_fix_high_24
     SettingsIconRole.APP_LANGUAGE -> R.drawable.ms_language_24
     SettingsIconRole.FONT_FILE -> R.drawable.ms_font_download_24
-    SettingsIconRole.SPLASH_WALLPAPER -> R.drawable.ms_wallpaper_24
-    SettingsIconRole.RANDOM_WALLPAPER -> R.drawable.ms_shuffle_24
     SettingsIconRole.DISPLAY_STYLE -> R.drawable.ms_view_carousel_24
     SettingsIconRole.HOME_COVER_GLASS -> R.drawable.ms_opacity_24
     SettingsIconRole.VIDEO_DURATION_BADGES -> R.drawable.ms_timer_24
@@ -310,7 +305,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.PRIVACY_CONTENT_AUTHENTICATION -> R.drawable.ms_verified_24
     SettingsIconRole.PLAYER_STATS -> R.drawable.ms_insert_chart_outlined_24
     SettingsIconRole.PLAYER_DIAGNOSTIC_LOGS -> R.drawable.ms_report_gmailerrorred_24
-    SettingsIconRole.QUALITY_WARNING_ONCE -> R.drawable.ms_notification_important_24
     SettingsIconRole.DIRECTED_TRAFFIC -> R.drawable.ms_network_locked_24
     SettingsIconRole.AUTO_HIGHEST_QUALITY -> R.drawable.ms_settings_suggest_24
     SettingsIconRole.AUTO_PLAY_ON_OPEN -> R.drawable.ms_play_arrow_24
@@ -509,8 +503,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.COLOR_SPEC -> MiuixIcons.Filter
     SettingsIconRole.APP_LANGUAGE -> MiuixIcons.Translate
     SettingsIconRole.FONT_FILE -> MiuixIcons.Folder
-    SettingsIconRole.SPLASH_WALLPAPER -> MiuixIcons.Image
-    SettingsIconRole.RANDOM_WALLPAPER -> MiuixIcons.Replace
     SettingsIconRole.DISPLAY_STYLE -> MiuixIcons.ListView
     SettingsIconRole.HOME_COVER_GLASS -> MiuixIcons.Background
     SettingsIconRole.VIDEO_DURATION_BADGES -> MiuixIcons.Timer
@@ -568,7 +560,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.PRIVACY_CONTENT_AUTHENTICATION -> MiuixIcons.Scan
     SettingsIconRole.PLAYER_STATS -> MiuixIcons.Sort
     SettingsIconRole.PLAYER_DIAGNOSTIC_LOGS -> MiuixIcons.File
-    SettingsIconRole.QUALITY_WARNING_ONCE -> MiuixIcons.Alarm
     SettingsIconRole.DIRECTED_TRAFFIC -> MiuixIcons.SearchDevice
     SettingsIconRole.AUTO_HIGHEST_QUALITY -> MiuixIcons.TopDownloads
     SettingsIconRole.AUTO_PLAY_ON_OPEN -> MiuixIcons.Play

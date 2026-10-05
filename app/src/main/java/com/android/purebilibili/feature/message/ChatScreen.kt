@@ -472,14 +472,11 @@ private fun ChatWallpaperHost(
     val context = LocalContext.current
     val configuredHomeWallpaperUri by SettingsManager.getHomeWallpaperUri(context)
         .collectAsStateWithLifecycle(initialValue = "")
-    val splashWallpaperUri by SettingsManager.getSplashWallpaperUri(context)
-        .collectAsStateWithLifecycle(initialValue = "")
     val wallpaperEffectMode by SettingsManager.getHomeWallpaperEffectMode(context)
         .collectAsStateWithLifecycle(initialValue = HomeWallpaperEffectMode.SOFT_BLUR)
-    val wallpaperUri = remember(configuredHomeWallpaperUri, splashWallpaperUri) {
+    val wallpaperUri = remember(configuredHomeWallpaperUri) {
         resolveHomeWallpaperUri(
             homeWallpaperUri = configuredHomeWallpaperUri,
-            splashWallpaperUri = splashWallpaperUri,
         )
     }
     val wallpaperPalette by WallpaperPaletteStore.currentPalette.collectAsStateWithLifecycle()

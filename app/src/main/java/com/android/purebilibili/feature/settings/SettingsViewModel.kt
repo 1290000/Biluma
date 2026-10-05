@@ -27,7 +27,6 @@ import com.android.purebilibili.core.theme.AppUiScalePreset
 import com.android.purebilibili.core.theme.AppUiStyle
 import com.android.purebilibili.core.theme.syncThemeRoleControlAccent
 import com.android.purebilibili.core.ui.AppIconStyle
-import com.android.purebilibili.core.ui.AppListItemStyle
 import com.android.purebilibili.core.ui.blur.BlurIntensity
 import com.android.purebilibili.core.ui.transition.VIDEO_SHARED_TRANSITION_CUSTOM_DEFAULT_MILLIS
 import com.android.purebilibili.core.ui.transition.VideoSharedTransitionSpeed
@@ -83,7 +82,6 @@ data class SettingsUiState(
     val themeColorIndex: Int = 0,
     val appIcon: String = DEFAULT_APP_ICON_KEY,
     val appIconStyle: AppIconStyle = AppIconStyle.AUTO,
-    val appListItemStyle: AppListItemStyle = AppListItemStyle.AUTO,
     val bottomBarLabelMode: Int = 1,  // 0=图标+文字, 1=仅图标, 2=仅文字
     val headerBlurEnabled: Boolean = true,
     val progressiveTopBlurEnabled: Boolean = true,
@@ -151,7 +149,6 @@ data class ExtraSettings(
     val themeColorIndex: Int,
     val appIcon: String,
     val appIconStyle: AppIconStyle,
-    val appListItemStyle: AppListItemStyle,
     val appFontSizePreset: AppFontSizePreset,
     val appFontWeightPreset: AppFontWeightPreset,
     val appFontFileName: String,
@@ -226,7 +223,6 @@ private data class BaseSettings(
     val themeColorIndex: Int,
     val appIcon: String,
     val appIconStyle: AppIconStyle,
-    val appListItemStyle: AppListItemStyle,
     val bottomBarLabelMode: Int,
     val headerBlurEnabled: Boolean,
     val progressiveTopBlurEnabled: Boolean,
@@ -293,7 +289,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val themeColorIndex: Int,
         val appIcon: String,
         val appIconStyle: AppIconStyle,
-        val appListItemStyle: AppListItemStyle,
         val appFontSizePreset: AppFontSizePreset,
         val appFontWeightPreset: AppFontWeightPreset,
         val appFontFileName: String,
@@ -346,7 +341,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         SettingsManager.getThemeColorIndex(context).asAnyFlow(),
         SettingsManager.getAppIcon(context).asAnyFlow(),
         SettingsManager.getAppIconStyle(context).asAnyFlow(),
-        SettingsManager.getAppListItemStyle(context).asAnyFlow(),
         SettingsManager.getAppFontSizePreset(context).asAnyFlow(),
         SettingsManager.getAppFontWeightPreset(context).asAnyFlow(),
         SettingsManager.getAppFontFileName(context).asAnyFlow(),
@@ -359,13 +353,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             themeColorIndex = values[1] as Int,
             appIcon = values[2] as String,
             appIconStyle = values[3] as AppIconStyle,
-            appListItemStyle = values[4] as AppListItemStyle,
-            appFontSizePreset = values[5] as AppFontSizePreset,
-            appFontWeightPreset = values[6] as AppFontWeightPreset,
-            appFontFileName = values[7] as String,
-            appFontDisplayName = values[8] as String,
-            appUiScalePreset = values[9] as AppUiScalePreset,
-            appDpiOverridePercent = values[10] as Int
+            appFontSizePreset = values[4] as AppFontSizePreset,
+            appFontWeightPreset = values[5] as AppFontWeightPreset,
+            appFontFileName = values[6] as String,
+            appFontDisplayName = values[7] as String,
+            appUiScalePreset = values[8] as AppUiScalePreset,
+            appDpiOverridePercent = values[9] as Int
         )
     }
     
@@ -466,7 +459,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             themeColorIndex = ui1.themeColorIndex,
             appIcon = ui1.appIcon,
             appIconStyle = ui1.appIconStyle,
-            appListItemStyle = ui1.appListItemStyle,
             appFontSizePreset = ui1.appFontSizePreset,
             appFontWeightPreset = ui1.appFontWeightPreset,
             appFontFileName = ui1.appFontFileName,
@@ -564,7 +556,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             themeColorIndex = extra.themeColorIndex,
             appIcon = extra.appIcon,
             appIconStyle = extra.appIconStyle,
-            appListItemStyle = extra.appListItemStyle,
             bottomBarLabelMode = extra.bottomBarLabelMode,
             headerBlurEnabled = extra.headerBlurEnabled,
             progressiveTopBlurEnabled = extra.progressiveTopBlurEnabled,
@@ -628,7 +619,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             themeColorIndex = settings.themeColorIndex,
             appIcon = settings.appIcon,
             appIconStyle = settings.appIconStyle,
-            appListItemStyle = settings.appListItemStyle,
             bottomBarLabelMode = settings.bottomBarLabelMode,
             headerBlurEnabled = settings.headerBlurEnabled,
             progressiveTopBlurEnabled = settings.progressiveTopBlurEnabled,
@@ -769,11 +759,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setAppIconStyle(iconStyle: AppIconStyle) {
         viewModelScope.launch {
             SettingsManager.setAppIconStyle(context, iconStyle)
-        }
-    }
-    fun setAppListItemStyle(style: AppListItemStyle) {
-        viewModelScope.launch {
-            SettingsManager.setAppListItemStyle(context, style)
         }
     }
     fun toggleDynamicColor(value: Boolean) { viewModelScope.launch { SettingsManager.setDynamicColor(context, value) } }
@@ -1031,8 +1016,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleSponsorBlockAutoSkip(value: Boolean) { viewModelScope.launch { SettingsManager.setSponsorBlockAutoSkip(context, value) } }
     
     // [New] Splash Screen
-    fun toggleSplashEnabled(value: Boolean) { viewModelScope.launch { SettingsManager.setSplashEnabled(context, value) } }
-    fun toggleSplashRandomEnabled(value: Boolean) { viewModelScope.launch { SettingsManager.setSplashRandomEnabled(context, value) } }
     // [New] 触感反馈
     fun toggleHapticFeedback(value: Boolean) { viewModelScope.launch { SettingsManager.setHapticFeedbackEnabled(context, value) } }
 

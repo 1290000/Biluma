@@ -32,16 +32,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import com.android.purebilibili.core.ui.common.ProvideAppTextSelectionHost
 import androidx.compose.ui.platform.LocalContext
@@ -51,10 +48,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.ui.BiasAlignment
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.ComposeView
@@ -67,7 +60,6 @@ import androidx.media3.ui.PlayerView
 import androidx.metrics.performance.JankStats
 import androidx.window.layout.WindowMetrics
 import androidx.window.layout.WindowMetricsCalculator
-import coil3.compose.AsyncImage
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.ui.LocalDetailedCommentTimeEnabled
 import com.android.purebilibili.core.coroutines.AppScope
@@ -75,14 +67,10 @@ import com.android.purebilibili.core.coroutines.AppScope
 import com.android.purebilibili.core.theme.LocalDisplayMetricsSnapshot
 import com.android.purebilibili.core.theme.PureBiliBiliTheme
 import com.android.purebilibili.core.ui.blur.rememberRecoverableHazeState
-import com.android.purebilibili.core.ui.motion.AppMotionEasing
 import com.android.purebilibili.core.ui.performance.AppRuntimeVisualGuardTracker
 import com.android.purebilibili.core.ui.performance.applyPreferredDisplayMode
-import com.android.purebilibili.core.ui.wallpaper.SplashWallpaperLayout
-import com.android.purebilibili.core.ui.wallpaper.resolveSplashWallpaperLayout
 import com.android.purebilibili.core.util.BilibiliNavigationTarget
 import com.android.purebilibili.core.util.BilibiliNavigationTargetParser
-import com.android.purebilibili.core.util.WindowWidthSizeClass
 import com.android.purebilibili.core.util.Logger
 import com.android.purebilibili.feature.plugin.EyeProtectionOverlay
 import com.android.purebilibili.feature.plugin.PluginEffectHintHost
@@ -105,8 +93,6 @@ import com.android.purebilibili.core.ui.AppThemeConfig
 import com.android.purebilibili.core.ui.BrandSuccessFeedbackHost
 import com.android.purebilibili.core.ui.AppWindowSystemUiController
 import com.android.purebilibili.core.ui.ProvideAppThemeConfig
-import com.android.purebilibili.core.ui.components.AppCard
-import com.android.purebilibili.core.ui.components.AppCardShape
 import com.android.purebilibili.core.ui.blur.BlurIntensity
 import com.android.purebilibili.core.ui.blur.ProvideUnifiedBlurIntensity
 import com.android.purebilibili.core.ui.performance.ProvideRuntimeVisualGuard
@@ -160,7 +146,6 @@ import com.android.purebilibili.navigation.AppNavigation
 import com.android.purebilibili.navigation.ScreenRoutes
 import com.android.purebilibili.navigation.VideoRoute
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -171,10 +156,7 @@ import java.net.URLEncoder
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import kotlin.math.max
-import kotlin.math.pow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.android.purebilibili.core.ui.AppShapes
-import com.android.purebilibili.core.ui.ContainerLevel
 
 private const val TAG = "MainActivity"
 private const val PREFS_NAME = "app_welcome"
@@ -479,81 +461,17 @@ internal fun shouldClearPendingCrashLogAfterAction(
     action: CrashLogPromptAction
 ): Boolean = action != CrashLogPromptAction.IGNORE
 
-internal fun shouldShowCustomSplashOverlay(
-    customSplashEnabled: Boolean,
-    splashUri: String
-): Boolean {
-    return customSplashEnabled && splashUri.isNotEmpty()
-}
-
-internal fun shouldReadCustomSplashPreferences(): Boolean {
-    return true
-}
-
-internal fun resolveSplashWallpaperAlignmentBias(
-    isTabletLayout: Boolean,
-    mobileBias: Float,
-    tabletBias: Float
-): Float {
-    return if (isTabletLayout) tabletBias else mobileBias
-}
-
-internal fun resolveSplashWallpaperUriForLaunch(
-    randomEnabled: Boolean,
-    fixedSplashUri: String,
-    poolUris: List<String>,
-    launchSeed: Long
-): String {
-    if (!randomEnabled) return fixedSplashUri
-    val candidates = poolUris
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .distinct()
-    if (candidates.isEmpty()) return fixedSplashUri
-    val index = Math.floorMod(launchSeed, candidates.size.toLong()).toInt()
-    return candidates[index]
-}
-
 internal fun shouldStartLocalProxyOnAppLaunch(): Boolean = false
 
 internal fun shouldKeepSystemSplashForPreload(
     runColdStartSplash: Boolean
 ): Boolean {
-    // The native splash background is still the cold-start handoff when both the optional
-    // launcher icon animation and custom wallpaper are disabled.
     return runColdStartSplash
 }
 
 internal fun shouldRunColdStartSplash(savedInstanceStatePresent: Boolean): Boolean = !savedInstanceStatePresent
 
 internal fun splashMaxKeepOnScreenMs(): Long = 1000L
-internal fun customSplashHoldDurationMs(): Long = 1900L
-internal fun customSplashFadeDurationMs(): Int = 1450
-
-internal fun customSplashShouldRender(
-    showSplash: Boolean,
-    overlayAlpha: Float
-): Boolean = showSplash || overlayAlpha > 0.01f
-
-internal fun customSplashFadeProgress(overlayAlpha: Float): Float {
-    return (1f - overlayAlpha).coerceIn(0f, 1f)
-}
-
-internal fun customSplashOverlayScale(fadeProgress: Float): Float {
-    val normalized = fadeProgress.coerceIn(0f, 1f)
-    return 1f + (0.024f * normalized.pow(1.08f))
-}
-
-internal fun customSplashOverlayScrimAlpha(fadeProgress: Float): Float {
-    val normalized = fadeProgress.coerceIn(0f, 1f)
-    return (0.14f * normalized.pow(1.2f)).coerceIn(0f, 0.16f)
-}
-
-internal fun customSplashExtraBlurDp(fadeProgress: Float): Float {
-    val normalized = fadeProgress.coerceIn(0f, 1f)
-    return (14f * normalized.pow(1.1f)).coerceAtLeast(0f)
-}
-
 internal fun shouldLogWarmResume(
     hasCompletedInitialResume: Boolean,
     isChangingConfigurations: Boolean
@@ -1044,7 +962,6 @@ open class MainActivity : AppCompatActivity() {
                 appFontWeightPreset = appFontWeightPreset,
                 appFontFileName = appFontFileName,
                 appIconStyle = appThemeSettings.appIconStyle,
-                appListItemStyle = appThemeSettings.appListItemStyle,
             ) {
                 ProvideAppThemeConfig(config = appThemeConfig) {
                 ProvideRuntimeVisualGuard(
@@ -1067,7 +984,6 @@ open class MainActivity : AppCompatActivity() {
                     val isPipRenderingActive =
                         isInPipMode || miniPlayerManager.shouldKeepPlaybackForPipTransition()
                     val isFullscreenPlayerLocked = AppScreenshotGestureBlockState.fullscreenPlayerLocked
-                    var isAppScreenshotBlockedBySplash by remember { mutableStateOf(false) }
                     var isAppScreenshotSaving by remember { mutableStateOf(false) }
                     var appScreenshotRegionBitmap by remember { mutableStateOf<Bitmap?>(null) }
                     var brandFeedbackBottomInset by remember { mutableStateOf(0.dp) }
@@ -1102,7 +1018,6 @@ open class MainActivity : AppCompatActivity() {
                                 mode = appScreenshotGestureMode,
                                 blocked = isPipRenderingActive ||
                                     isFullscreenPlayerLocked ||
-                                    isAppScreenshotBlockedBySplash ||
                                     isAppScreenshotSaving ||
                                     appScreenshotRegionBitmap != null,
                                 onCaptureRequested = {
@@ -1353,163 +1268,10 @@ open class MainActivity : AppCompatActivity() {
                     )
                     PluginEffectHintHost()
                     
-                    // [New] Custom Splash Wallpaper Overlay
-                    val readCustomSplashPrefs = remember { shouldReadCustomSplashPreferences() }
-                    val splashUri = remember(readCustomSplashPrefs) {
-                        val fixedUri = SettingsManager.getSplashWallpaperUriSync(context)
-                        val randomEnabled = SettingsManager.isSplashRandomEnabledSync(context)
-                        val splashRandomPool = SettingsManager.getSplashRandomPoolUrisSync(context)
-                        resolveSplashWallpaperUriForLaunch(
-                            randomEnabled = randomEnabled,
-                            fixedSplashUri = fixedUri,
-                            poolUris = splashRandomPool,
-                            launchSeed = System.currentTimeMillis()
-                        )
-                    }
-                    val splashAlignmentBias = remember(readCustomSplashPrefs, windowSizeClass.widthSizeClass) {
-                        val mobileBias = SettingsManager.getSplashAlignmentSync(context, isTablet = false)
-                        val tabletBias = SettingsManager.getSplashAlignmentSync(context, isTablet = true)
-                        resolveSplashWallpaperAlignmentBias(
-                            isTabletLayout = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact,
-                            mobileBias = mobileBias,
-                            tabletBias = tabletBias
-                        )
-                    }
-                    val showCustomSplashInitially = remember(runColdStartSplash, splashUri) {
-                        runColdStartSplash && shouldShowCustomSplashOverlay(
-                            customSplashEnabled = SettingsManager.isSplashEnabledSync(context),
-                            splashUri = splashUri
-                        )
-                    }
-                    var showSplash by remember { mutableStateOf(showCustomSplashInitially) }
-                    LaunchedEffect(showSplash) {
-                        isAppScreenshotBlockedBySplash = showSplash
-                    }
-                    // Start wallpaper timing only after the native splash has actually left.
-                    LaunchedEffect(showCustomSplashInitially, systemSplashExited) {
-                        if (showCustomSplashInitially && systemSplashExited) {
-                            delay(customSplashHoldDurationMs())
-                            showSplash = false
-                        }
-                    }
-                    val splashOverlayAlpha by animateFloatAsState(
-                        targetValue = if (showSplash) 1f else 0f,
-                        animationSpec = tween(
-                            durationMillis = customSplashFadeDurationMs(),
-                            easing = AppMotionEasing.EmphasizedEnter
-                        ),
-                        label = "customSplashOverlayAlpha"
-                    )
-                    val splashFadeProgress = customSplashFadeProgress(splashOverlayAlpha)
-                    val splashOverlayScale = customSplashOverlayScale(splashFadeProgress)
-                    val splashExtraBlur = customSplashExtraBlurDp(splashFadeProgress)
-                    val splashTailScrimAlpha = customSplashOverlayScrimAlpha(splashFadeProgress)
-
-                    if (customSplashShouldRender(showSplash, splashOverlayAlpha) && splashUri.isNotEmpty()) {
-                        val splashWallpaperLayout = remember(windowSizeClass.widthSizeClass) {
-                            resolveSplashWallpaperLayout(
-                                widthSizeClass = windowSizeClass.widthSizeClass
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .graphicsLayer(alpha = splashOverlayAlpha)
-                                .background(MaterialTheme.colorScheme.background)
-                        ) {
-                            when (splashWallpaperLayout) {
-                                SplashWallpaperLayout.FULL_CROP -> {
-                                    AsyncImage(
-                                        model = splashUri,
-                                        contentDescription = "Splash Wallpaper",
-                                        alignment = BiasAlignment(0f, splashAlignmentBias),
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .graphicsLayer(
-                                                scaleX = splashOverlayScale,
-                                                scaleY = splashOverlayScale
-                                            )
-                                            .blur(splashExtraBlur.dp)
-                                    )
-                                }
-
-                                SplashWallpaperLayout.POSTER_CARD_BLUR_BG -> {
-                                    AsyncImage(
-                                        model = splashUri,
-                                        contentDescription = null,
-                                        alignment = BiasAlignment(0f, splashAlignmentBias),
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .graphicsLayer(
-                                                scaleX = splashOverlayScale,
-                                                scaleY = splashOverlayScale
-                                            )
-                                            .blur((56f + splashExtraBlur).dp)
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(
-                                                Color.Black.copy(
-                                                    alpha = (0.16f + splashTailScrimAlpha * 0.5f).coerceAtMost(0.26f)
-                                                )
-                                            )
-                                    )
-                                    val posterCardCornerRadius =
-                                        AppShapes.containerCornerDp(ContainerLevel.Floating)
-                                    AppCard(
-                                        shape = AppCardShape.Semantic(ContainerLevel.Floating),
-                                        modifier = Modifier
-                                            .align(Alignment.Center)
-                                            .graphicsLayer(
-                                                scaleX = 1f + (splashFadeProgress * 0.015f),
-                                                scaleY = 1f + (splashFadeProgress * 0.015f)
-                                            )
-                                            .fillMaxWidth(
-                                                if (windowSizeClass.widthSizeClass >= WindowWidthSizeClass.Expanded) {
-                                                    0.34f
-                                                } else {
-                                                    0.48f
-                                                }
-                                            )
-                                            .widthIn(min = 190.dp, max = 340.dp)
-                                            .aspectRatio(9f / 16f)
-                                            .shadow(
-                                                elevation = 16.dp,
-                                                shape = RoundedCornerShape(posterCardCornerRadius),
-                                            )
-                                    ) {
-                                        AsyncImage(
-                                            model = splashUri,
-                                            contentDescription = "Splash Wallpaper Poster",
-                                            alignment = BiasAlignment(0f, splashAlignmentBias),
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .graphicsLayer(
-                                                    scaleX = splashOverlayScale,
-                                                    scaleY = splashOverlayScale
-                                                )
-                                                .blur((splashExtraBlur * 0.35f).dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = splashTailScrimAlpha))
-                            )
-                        }
-                    }
-
                     BrandSuccessFeedbackHost(
                         bottomContentInset = brandFeedbackBottomInset,
                         extraBottomClearance = if (showAudioNowPlaying) 64.dp else 0.dp,
-                        enabled = systemSplashExited && !showSplash &&
+                        enabled = systemSplashExited &&
                             !isPipRenderingActive && !isFullscreenPlayerLocked && appScreenshotRegionBitmap == null
                     )
 

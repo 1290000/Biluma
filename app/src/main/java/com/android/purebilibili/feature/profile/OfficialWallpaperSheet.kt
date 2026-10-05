@@ -1,8 +1,6 @@
 package com.android.purebilibili.feature.profile
 
 import coil3.request.crossfade
-import com.android.purebilibili.core.ui.resolveFilledButtonContainerColor
-import com.android.purebilibili.core.ui.resolveFilledButtonContentColor
 import com.android.purebilibili.core.ui.components.AppIcon
 import com.android.purebilibili.core.ui.components.AppText
 import com.android.purebilibili.core.ui.components.AppTextButton
@@ -32,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.draw.scale
 import android.widget.Toast
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.purebilibili.core.ui.rememberAppClearIcon
@@ -40,10 +37,8 @@ import com.android.purebilibili.core.ui.rememberAppCheckCircleIcon
 import com.android.purebilibili.core.ui.AdaptiveLoadingIndicator
 import com.android.purebilibili.core.ui.AppModalBottomSheet
 import com.android.purebilibili.core.ui.components.AppButton
-import com.android.purebilibili.core.ui.components.AppCircularProgressIndicator
 import com.android.purebilibili.core.ui.components.AppIconButton
 import com.android.purebilibili.core.ui.components.AppSurface
-import com.android.purebilibili.core.ui.components.AppSwitch
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.ContainerLevel
 
@@ -111,7 +106,7 @@ fun OfficialWallpaperSheet(
                     }
                     
                     AppText(
-                        text = "开屏壁纸设置",
+                        text = "选择个人空间背景",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -253,32 +248,8 @@ fun OfficialWallpaperSheet(
                 Column(modifier = Modifier.padding(16.dp)) {
                     // [New] Observe save state
                     val saveState by viewModel.wallpaperSaveState.collectAsStateWithLifecycle()
-                    val splashSaveState by viewModel.splashSaveState.collectAsStateWithLifecycle()
                     
-                    val isSaving = saveState is WallpaperSaveState.Loading || splashSaveState is WallpaperSaveState.Loading
-                    var saveToGallery by remember { mutableStateOf(false) }
-
-                    // Switch for Save to Album
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                            .clickable { saveToGallery = !saveToGallery }, // Make row clickable
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        AppText(
-                            text = "保存到系统相册",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface 
-                        )
-                        AppSwitch(
-                            checked = saveToGallery,
-                            onCheckedChange = { saveToGallery = it },
-                            modifier = Modifier.scale(0.8f) 
-                        )
-                    }
-
+                    val isSaving = saveState is WallpaperSaveState.Loading
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -288,12 +259,6 @@ fun OfficialWallpaperSheet(
                         
                         // [New] Adjustment Sheet Logic
                         var showAdjustmentSheet by remember { mutableStateOf(false) }
-                        var showSplashAdjustmentSheet by remember { mutableStateOf(false) }
-                        val initialSplashMobileBias by viewModel.getSplashAlignment(false).collectAsStateWithLifecycle(initialValue = 0f
-        )
-                        val initialSplashTabletBias by viewModel.getSplashAlignment(true).collectAsStateWithLifecycle(initialValue = 0f
-        )
-                        
                         // [New] Adjustment Sheet
                          if (showAdjustmentSheet && selectedUrl != null) {
                              ProfileWallpaperAdjustmentSheet(
@@ -318,29 +283,6 @@ fun OfficialWallpaperSheet(
                              )
                         }
 
-                        if (showSplashAdjustmentSheet && selectedUrl != null) {
-                            WallpaperAdjustmentSheet(
-                                imageUri = fixWallpaperUrl(selectedUrl),
-                                initialMobileBias = initialSplashMobileBias,
-                                initialTabletBias = initialSplashTabletBias,
-                                onDismiss = { showSplashAdjustmentSheet = false },
-                                onSave = { mBias, tBias ->
-                                    showSplashAdjustmentSheet = false
-                                    selectedUrl?.let { url ->
-                                        viewModel.setAsSplashWallpaper(
-                                            url = url,
-                                            saveToGallery = saveToGallery,
-                                            mobileBias = mBias,
-                                            tabletBias = tBias
-                                        ) {
-                                            onDismiss()
-                                            Toast.makeText(context, "开屏壁纸设置成功", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                        
                         AppButton(
                             onClick = { 
                                 showAdjustmentSheet = true
@@ -365,45 +307,11 @@ fun OfficialWallpaperSheet(
                             }
                         }
                         
-                        // Set as Splash Screen
-                        AppButton(
-                            onClick = { 
-                                showSplashAdjustmentSheet = true
-                            },
-                            enabled = selectedUrl != null && !isSaving,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(50.dp),
-                            shape = AppShapes.container(ContainerLevel.Floating),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = resolveFilledButtonContainerColor(MaterialTheme.colorScheme),
-
-                                contentColor = resolveFilledButtonContentColor(MaterialTheme.colorScheme)
-                            )
-                        ) {
-                            if (splashSaveState is WallpaperSaveState.Loading) {
-                                AppCircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                AppText("设为开屏", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                            }
-                        }
                     }
                     
                     if (saveState is WallpaperSaveState.Error) {
                         AppText(
                             text = (saveState as WallpaperSaveState.Error).message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 8.dp).align(Alignment.CenterHorizontally)
-                        )
-                    }
-                    if (splashSaveState is WallpaperSaveState.Error) {
-                         AppText(
-                            text = (splashSaveState as WallpaperSaveState.Error).message,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp).align(Alignment.CenterHorizontally)

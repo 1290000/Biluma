@@ -96,7 +96,7 @@ internal object StyleLintAllowlist {
         "src/main/java/com/android/purebilibili/feature/plugin/SponsorBlockPlugin.kt",
         "src/main/java/com/android/purebilibili/feature/profile/OfficialWallpaperSheet.kt",
         "src/main/java/com/android/purebilibili/feature/profile/ProfileScreen.kt",
-        "src/main/java/com/android/purebilibili/feature/profile/SplashWallpaperPickerSheet.kt",
+        "src/main/java/com/android/purebilibili/feature/profile/HomeWallpaperPickerSheet.kt",
         "src/main/java/com/android/purebilibili/feature/profile/WallpaperAdjustmentSheet.kt",
 
         "src/main/java/com/android/purebilibili/feature/search/SearchScreen.kt",

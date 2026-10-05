@@ -35,12 +35,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import com.android.purebilibili.core.ui.AppIconStyle
-import com.android.purebilibili.core.ui.AppListItemStyle
 import com.android.purebilibili.core.ui.LocalAppIconStyle
-import com.android.purebilibili.core.ui.LocalAppListItemStyle
 import com.android.purebilibili.core.ui.findHostActivity
 import com.android.purebilibili.core.ui.resolveAppIconStyle
-import com.android.purebilibili.core.ui.resolveAppListItemStyle
 import com.android.purebilibili.core.store.ThemeRoleOverrides
 import com.android.purebilibili.feature.settings.AppThemeMode
 import com.android.purebilibili.feature.settings.Md3ColorSource
@@ -803,7 +800,6 @@ fun PureBiliBiliTheme(
     appFontWeightPreset: AppFontWeightPreset = AppFontWeightPreset.FOLLOW_THEME,
     appFontFileName: String = "",
     appIconStyle: AppIconStyle = AppIconStyle.AUTO,
-    appListItemStyle: AppListItemStyle = AppListItemStyle.AUTO,
     liquidGlassEnabled: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -970,10 +966,6 @@ fun PureBiliBiliTheme(
         LocalBaseThemeRoleOverrides provides baseThemeRoleOverrides,
         LocalAppIconStyle provides resolveAppIconStyle(
             iconStyle = appIconStyle,
-            uiStyle = uiStyle
-        ),
-        LocalAppListItemStyle provides resolveAppListItemStyle(
-            style = appListItemStyle,
             uiStyle = uiStyle
         ),
         LocalCornerRadiusScale provides resolveCornerRadiusScale(uiStyle)

@@ -18,7 +18,7 @@ class FixedUiSettingsStructureTest {
         assertFalse(activity.contains("splashFlyout"))
         assertFalse(activity.contains("MaidAnimation.WELCOME"))
         assertTrue(activity.contains("splashScreen.setOnExitAnimationListener"))
-        assertTrue(activity.contains("shouldShowCustomSplashOverlay"))
+        assertFalse(activity.contains("shouldShowCustomSplashOverlay"))
     }
 
     @Test

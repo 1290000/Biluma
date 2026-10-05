@@ -370,14 +370,8 @@ internal fun resolveHomeWallpaperBackdropAppearance(
     }
 }
 
-internal fun resolveHomeWallpaperUri(
-    homeWallpaperUri: String?,
-    splashWallpaperUri: String?
-): String {
-    val dedicatedHomeUri = homeWallpaperUri?.trim().orEmpty()
-    if (dedicatedHomeUri.isNotEmpty()) return dedicatedHomeUri
-    return splashWallpaperUri?.trim().orEmpty()
-}
+internal fun resolveHomeWallpaperUri(homeWallpaperUri: String?): String =
+    homeWallpaperUri?.trim().orEmpty()
 
 internal fun resolveHomeWallpaperDecodeSizePx(
     screenWidthDp: Int,

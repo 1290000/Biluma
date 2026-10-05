@@ -9,7 +9,6 @@ ROOT = ART.parents[1]
 RAW = ROOT / 'app/src/main/res/raw'
 DRAWABLE = ROOT / 'app/src/main/res/drawable-nodpi'
 FALLBACKS = {
-    'welcome': 'bilipai_maid_static',
     'clean_complete': 'bilipai_maid_clean_static',
     'cleaning': 'bilipai_maid_cleaning_static',
     'retry': 'bilipai_maid_retry_static',
@@ -59,7 +58,7 @@ def package_existing():
         path.write_text(json.dumps(data, separators=(',', ':')) + '\n')
         after += path.stat().st_size
     build_preview()
-    print(f'JSON bytes: {before} -> {after}; all 14 PNGs are shared with static fallbacks.')
+    print(f'JSON bytes: {before} -> {after}; all {len(FALLBACKS)} PNGs are shared with static fallbacks.')
 
 if __name__ == '__main__':
     package_existing()

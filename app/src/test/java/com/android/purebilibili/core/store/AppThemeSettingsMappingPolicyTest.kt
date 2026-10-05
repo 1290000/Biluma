@@ -5,7 +5,6 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.android.purebilibili.core.ui.AppIconStyle
-import com.android.purebilibili.core.ui.AppListItemStyle
 import com.android.purebilibili.core.theme.AndroidNativeVariant
 import com.android.purebilibili.core.theme.AppFontSizePreset
 import com.android.purebilibili.core.theme.AppUiScalePreset
@@ -48,7 +47,6 @@ class AppThemeSettingsMappingPolicyTest {
         )
         assertEquals(AppScreenshotCaptureMode.FULL_WINDOW, result.appScreenshotCaptureMode)
         assertEquals(AppIconStyle.AUTO, result.appIconStyle)
-        assertEquals(AppListItemStyle.AUTO, result.appListItemStyle)
     }
 
     @Test
@@ -77,7 +75,6 @@ class AppThemeSettingsMappingPolicyTest {
                 intPreferencesKey("app_screenshot_capture_mode") to
                     AppScreenshotCaptureMode.SELECT_REGION.value,
                 stringPreferencesKey("app_icon_style") to AppIconStyle.THEME_CONTAINER.name,
-                stringPreferencesKey("app_list_item_style") to AppListItemStyle.NATIVE.name
             )
         )
 
@@ -98,7 +95,6 @@ class AppThemeSettingsMappingPolicyTest {
         assertEquals(AppUiScalePreset.LARGE, result.appUiScalePreset)
         assertEquals(115, result.appDpiOverridePercent)
         assertEquals(AppIconStyle.THEME_CONTAINER, result.appIconStyle)
-        assertEquals(AppListItemStyle.NATIVE, result.appListItemStyle)
         assertEquals(true, result.appGestureScreenshotEnabled)
         assertEquals(AppScreenshotGestureMode.THREE_FINGER_SWIPE_DOWN, result.appScreenshotGestureMode)
         assertEquals(AppScreenshotCaptureMode.SELECT_REGION, result.appScreenshotCaptureMode)

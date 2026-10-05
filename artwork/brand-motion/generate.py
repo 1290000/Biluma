@@ -47,7 +47,6 @@ def layer(name,shapes=(),pivot=(0,0),rotation=None,scale=None,position=None,opac
 
 def mask(name,points,mode='a'):
     return {'inv':False,'mode':mode,'pt':prop(poly(points)),'o':prop(100),'x':prop(0),'nm':name}
-def mapped(points): return [[round(x*450/1349+62,2),round(y*450/1349+31,2)] for x,y in points]
 def bounds_center(points): return [(min(p[0] for p in points)+max(p[0] for p in points))/2,(min(p[1] for p in points)+max(p[1] for p in points))/2]
 def star(x,y,r): return shape([[x,y-r],[x+r*.28,y-r*.28],[x+r,y],[x+r*.28,y+r*.28],[x,y+r],[x-r*.28,y+r*.28],[x-r,y],[x-r*.28,y-r*.28]])
 
@@ -60,7 +59,7 @@ def closed_eyelash(name,points,end,close_frame=None):
         (0,0),(close_frame-3,0),(close_frame,100),(close_frame+2,100),(close_frame+6,0),(end,0)])
     return layer(name+' closed eyelash',[group('Soft closed eye',[curve],None,'#80566A',1.8)],opacity=opacity)
 
-def load_art(source='blue-snow-maid-reference.png',static='bilipai_maid_static',size=(390,450)):
+def load_art(source,static,size=(390,450)):
     im=Image.open(ART/source).convert('RGBA')
     im.thumbnail(size,Image.Resampling.LANCZOS)
     canvas=Image.new('RGBA',(512,512))
@@ -72,68 +71,6 @@ def load_art(source='blue-snow-maid-reference.png',static='bilipai_maid_static',
     art=layer('Blue snow maid detailed illustration',ref='maid_bitmap')
     art['ty']=2; art['ind']=1
     return [{'id':'maid_art','layers':[art]},image]
-
-LEFT_EYE=mapped([(402,539),(416,508),(453,490),(518,491),(559,518),(555,579),(516,593),(460,593),(425,569)])
-RIGHT_EYE=mapped([(620,496),(644,468),(688,460),(742,470),(775,492),(757,553),(725,568),(674,568),(639,545)])
-HAND=mapped([(58,790),(68,759),(108,748),(72,702),(88,668),(131,674),(186,720),(145,664),(142,628),(163,620),(185,642),(238,716),(253,691),(280,690),(292,714),(280,771),(289,820),(267,866),(275,887),(198,915),(185,866),(142,844),(93,830),(66,813)])
-
-HAIR_TIPS=[
-    mapped([(7,1110),(68,1075),(131,1078),(160,1110),(168,1170),(120,1228),(73,1237),(3,1194)]),
-    mapped([(1038,1038),(1124,1026),(1160,1088),(1140,1170),(1094,1230),(1031,1235),(995,1190)])
-]
-
-
-def make_welcome(art):
-    kind="welcome"
-    end={'welcome':60,'clean':72,'retry':144,'empty':108,'search_empty':120}[kind]
-    layers=[]
-    # Eye and hand patches reuse one precomposition: no duplicate image or vector payload.
-    all_masks=[mask('Full illustration',[[0,0],[512,0],[512,512],[0,512]])]
-    for name,points in [('Left eye',LEFT_EYE),('Right eye',RIGHT_EYE),('Greeting hand',HAND)]:
-        all_masks.append(mask(name,points,'s'))
-    for i,points in enumerate(HAIR_TIPS): all_masks.append(mask('Hair tip '+str(i),points,'s'))
-    layers.append(layer('Maid portrait',ref='maid_art',masks=all_masks))
-    for points,skin in [(LEFT_EYE,'#FFE2D3'),(RIGHT_EYE,'#FFE7DA')]:
-        layers.insert(0,layer('Skin under eyelid',[group('Soft peach eyelid',[shape(points)],skin)]))
-    for name,points in [('Left eye',LEFT_EYE),('Right eye',RIGHT_EYE)]:
-        pivot=bounds_center(points)
-        blink=[(0,[100,8,100]),(8,[100,100,100]),(end,[100,100,100])]
-        if kind=='clean': blink=[(0,[100,100,100]),(46,[100,100,100]),(51,[100,4,100]),(56,[100,100,100]),(end,[100,100,100])]
-        if kind in ('retry','empty','search_empty'): blink=[(0,[100,100,100]),(62,[100,100,100]),(67,[100,4,100]),(73,[100,100,100]),(end,[100,100,100])]
-        layers.append(layer(name,ref='maid_art',pivot=pivot,scale=keys(blink),masks=[mask(name,points)]))
-    for name,points in [('Left eye',LEFT_EYE),('Right eye',RIGHT_EYE)]:
-        layers.append(closed_eyelash(name,points,end,None if kind=='welcome' else 67))
-    # Gentle wrist rotation keeps the reference anatomy intact.
-    rot=[(0,0),(12,-5),(24,4),(38,-3),(50,0),(end,0)]
-    if kind=='clean': rot=[(0,0),(13,-6),(27,5),(40,-4),(53,0),(end,0)]
-    if kind in ('retry','empty','search_empty'): rot=[(0,0),(end/2,1),(end,0)]
-    layers.append(layer('Greeting hand',ref='maid_art',pivot=mapped([(235,885)])[0],rotation=keys(rot),masks=[mask('Hand and wrist',HAND)]))
-    for i,points in enumerate(HAIR_TIPS):
-        pivot=[bounds_center(points)[0],min(p[1] for p in points)]
-        layers.append(layer('Hair tip '+str(i),ref='maid_art',pivot=pivot,
-            rotation=keys([(0,0),(end*.45,1.2 if i else -1.2),(end,0)]),
-            masks=[mask('Flowing hair',points)]))
-    for side,(x,y) in enumerate([(152,169),(354,164)]):
-        # Moving gleams and a small snow charm give the hair ornaments subtle motion.
-        layers.append(layer('Ribbon snow charm '+str(side),[group('Snow glint',[star(0,0,4)],'#F8FDFF','#64CFFF',1)],position=keys([(0,[x,y,0]),(end/2,[x+(-2 if side else 2),y-2,0]),(end,[x,y,0])]),opacity=keys([(0,0),(12,70),(end-8,70),(end,0)])))
-    if kind=='retry':
-        layers.append(layer('Offline cloud',[
-            group('Cloud',[rect(398,309,67,29,13),ellipse(384,292,31,31),ellipse(407,290,38,38)],'#EAF5FF','#7CA9C7',2),
-            group('Patient cloud eyes',[ellipse(385,305,3,4),ellipse(408,305,3,4)],'#688AAB'),
-            group('Connection pause',[shape([[382,334],[411,334]],False)],None,'#63B8E4',3)
-        ],pivot=(398,300),position=keys([(0,[398,300,0]),(72,[398,294,0]),(end,[398,300,0])]),opacity=keys([(0,0),(14,100),(end,100)])))
-    for i,(x,y) in enumerate([(87,163),(414,139),(429,236)]):
-        if kind in ('retry','empty','search_empty'): break
-        start=42+i*2 if kind=='clean' else 9+i*3
-        layers.append(layer('Snow sparkle '+str(i),[group('Snowflake',[star(0,0,7 if i%2 else 5)],'#F9FDFF','#6BCBF1',1.5)],position=keys([(0,[x,y+6,0]),(end,[x,y-5,0])]),opacity=keys([(0,0),(start,0),(start+7,90),(end,65 if kind=='clean' else 0)])))
-    layers.reverse()
-    # A shared parent supplies a tiny breathing / bowing motion without re-rasterization.
-    motion=layer('Character motion',pivot=(256,330)); motion['ty']=3; motion.pop('shapes',None)
-    motion['ind']=len(layers)+1
-    motion['ks']['p']=keys([(0,[256,332,0]),(end*.45,[256,327,0]),(end,[256,330,0])]) if kind=='welcome' else keys([(0,[256,330,0]),(end/2,[256,333,0]),(end,[256,330,0])])
-    for i,l in enumerate(layers): l['ind']=i+1; l['op']=end; l['parent']=motion['ind']
-    motion['op']=end; layers.append(motion)
-    return {'v':'5.12.2','fr':60,'ip':0,'op':end,'w':512,'h':512,'nm':'BiliPai Blue Snow Maid '+kind,'ddd':0,'assets':copy.deepcopy(art),'layers':layers,'markers':[]}
 
 def clean_mapped(points): return [[round(x*450/1254+31,2),round(y*450/1254+31,2)] for x,y in points]
 
@@ -453,8 +390,8 @@ def make_triple(art):
     return {'v':'5.12.2','fr':60,'ip':0,'op':end,'w':512,'h':512,'nm':'BiliPai triple success happy hop','ddd':0,'assets':copy.deepcopy(art),'layers':layers,'markers':[]}
 
 if __name__=='__main__':
-    art=load_art(); animations={}
-    for kind,name in [('welcome','bilipai_maid_welcome'),('clean','bilipai_maid_clean_complete'),('cleaning','bilipai_maid_cleaning'),('retry','bilipai_maid_retry'),('empty','bilipai_maid_empty'),('search_empty','bilipai_maid_search_empty'),('favorite','bilipai_maid_favorite_saved'),('follow','bilipai_maid_follow_success'),('unfollow','bilipai_maid_unfollow_complete'),('download','bilipai_maid_download_complete'),('triple','bilipai_maid_triple_success')]:
+    animations={}
+    for kind,name in [('clean','bilipai_maid_clean_complete'),('cleaning','bilipai_maid_cleaning'),('retry','bilipai_maid_retry'),('empty','bilipai_maid_empty'),('search_empty','bilipai_maid_search_empty'),('favorite','bilipai_maid_favorite_saved'),('follow','bilipai_maid_follow_success'),('unfollow','bilipai_maid_unfollow_complete'),('download','bilipai_maid_download_complete'),('triple','bilipai_maid_triple_success')]:
         if kind=='clean':
             data=make_clean(load_art('blue-snow-maid-clean-reference.png','bilipai_maid_clean_static',(450,450)))
         elif kind=='cleaning':
@@ -464,8 +401,6 @@ if __name__=='__main__':
             data=make_follow_feedback(kind,load_art(source,'bilipai_maid_'+kind+'_static',(450,450)))
         elif kind=='triple':
             data=make_triple(load_art('blue-snow-maid-triple-reference.png','bilipai_maid_triple_static',(450,450)))
-        elif kind=='welcome':
-            data=make_welcome(art)
         else:
             pose_art=load_art('blue-snow-maid-'+kind.replace('_','-')+'-reference.png','bilipai_maid_'+kind+'_static',(450,450))
             data=make_state(kind,pose_art)
