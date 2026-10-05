@@ -21,7 +21,7 @@ class VideoLoadRequestPolicyTest {
         ).first { it.exists() }.readText()
         val switchBlock = source
             .substringAfter("fun switchPage(")
-            .substringBefore("fun dismissResumePlaybackSuggestion()")
+            .substringBefore("private suspend fun switchToInteractiveCid(")
         val uiCommitIndex = switchBlock.indexOf("_uiState.value = switchedState")
         val playerReplaceIndex = switchBlock.indexOf("playResolvedPlayback(")
         val identityCallbackIndex = switchBlock.indexOf("onPageIdentityCommitted?.invoke(targetBvid, page.cid)")

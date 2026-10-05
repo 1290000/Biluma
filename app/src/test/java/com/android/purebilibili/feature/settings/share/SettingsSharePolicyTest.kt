@@ -106,6 +106,43 @@ class SettingsSharePolicyTest {
     }
 
     @Test
+    fun retiredPlaybackSettings_areExcludedFromExportAndSkippedOnImport() {
+        val retiredPlayback = mapOf(
+            "resume_playback_prompt_enabled" to JsonPrimitive(true),
+            "video_info_default_expanded" to JsonPrimitive(false),
+            "video_note_default_collapsed" to JsonPrimitive(false)
+        )
+        val retiredGestures = mapOf(
+            "exp_double_tap_like" to JsonPrimitive(true),
+            "set_system_brightness" to JsonPrimitive(true)
+        )
+        val definitions = SettingsManager.getShareableSettingsEntryDefinitions()
+        val retainedSettings = mapOf("video_note_enabled" to JsonPrimitive(false))
+        val exported = buildSettingsShareProfile(
+            profileName = "Playback settings",
+            appVersion = "test",
+            exportedAtIso = "2026-10-05T00:00:00Z",
+            rawSettings = retiredPlayback + retiredGestures + retainedSettings,
+            definitions = definitions
+        )
+
+        assertEquals(retainedSettings, flattenSettingsShareSections(exported.sections))
+
+        val preview = resolveSettingsShareImportPreview(
+            profile = exported.copy(
+                sections = SettingsShareSections(
+                    playback = retiredPlayback + retainedSettings,
+                    gesture = retiredGestures
+                )
+            ),
+            definitions = definitions
+        )
+
+        assertEquals((retiredPlayback.keys + retiredGestures.keys).sorted(), preview.skippedKeys)
+        assertEquals(listOf(SettingsShareSection.PLAYBACK), preview.importableSections)
+    }
+
+    @Test
     fun shareFileName_containsVersionAndUtcTimestamp() {
         assertEquals(
             "bilipai-settings-6.8.2-20260307-130000.json",

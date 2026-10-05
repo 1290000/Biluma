@@ -1096,12 +1096,10 @@ internal fun resolveAutoExitFullscreenMode(
 
 data class PlayerInteractionSettings(
     val gestureSensitivity: Float = 1.0f,
-    val doubleTapLikeEnabled: Boolean = true,
     val doubleTapSeekEnabled: Boolean = false,
     val portraitSwipeToFullscreenEnabled: Boolean = true,
     val centerSwipeToFullscreenEnabled: Boolean = true,
     val slideVolumeBrightnessEnabled: Boolean = true,
-    val setSystemBrightnessEnabled: Boolean = false,
     val pipNoDanmakuEnabled: Boolean = false,
     val seekForwardSeconds: Int = 10,
     val seekBackwardSeconds: Int = 10,
@@ -1384,7 +1382,6 @@ object SettingsManager {
     //  [新增] 手势灵敏度和主题色
     private val KEY_GESTURE_SENSITIVITY = floatPreferencesKey("gesture_sensitivity")
     private val KEY_SLIDE_VOLUME_BRIGHTNESS_ENABLED = booleanPreferencesKey("slide_volume_brightness_enabled")
-    private val KEY_SET_SYSTEM_BRIGHTNESS = booleanPreferencesKey("set_system_brightness")
     private val KEY_PIP_NO_DANMAKU = booleanPreferencesKey("pip_no_danmaku")
     private val KEY_DANMAKU_CLOUD_SYNC_ENABLED = booleanPreferencesKey("danmaku_cloud_sync_enabled")
     private val KEY_SHOW_PLAYER_CAST_BUTTON = booleanPreferencesKey("show_player_cast_button")
@@ -1693,15 +1690,12 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_MUSIC_LYRICS_UI_STYLE = intPreferencesKey("music_lyrics_ui_style")
     private val KEY_VIDEO_AI_SUMMARY_ENTRY_ENABLED = booleanPreferencesKey("video_ai_summary_entry_enabled")
     private val KEY_VIDEO_NOTE_ENABLED = booleanPreferencesKey("video_note_enabled")
-    private val KEY_VIDEO_NOTE_DEFAULT_COLLAPSED = booleanPreferencesKey("video_note_default_collapsed")
-    private val KEY_VIDEO_INFO_DEFAULT_EXPANDED = booleanPreferencesKey("video_info_default_expanded")
     private val KEY_VIDEO_ARGUE_MSG_SHOWN = booleanPreferencesKey("video_argue_msg_shown")
     private val KEY_VIDEO_TAG_SIZE_PRESET = intPreferencesKey("video_tag_size_preset")
     private val KEY_VIDEO_DETAIL_CHROME_SCROLL_HIDE_ENABLED =
         booleanPreferencesKey("video_detail_chrome_scroll_hide_enabled")
     private const val VIDEO_NOTE_CACHE_PREFS = "video_note_settings"
     private const val CACHE_KEY_VIDEO_NOTE_ENABLED = "video_note_enabled"
-    private const val CACHE_KEY_VIDEO_NOTE_DEFAULT_COLLAPSED = "video_note_default_collapsed"
     private const val PLAYBACK_SPEED_CACHE_PREFS = "playback_speed_cache"
     private const val CACHE_KEY_DEFAULT_PLAYBACK_SPEED = "default_speed"
     private const val CACHE_KEY_REMEMBER_LAST_SPEED = "remember_last_speed"
@@ -1904,12 +1898,10 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     ): PlayerInteractionSettings {
         return PlayerInteractionSettings(
             gestureSensitivity = (preferences[KEY_GESTURE_SENSITIVITY] ?: 1.0f).coerceIn(0.5f, 2.0f),
-            doubleTapLikeEnabled = preferences[KEY_DOUBLE_TAP_LIKE] ?: true,
             doubleTapSeekEnabled = preferences[KEY_DOUBLE_TAP_SEEK_ENABLED] ?: false,
             portraitSwipeToFullscreenEnabled = preferences[KEY_PORTRAIT_SWIPE_TO_FULLSCREEN] ?: true,
             centerSwipeToFullscreenEnabled = preferences[KEY_CENTER_SWIPE_TO_FULLSCREEN] ?: true,
             slideVolumeBrightnessEnabled = preferences[KEY_SLIDE_VOLUME_BRIGHTNESS_ENABLED] ?: true,
-            setSystemBrightnessEnabled = preferences[KEY_SET_SYSTEM_BRIGHTNESS] ?: false,
             pipNoDanmakuEnabled = preferences[KEY_PIP_NO_DANMAKU] ?: false,
             seekForwardSeconds = (preferences[KEY_SEEK_FORWARD_SECONDS] ?: 10).coerceIn(1, 60),
             seekBackwardSeconds = (preferences[KEY_SEEK_BACKWARD_SECONDS] ?: 10).coerceIn(1, 60),
@@ -2015,12 +2007,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     // --- Auto Play on Enter (Click to Play) ---
     private val KEY_CLICK_TO_PLAY = booleanPreferencesKey("click_to_play")
-    private val KEY_RESUME_PLAYBACK_PROMPT_ENABLED = booleanPreferencesKey("resume_playback_prompt_enabled")
     private val KEY_SPACE_PLAYED_VIDEO_LOCATE_PROMPT_ENABLED =
         booleanPreferencesKey("space_played_video_locate_prompt_enabled")
-    private const val RESUME_PROMPT_CACHE_PREFS = "resume_prompt_cache"
-    private const val CACHE_KEY_RESUME_PROMPT_ENABLED = "resume_prompt_enabled"
-    private const val CACHE_KEY_RESUME_PROMPT_SHOWN = "resume_prompt_shown"
     private const val HI_RES_LONG_PRESS_HINT_CACHE_PREFS = "hi_res_long_press_hint_cache"
     private const val CACHE_KEY_HI_RES_LONG_PRESS_HINT_SHOWN = "hi_res_long_press_hint_shown"
     private const val LONG_PRESS_SPEED_LOCK_CACHE_PREFS = "long_press_speed_lock_cache"
@@ -2049,24 +2037,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             .getBoolean("click_to_play_enabled", true)
     }
 
-    fun getResumePlaybackPromptEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_RESUME_PLAYBACK_PROMPT_ENABLED] ?: true }
-
-    suspend fun setResumePlaybackPromptEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_RESUME_PLAYBACK_PROMPT_ENABLED] = value
-        }
-        context.getSharedPreferences(RESUME_PROMPT_CACHE_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(CACHE_KEY_RESUME_PROMPT_ENABLED, value)
-            .apply()
-    }
-
-    fun getResumePlaybackPromptEnabledSync(context: Context): Boolean {
-        return context.getSharedPreferences(RESUME_PROMPT_CACHE_PREFS, Context.MODE_PRIVATE)
-            .getBoolean(CACHE_KEY_RESUME_PROMPT_ENABLED, true)
-    }
-
     fun getSpacePlayedVideoLocatePromptEnabled(context: Context): Flow<Boolean> =
         context.settingsDataStore.data
             .map { preferences -> preferences[KEY_SPACE_PLAYED_VIDEO_LOCATE_PROMPT_ENABLED] ?: true }
@@ -2075,30 +2045,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         context.settingsDataStore.edit { preferences ->
             preferences[KEY_SPACE_PLAYED_VIDEO_LOCATE_PROMPT_ENABLED] = enabled
         }
-    }
-
-    fun hasResumePlaybackPromptShown(context: Context, promptKey: String): Boolean {
-        if (promptKey.isBlank()) return false
-        val shownSet = context.getSharedPreferences(RESUME_PROMPT_CACHE_PREFS, Context.MODE_PRIVATE)
-            .getStringSet(CACHE_KEY_RESUME_PROMPT_SHOWN, emptySet())
-            .orEmpty()
-        return shownSet.contains(promptKey)
-    }
-
-    fun markResumePlaybackPromptShown(context: Context, promptKey: String) {
-        if (promptKey.isBlank()) return
-        val prefs = context.getSharedPreferences(RESUME_PROMPT_CACHE_PREFS, Context.MODE_PRIVATE)
-        val shownSet = prefs.getStringSet(CACHE_KEY_RESUME_PROMPT_SHOWN, emptySet())
-            .orEmpty()
-            .toMutableSet()
-        if (shownSet.contains(promptKey)) return
-        if (shownSet.size >= 500) {
-            shownSet.clear()
-        }
-        shownSet.add(promptKey)
-        prefs.edit()
-            .putStringSet(CACHE_KEY_RESUME_PROMPT_SHOWN, shownSet)
-            .apply()
     }
 
     // --- Auto Play Next ---
@@ -2710,15 +2656,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     suspend fun setSlideVolumeBrightnessEnabled(context: Context, value: Boolean) {
         context.settingsDataStore.edit { preferences ->
             preferences[KEY_SLIDE_VOLUME_BRIGHTNESS_ENABLED] = value
-        }
-    }
-
-    fun getSetSystemBrightnessEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SET_SYSTEM_BRIGHTNESS] ?: false }
-
-    suspend fun setSetSystemBrightnessEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_SET_SYSTEM_BRIGHTNESS] = value
         }
     }
 
@@ -5802,7 +5739,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_AUTO_1080P = booleanPreferencesKey("exp_auto_1080p")
     private val KEY_AUTO_SKIP_OP_ED = booleanPreferencesKey("exp_auto_skip_op_ed")
     private val KEY_PREFETCH_VIDEO = booleanPreferencesKey("exp_prefetch_video")
-    private val KEY_DOUBLE_TAP_LIKE = booleanPreferencesKey("exp_double_tap_like")
     
     // --- 已登录用户默认 1080P ---
     fun getAuto1080p(context: Context): Flow<Boolean> = context.settingsDataStore.data
@@ -5826,14 +5762,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     suspend fun setPrefetchVideo(context: Context, value: Boolean) {
         context.settingsDataStore.edit { preferences -> preferences[KEY_PREFETCH_VIDEO] = value }
-    }
-    
-    // --- 双击点赞 ---
-    fun getDoubleTapLike(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_DOUBLE_TAP_LIKE] ?: true }  // 默认开启
-
-    suspend fun setDoubleTapLike(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences -> preferences[KEY_DOUBLE_TAP_LIKE] = value }
     }
     
     // ========== 📱 竖屏全屏设置 ==========
@@ -6749,33 +6677,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     fun getVideoNoteEnabledSync(context: Context): Boolean {
         return context.getSharedPreferences(VIDEO_NOTE_CACHE_PREFS, Context.MODE_PRIVATE)
             .getBoolean(CACHE_KEY_VIDEO_NOTE_ENABLED, true)
-    }
-
-    fun getVideoNoteDefaultCollapsed(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_VIDEO_NOTE_DEFAULT_COLLAPSED] ?: true }
-
-    suspend fun setVideoNoteDefaultCollapsed(context: Context, enabled: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_VIDEO_NOTE_DEFAULT_COLLAPSED] = enabled
-        }
-        context.getSharedPreferences(VIDEO_NOTE_CACHE_PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(CACHE_KEY_VIDEO_NOTE_DEFAULT_COLLAPSED, enabled)
-            .apply()
-    }
-
-    fun getVideoNoteDefaultCollapsedSync(context: Context): Boolean {
-        return context.getSharedPreferences(VIDEO_NOTE_CACHE_PREFS, Context.MODE_PRIVATE)
-            .getBoolean(CACHE_KEY_VIDEO_NOTE_DEFAULT_COLLAPSED, true)
-    }
-
-    fun getVideoInfoDefaultExpanded(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_VIDEO_INFO_DEFAULT_EXPANDED] ?: false }
-
-    suspend fun setVideoInfoDefaultExpanded(context: Context, enabled: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_VIDEO_INFO_DEFAULT_EXPANDED] = enabled
-        }
     }
 
     /** UP 主视频声明(如"虚构演绎,请勿过度解读")在详情页是否显示,默认开。 */
@@ -8251,8 +8152,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             IntShareablePreferenceDefinition(KEY_MUSIC_LYRICS_UI_STYLE, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_VIDEO_AI_SUMMARY_ENTRY_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_VIDEO_NOTE_ENABLED, SettingsShareSection.PLAYBACK),
-            BooleanShareablePreferenceDefinition(KEY_VIDEO_NOTE_DEFAULT_COLLAPSED, SettingsShareSection.PLAYBACK),
-            BooleanShareablePreferenceDefinition(KEY_VIDEO_INFO_DEFAULT_EXPANDED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_VIDEO_ARGUE_MSG_SHOWN, SettingsShareSection.PLAYBACK),
             IntShareablePreferenceDefinition(KEY_VIDEO_TAG_SIZE_PRESET, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(
@@ -8260,7 +8159,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 SettingsShareSection.PLAYBACK,
             ),
             BooleanShareablePreferenceDefinition(KEY_CLICK_TO_PLAY, SettingsShareSection.PLAYBACK),
-            BooleanShareablePreferenceDefinition(KEY_RESUME_PLAYBACK_PROMPT_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(
                 KEY_SPACE_PLAYED_VIDEO_LOCATE_PROMPT_ENABLED,
                 SettingsShareSection.PLAYBACK
@@ -8305,7 +8203,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             ),
             FloatShareablePreferenceDefinition(KEY_GESTURE_SENSITIVITY, SettingsShareSection.GESTURE),
             BooleanShareablePreferenceDefinition(KEY_SLIDE_VOLUME_BRIGHTNESS_ENABLED, SettingsShareSection.GESTURE),
-            BooleanShareablePreferenceDefinition(KEY_SET_SYSTEM_BRIGHTNESS, SettingsShareSection.GESTURE),
             BooleanShareablePreferenceDefinition(KEY_DOUBLE_TAP_SEEK_ENABLED, SettingsShareSection.GESTURE),
             IntShareablePreferenceDefinition(KEY_SEEK_FORWARD_SECONDS, SettingsShareSection.GESTURE),
             IntShareablePreferenceDefinition(KEY_SEEK_BACKWARD_SECONDS, SettingsShareSection.GESTURE),
@@ -8325,7 +8222,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 SettingsShareSection.GESTURE
             ),
             BooleanShareablePreferenceDefinition(KEY_PIP_NO_DANMAKU, SettingsShareSection.GESTURE),
-            BooleanShareablePreferenceDefinition(KEY_DOUBLE_TAP_LIKE, SettingsShareSection.GESTURE),
             BooleanShareablePreferenceDefinition(KEY_SWIPE_HIDE_PLAYER, SettingsShareSection.GESTURE),
             IntShareablePreferenceDefinition(KEY_PORTRAIT_PLAYER_COLLAPSE_MODE, SettingsShareSection.GESTURE),
             BooleanShareablePreferenceDefinition(KEY_PAUSE_ON_PLAYER_COLLAPSE, SettingsShareSection.GESTURE),

@@ -17,26 +17,4 @@ class VideoNoteVisibilityPolicyTest {
         assertTrue(shouldLoadVideoNote(isVideoNoteEnabled = true, aid = 123L))
         assertFalse(shouldLoadVideoNote(isVideoNoteEnabled = true, aid = 0L))
     }
-
-    @Test
-    fun `default collapsed note should hide body until user expands it`() {
-        assertFalse(
-            shouldShowVideoNoteBody(
-                defaultCollapsed = true,
-                userExpanded = false
-            )
-        )
-        assertTrue(
-            shouldShowVideoNoteBody(
-                defaultCollapsed = true,
-                userExpanded = true
-            )
-        )
-        assertTrue(
-            shouldShowVideoNoteBody(
-                defaultCollapsed = false,
-                userExpanded = false
-            )
-        )
-    }
 }

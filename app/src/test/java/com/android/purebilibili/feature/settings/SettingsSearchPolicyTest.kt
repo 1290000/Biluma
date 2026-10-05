@@ -1,5 +1,6 @@
 package com.android.purebilibili.feature.settings
 
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -274,20 +275,29 @@ class SettingsSearchPolicyTest {
     }
 
     @Test
-    fun queryByVideoInfoDefaultExpanded_hitsPlaybackInteractionEntry() {
-        val results = resolveSettingsSearchResults("默认展开视频简介")
-
-        assertTrue(
-            results.any {
-                it.target == SettingsSearchTarget.PLAYBACK &&
-                    it.focusId == SettingsSearchFocusIds.PLAYBACK_INTERACTION
-            }
-        )
+    fun retiredPlaybackSettings_haveNoSearchAliases() {
+        val sourcePath = "src/main/java/com/android/purebilibili/feature/settings/SettingsSearchPolicy.kt"
+        val source = listOf(File(sourcePath), File("app", sourcePath))
+            .first { it.exists() }
+            .readText()
+        listOf(
+            "续播弹窗提示",
+            "默认展开视频简介",
+            "简介默认展开",
+            "默认折叠视频笔记",
+            "笔记折叠",
+            "双击点赞",
+            "系统亮度",
+            "续播弹窗",
+            "IP属地"
+        ).forEach { alias ->
+            assertFalse(source.contains("\"$alias\""), alias)
+        }
     }
 
     @Test
     fun queryByVideoNote_hitsPlaybackInteractionEntry() {
-        val results = resolveSettingsSearchResults("默认折叠视频笔记")
+        val results = resolveSettingsSearchResults("显示视频笔记")
 
         assertTrue(
             results.any {
@@ -428,7 +438,7 @@ class SettingsSearchPolicyTest {
         assertTrue(resolveSettingsSearchResults("顶部标签").any { it.target == SettingsSearchTarget.NAVIGATION })
         assertTrue(resolveSettingsSearchResults("首页壁纸").any { it.target == SettingsSearchTarget.HOME_FEED })
         assertTrue(resolveSettingsSearchResults("评论装扮").any { it.target == SettingsSearchTarget.INTERACTION_COMMENT })
-        assertTrue(resolveSettingsSearchResults("IP属地").any { it.title == "评论 IP 属地" })
+        assertTrue(resolveSettingsSearchResults("IP属地").isEmpty())
         assertTrue(resolveSettingsSearchResults("WebDAV").any { it.target == SettingsSearchTarget.DATA_BACKUP })
     }
 

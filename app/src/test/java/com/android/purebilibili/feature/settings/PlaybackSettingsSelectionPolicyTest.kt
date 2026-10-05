@@ -399,21 +399,54 @@ class PlaybackSettingsSelectionPolicyTest {
     }
 
     @Test
-    fun `playback settings exposes video note switches with collapse gated by enabled`() {
-        val source = File("src/main/java/com/android/purebilibili/feature/settings/screen/PlaybackSettingsScreen.kt")
-            .readText()
+    fun `playback settings retains note visibility without retired options`() {
+        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/settings/screen/PlaybackSettingsScreen.kt")
 
         assertTrue(source.contains("显示视频笔记"))
-        assertTrue(source.contains("默认折叠视频笔记"))
         assertTrue(source.contains("getVideoNoteEnabled"))
         assertTrue(source.contains("setVideoNoteEnabled"))
-        assertTrue(source.contains("getVideoNoteDefaultCollapsed"))
-        assertTrue(source.contains("setVideoNoteDefaultCollapsed"))
+        listOf(
+            "续播弹窗提示",
+            "默认展开视频简介",
+            "评论 IP 属地",
+            "默认折叠视频笔记",
+            "双击点赞",
+            "调节系统亮度"
+        ).forEach { title ->
+            assertFalse(source.contains(title), title)
+        }
+    }
 
-        val noteSwitchBlock = source
-            .substringAfter("title = \"显示视频笔记\"")
-            .substringBefore("title = \"默认折叠视频笔记\"")
-        assertTrue(noteSwitchBlock.contains("if (videoNoteEnabled)"))
+    @Test
+    fun fixedPlaybackBehavior_hasNoPromptLikeOrSystemBrightnessHooks() {
+        val sourceRoot = "app/src/main/java/com/android/purebilibili/"
+        val player = loadSource(sourceRoot + "feature/video/ui/section/VideoPlayerSection.kt")
+        val overlay = loadSource(sourceRoot + "feature/video/ui/overlay/VideoPlayerOverlay.kt")
+        val viewModel = loadSource(sourceRoot + "feature/video/viewmodel/VideoPlaybackViewModel.kt")
+        val manifest = loadSource("app/src/main/AndroidManifest.xml")
+
+        assertFalse(player.contains("onDoubleTapLike"))
+        assertFalse(overlay.contains("onDoubleTapLike"))
+        assertFalse(viewModel.contains("ResumePlaybackSuggestion"))
+        assertFalse(player.contains("Settings.System.put"))
+        assertFalse(manifest.contains("android.permission.WRITE_SETTINGS"))
+        assertTrue(player.contains("screenBrightness = newBrightness"))
+        assertTrue(player.contains("FullscreenDoubleTapAction.TogglePlayPause"))
+        assertTrue(player.contains("FullscreenDoubleTapAction.SeekForward"))
+    }
+
+    @Test
+    fun videoNotes_startClosedAndOpenOnlyOnRequestAcrossLayouts() {
+        val sourceRoot = "app/src/main/java/com/android/purebilibili/feature/video/screen/"
+        mapOf(
+            "TabletVideoLayout.kt" to "info.bvid",
+            "TabletCinemaLayout.kt" to "success.info.bvid"
+        ).forEach { (layout, videoIdentity) ->
+            val source = loadSource(sourceRoot + layout)
+            assertTrue(source.contains("showNoteListSheet by remember($videoIdentity) { mutableStateOf(false) }"), layout)
+            assertTrue(source.contains("onNoteClick = { showNoteListSheet = true }"), layout)
+            assertFalse(source.contains("videoNoteDefaultCollapsed"), layout)
+        }
     }
 
     @Test

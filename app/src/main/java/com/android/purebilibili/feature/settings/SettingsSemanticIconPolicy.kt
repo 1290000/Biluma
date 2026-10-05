@@ -93,7 +93,6 @@ internal enum class SettingsIconRole {
     PLAYBACK_SPEED,
     NATIVE_MIUIX_DIALOG,
     LONG_PRESS_SPEED_HINT,
-    RESUME_PLAYBACK_PROMPT,
     STOP_ON_EXIT,
     BACKGROUND_PLAYBACK,
     PLAYLIST_AUTO_CONTINUE,
@@ -108,7 +107,6 @@ internal enum class SettingsIconRole {
     COMMENT_DECORATION,
     AI_SUMMARY,
     VIDEO_NOTE,
-    LIKE_INTERACTION,
     FAVORITE_TAP_MODE,
     VIDEO_DESCRIPTION,
     FULLSCREEN_ORIENTATION,
@@ -133,11 +131,9 @@ internal enum class SettingsIconRole {
     STARTUP_PORTRAIT_FEED,
     HOME_HERO_AUTOPLAY,
     AUTO_PLAY_NEXT,
-    VIDEO_NOTE_COLLAPSE,
     INTERACTIVE_COMMANDS,
     PORTRAIT_SWIPE_FULLSCREEN,
     CENTER_SWIPE_FULLSCREEN,
-    SYSTEM_BRIGHTNESS,
     APP_ICON,
     HOME_CARD_STATS_COMPACT,
     HOME_HERO_CAROUSEL,
@@ -292,7 +288,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.PLAYBACK_SPEED -> R.drawable.ms_speed_24
     SettingsIconRole.NATIVE_MIUIX_DIALOG -> R.drawable.ms_chat_bubble_outline_24
     SettingsIconRole.LONG_PRESS_SPEED_HINT -> R.drawable.ms_visibility_off_24
-    SettingsIconRole.RESUME_PLAYBACK_PROMPT -> R.drawable.ms_restore_24
     SettingsIconRole.STOP_ON_EXIT -> R.drawable.ms_stop_circle_24
     SettingsIconRole.BACKGROUND_PLAYBACK -> R.drawable.ms_music_note_24
     SettingsIconRole.PLAYLIST_AUTO_CONTINUE -> R.drawable.ms_queue_play_next_24
@@ -307,7 +302,6 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.COMMENT_DECORATION -> R.drawable.ms_mode_comment_24
     SettingsIconRole.AI_SUMMARY -> R.drawable.ms_smart_toy_24
     SettingsIconRole.VIDEO_NOTE -> R.drawable.ms_edit_note_24
-    SettingsIconRole.LIKE_INTERACTION -> R.drawable.ms_thumb_up_off_alt_24
     SettingsIconRole.FAVORITE_TAP_MODE -> R.drawable.ms_collections_bookmark_24
     SettingsIconRole.VIDEO_DESCRIPTION -> R.drawable.ms_subject_24
     SettingsIconRole.FULLSCREEN_ORIENTATION -> R.drawable.ms_screen_rotation_24
@@ -332,11 +326,9 @@ internal fun resolveSettingsMaterialSymbolResource(role: SettingsIconRole): Int 
     SettingsIconRole.STARTUP_PORTRAIT_FEED -> R.drawable.ms_vertical_align_top_24
     SettingsIconRole.HOME_HERO_AUTOPLAY -> R.drawable.ms_smart_display_24
     SettingsIconRole.AUTO_PLAY_NEXT -> R.drawable.ms_playlist_play_24
-    SettingsIconRole.VIDEO_NOTE_COLLAPSE -> R.drawable.ms_short_text_24
     SettingsIconRole.INTERACTIVE_COMMANDS -> R.drawable.ms_comments_disabled_24
     SettingsIconRole.PORTRAIT_SWIPE_FULLSCREEN -> R.drawable.ms_swipe_up_24
     SettingsIconRole.CENTER_SWIPE_FULLSCREEN -> R.drawable.ms_swipe_24
-    SettingsIconRole.SYSTEM_BRIGHTNESS -> R.drawable.ms_brightness_medium_24
     SettingsIconRole.APP_ICON -> R.drawable.ms_apps_24
     SettingsIconRole.HOME_CARD_STATS_COMPACT -> R.drawable.ms_stacked_bar_chart_24
     SettingsIconRole.HOME_HERO_CAROUSEL -> R.drawable.ms_view_day_24
@@ -562,7 +554,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.PLAYBACK_SPEED -> MiuixIcons.Stopwatch
     SettingsIconRole.NATIVE_MIUIX_DIALOG -> MiuixIcons.Messages
     SettingsIconRole.LONG_PRESS_SPEED_HINT -> MiuixIcons.Stopwatch
-    SettingsIconRole.RESUME_PLAYBACK_PROMPT -> MiuixIcons.Undo
     SettingsIconRole.STOP_ON_EXIT -> MiuixIcons.Pause
     SettingsIconRole.BACKGROUND_PLAYBACK -> MiuixIcons.Music
     SettingsIconRole.PLAYLIST_AUTO_CONTINUE -> MiuixIcons.Playlist
@@ -577,7 +568,6 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.COMMENT_DECORATION -> MiuixIcons.Community
     SettingsIconRole.AI_SUMMARY -> MiuixIcons.MindMap
     SettingsIconRole.VIDEO_NOTE -> MiuixIcons.NotesFill
-    SettingsIconRole.LIKE_INTERACTION -> MiuixIcons.FavoritesFill
     SettingsIconRole.FAVORITE_TAP_MODE -> MiuixIcons.FavoritesFill
     SettingsIconRole.VIDEO_DESCRIPTION -> MiuixIcons.ConvertFile
     SettingsIconRole.FULLSCREEN_ORIENTATION -> MiuixIcons.RotateLeft
@@ -602,11 +592,9 @@ internal fun resolveMiuixSettingsSemanticIcon(role: SettingsIconRole): ImageVect
     SettingsIconRole.STARTUP_PORTRAIT_FEED -> MiuixIcons.GridView
     SettingsIconRole.HOME_HERO_AUTOPLAY -> MiuixIcons.Recording
     SettingsIconRole.AUTO_PLAY_NEXT -> MiuixIcons.Playlist
-    SettingsIconRole.VIDEO_NOTE_COLLAPSE -> MiuixIcons.MoreCircle
     SettingsIconRole.INTERACTIVE_COMMANDS -> MiuixIcons.MicSlash
     SettingsIconRole.PORTRAIT_SWIPE_FULLSCREEN -> MiuixIcons.ExpandMore
     SettingsIconRole.CENTER_SWIPE_FULLSCREEN -> MiuixIcons.ScreenCapture
-    SettingsIconRole.SYSTEM_BRIGHTNESS -> MiuixIcons.Show
     SettingsIconRole.APP_ICON -> MiuixIcons.All
     SettingsIconRole.HOME_CARD_STATS_COMPACT -> MiuixIcons.Sort
     SettingsIconRole.HOME_HERO_CAROUSEL -> MiuixIcons.Album

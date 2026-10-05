@@ -272,7 +272,6 @@ internal fun TabletVideoLayout(
     paneControlsEnabled: Boolean = true,
     videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
-    videoNoteDefaultCollapsed: Boolean = true,
     playerContent: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val adaptiveInfo = com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo.current
@@ -453,7 +452,6 @@ internal fun TabletVideoLayout(
                                     onQualityChange = playbackActions.changeQuality,
                                     onBack = onBack,
                                     onHomeClick = onHomeClick,
-                                    onDoubleTapLike = engagementActions.toggleLike,
                                     onReloadVideo = playbackActions.reloadVideo,
                                     onSwitchCdn = playbackActions.switchCdn,
                                     onSwitchCdnTo = playbackActions.switchCdnTo,
@@ -505,7 +503,6 @@ internal fun TabletVideoLayout(
                         },
                         videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                         videoNoteEnabled = videoNoteEnabled,
-                        videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                         showRelatedVideos = false,
                         modifier = Modifier
                             .weight(1f)
@@ -566,7 +563,6 @@ internal fun TabletVideoLayout(
                                     },
                                     videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                                     videoNoteEnabled = videoNoteEnabled,
-                                    videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
@@ -623,7 +619,6 @@ internal fun TabletVideoInfoPane(
     onOwnerUploadsClick: () -> Unit,
     videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
-    videoNoteDefaultCollapsed: Boolean = true,
     modifier: Modifier = Modifier,
     showRelatedVideos: Boolean = true,
 ) {
@@ -702,7 +697,6 @@ internal fun TabletVideoInfoPane(
         videoNoteState = success.videoNoteState,
         isLoggedIn = success.isLoggedIn,
         videoNoteEnabled = videoNoteEnabled,
-        videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
         onOpenVideoNoteEditor = playbackActions.openVideoNoteEditor,
         onRetryVideoNote = playbackActions.retryVideoNote,
         onLoadMoreVideoNotes = playbackActions.loadMorePublicVideoNotes,
@@ -1495,7 +1489,6 @@ private fun ScrollableVideoInfoSection(
     videoNoteState: VideoNoteUiState = VideoNoteUiState(),
     isLoggedIn: Boolean = false,
     videoNoteEnabled: Boolean = true,
-    videoNoteDefaultCollapsed: Boolean = true,
     onOpenVideoNoteEditor: () -> Unit = {},
     onRetryVideoNote: () -> Unit = {},
     onLoadMoreVideoNotes: () -> Unit = {},

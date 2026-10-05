@@ -1423,10 +1423,6 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
     private val _qualitySwitchFailureDialog = MutableStateFlow<QualitySwitchFailureDialogState?>(null)
     internal val qualitySwitchFailureDialog = _qualitySwitchFailureDialog.asStateFlow()
 
-    val resumePlaybackSuggestion = playbackSessionStore.state
-        .map { session -> session.resumeSuggestion }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    
     // Celebration animations
     private val _likeBurstVisible = MutableStateFlow(false)
     val likeBurstVisible = _likeBurstVisible.asStateFlow()
@@ -3076,7 +3072,6 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
             audioLang = audioLang,
             videoCodecOverride = videoCodecOverride
         )
-        playbackCoordinator.dismissResumeSuggestion()
         bootstrapContextIfNeeded()
         aiSummaryJob?.cancel()
         videoNoteJob?.cancel()
@@ -3589,11 +3584,6 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                                 initialUnavailableReason = initialQualityUnavailableReason
                             )
                         }
-                        maybeEmitResumePlaybackSuggestion(
-                            requestCid = playbackRequest.cid,
-                            loadedInfo = result.info
-                        )
-
                         scheduleDeferredPostLoadWork(
                             loadedBvid = result.info.bvid,
                             loadedCid = result.info.cid,
@@ -7600,7 +7590,6 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
         pageSwitchJob?.cancel()
         val switchGeneration = ++pageSwitchGeneration
         pendingPageSwitchCid = page.cid
-        playbackCoordinator.dismissResumeSuggestion()
         subtitleLoadToken += 1
         val subtitleClearedState = clearTransientPlaybackPreviewData(clearSubtitleFields(current))
         val previousCid = currentCid
@@ -7749,67 +7738,6 @@ class VideoPlaybackViewModel(application: Application) : AndroidViewModel(applic
                 }
             }
         }
-    }
-
-    fun dismissResumePlaybackSuggestion() {
-        playbackCoordinator.dismissResumeSuggestion()
-    }
-
-    fun continueResumePlaybackSuggestion() {
-        val suggestion = playbackCoordinator.consumeResumeSuggestion() ?: return
-
-        val current = _uiState.value as? VideoPlaybackUiState.Success
-        if (current != null &&
-            current.info.bvid == suggestion.targetBvid &&
-            current.info.pages.isNotEmpty()
-        ) {
-            val pageIndex = current.info.pages.indexOfFirst { page ->
-                page.cid == suggestion.targetCid
-            }
-            if (pageIndex >= 0) {
-                switchPage(pageIndex)
-                return
-            }
-        }
-
-        markInPageInitiatedPlayback(suggestion.targetBvid, suggestion.targetCid)
-        loadVideo(
-            bvid = suggestion.targetBvid,
-            cid = suggestion.targetCid,
-            autoPlay = true
-        )
-    }
-
-    private fun maybeEmitResumePlaybackSuggestion(
-        requestCid: Long,
-        loadedInfo: ViewInfo
-    ) {
-        val context = appContext
-        val promptEnabled = context?.let {
-            com.android.purebilibili.core.store.SettingsManager.getResumePlaybackPromptEnabledSync(it)
-        } ?: true
-
-        playbackCoordinator.refreshResumeSuggestion(
-            requestCid = requestCid,
-            loadedInfo = loadedInfo,
-            promptEnabled = promptEnabled,
-            hasPromptedBefore = { key ->
-                context?.let {
-                    com.android.purebilibili.core.store.SettingsManager.hasResumePlaybackPromptShown(it, key)
-                } ?: false
-            },
-            markPromptShown = { promptKey ->
-                context?.let {
-                    com.android.purebilibili.core.store.SettingsManager.markResumePlaybackPromptShown(
-                        context = it,
-                        promptKey = promptKey
-                    )
-                }
-            },
-            progressLookup = { bvid, cid ->
-                playbackUseCase.getCachedPosition(bvid, cid)
-            }
-        )
     }
 
     private suspend fun switchToInteractiveCid(targetCid: Long, targetEdgeId: Long? = null): Boolean {

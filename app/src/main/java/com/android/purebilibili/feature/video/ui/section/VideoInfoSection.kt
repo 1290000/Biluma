@@ -278,9 +278,8 @@ private fun buildRawDescriptionAnnotatedString(
 
 internal fun resolveVideoInfoInitialExpandedState(
     hasDescription: Boolean,
-    hasTags: Boolean,
-    defaultExpanded: Boolean = false
-): Boolean = defaultExpanded && (hasDescription || hasTags)
+    hasTags: Boolean
+): Boolean = hasDescription || hasTags
 
 private const val BGM_DISCOVERY_LOAD_DELAY_MS = 420L
 private const val BGM_RECOMMEND_PAGE_SIZE = 5
@@ -460,18 +459,14 @@ fun VideoTitleWithDesc(
     val context = LocalContext.current
     val isMaterial3 = LocalAppUiStyle.current == AppUiStyle.MATERIAL3
     val horizontalPadding = if (isMaterial3) 16.dp else 12.dp
-    val defaultExpanded by com.android.purebilibili.core.store.SettingsManager
-        .getVideoInfoDefaultExpanded(context)
-        .collectAsStateWithLifecycle(initialValue = false)
     val argueMsgShown by com.android.purebilibili.core.store.SettingsManager
         .getVideoArgueMsgShown(context)
         .collectAsStateWithLifecycle(initialValue = true)
-    var expanded by remember(info.bvid, info.desc, videoTags.size, defaultExpanded) {
+    var expanded by remember(info.bvid, info.desc, videoTags.size) {
         mutableStateOf(
             resolveVideoInfoInitialExpandedState(
                 hasDescription = info.desc.isNotBlank(),
-                hasTags = videoTags.isNotEmpty(),
-                defaultExpanded = defaultExpanded
+                hasTags = videoTags.isNotEmpty()
             )
         )
     }

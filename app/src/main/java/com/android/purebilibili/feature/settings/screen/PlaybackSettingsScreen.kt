@@ -10,8 +10,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import com.android.purebilibili.feature.settings.ui.LocalSettingsTopContentPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.background
@@ -22,20 +20,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import com.android.purebilibili.R
 import com.android.purebilibili.core.store.DEFAULT_DASH_SEGMENT_REQUESTS_ENABLED
 import com.android.purebilibili.core.store.DEFAULT_PLAYER_DIAGNOSTIC_LOGGING_ENABLED
@@ -1346,8 +1340,6 @@ private fun PlaybackInteractionSettingsSection(
         .getAutoPlay(context).collectAsStateWithLifecycle(initialValue = true)
     val externalPlaylistAutoContinueEnabled by com.android.purebilibili.core.store.SettingsManager
         .getExternalPlaylistAutoContinue(context).collectAsStateWithLifecycle(initialValue = true)
-    val resumePlaybackPromptEnabled by com.android.purebilibili.core.store.SettingsManager
-        .getResumePlaybackPromptEnabled(context).collectAsStateWithLifecycle(initialValue = true)
     val spacePlayedVideoLocatePromptEnabled by com.android.purebilibili.core.store.SettingsManager
         .getSpacePlayedVideoLocatePromptEnabled(context).collectAsStateWithLifecycle(initialValue = true)
     val playbackCompletionBehavior by com.android.purebilibili.core.store.SettingsManager
@@ -1363,12 +1355,6 @@ private fun PlaybackInteractionSettingsSection(
     val videoNoteEnabled by com.android.purebilibili.core.store.SettingsManager
         .getVideoNoteEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true)
-    val videoNoteDefaultCollapsed by com.android.purebilibili.core.store.SettingsManager
-        .getVideoNoteDefaultCollapsed(context)
-        .collectAsStateWithLifecycle(initialValue = true)
-    val videoInfoDefaultExpanded by com.android.purebilibili.core.store.SettingsManager
-        .getVideoInfoDefaultExpanded(context)
-        .collectAsStateWithLifecycle(initialValue = false)
     val videoArgueMsgShown by com.android.purebilibili.core.store.SettingsManager
         .getVideoArgueMsgShown(context)
         .collectAsStateWithLifecycle(initialValue = true)
@@ -1426,24 +1412,6 @@ private fun PlaybackInteractionSettingsSection(
                 }
             },
             iconTint = com.android.purebilibili.core.theme.iOSBlue
-        )
-        AppPreferenceDivider()
-	        AppSwitchPreference(
-	            icon = rememberSettingsSemanticIcon(SettingsIconRole.RESUME_PLAYBACK_PROMPT),
-            title = "续播弹窗提示",
-            subtitle = if (resumePlaybackPromptEnabled) {
-                "检测到历史进度时仅提醒一次"
-            } else {
-                "关闭后不再弹出“继续播放”提示"
-            },
-            checked = resumePlaybackPromptEnabled,
-            onCheckedChange = {
-                scope.launch {
-                    com.android.purebilibili.core.store.SettingsManager
-                        .setResumePlaybackPromptEnabled(context, it)
-                }
-            },
-            iconTint = iOSTeal
         )
         AppPreferenceDivider()
         AppSwitchPreference(
@@ -1575,24 +1543,6 @@ private fun PlaybackInteractionSettingsSection(
         AppPreferenceDivider()
         AppSwitchPreference(
             icon = rememberSettingsSemanticIcon(SettingsIconRole.VIDEO_DESCRIPTION),
-            title = "默认展开视频简介",
-            subtitle = if (videoInfoDefaultExpanded) {
-                "进入视频页时默认展开标题、简介和标签"
-            } else {
-                "进入视频页时默认收起简介，点击标题区域后展开"
-            },
-            checked = videoInfoDefaultExpanded,
-            onCheckedChange = {
-                scope.launch {
-                    com.android.purebilibili.core.store.SettingsManager
-                        .setVideoInfoDefaultExpanded(context, it)
-                }
-            },
-            iconTint = com.android.purebilibili.core.theme.iOSBlue
-        )
-        AppPreferenceDivider()
-        AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.VIDEO_DESCRIPTION),
             title = "显示 UP 主视频声明",
             subtitle = if (videoArgueMsgShown) {
                 "在视频简介区上方显示 UP 主设置的声明（如\"虚构演绎，请勿过度解读\"）"
@@ -1610,20 +1560,6 @@ private fun PlaybackInteractionSettingsSection(
         )
         AppPreferenceDivider()
 
-        AppListItem(
-            headlineContent = { AppText("评论 IP 属地") },
-            supportingContent = {
-                AppText("无需开启；B站返回属地时会在评论时间旁自动显示。部分评论没有属地数据。")
-            },
-            leadingContent = {
-                AppIcon(
-                    rememberMaterialSymbol(R.drawable.ms_info_24),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
-            },
-        )
-        AppPreferenceDivider()
         AppSwitchPreference(
             icon = rememberSettingsSemanticIcon(SettingsIconRole.COMMENT_DECORATION),
             title = "详细评论时间显示",
@@ -1706,39 +1642,6 @@ private fun PlaybackInteractionSettingsSection(
                 }
             },
             iconTint = iOSTeal
-        )
-        if (videoNoteEnabled) {
-            AppPreferenceDivider()
-            AppSwitchPreference(
-                icon = rememberSettingsSemanticIcon(SettingsIconRole.VIDEO_NOTE_COLLAPSE),
-                title = "默认折叠视频笔记",
-                subtitle = if (videoNoteDefaultCollapsed) {
-                    "进入视频页时先显示笔记摘要，需要时再展开"
-                } else {
-                    "进入视频页时直接展开视频笔记内容和操作"
-                },
-                checked = videoNoteDefaultCollapsed,
-                onCheckedChange = {
-                    scope.launch {
-                        com.android.purebilibili.core.store.SettingsManager
-                            .setVideoNoteDefaultCollapsed(context, it)
-                    }
-                },
-                iconTint = com.android.purebilibili.core.theme.iOSBlue
-            )
-        }
-        AppPreferenceDivider()
-        AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.LIKE_INTERACTION),
-            title = "双击点赞",
-            subtitle = "双击视频画面快捷点赞",
-            checked = state.doubleTapLike,
-            onCheckedChange = {
-                viewModel.toggleDoubleTapLike(it)
-                //  [埋点] 设置变更追踪
-                com.android.purebilibili.core.util.AnalyticsHelper.logSettingChange("double_tap_like", it.toString())
-            },
-            iconTint = com.android.purebilibili.core.theme.iOSPink
         )
         AppPreferenceDivider()
         val favoriteQuickSaveDefaultFolder by com.android.purebilibili.core.store.FavoriteInteractionSettingsStore
@@ -1906,64 +1809,6 @@ private fun PlaybackFullscreenGestureSettingsSection(
         .getCenterSwipeToFullscreenEnabled(context).collectAsStateWithLifecycle(initialValue = true)
     val slideVolumeBrightnessEnabled by com.android.purebilibili.core.store.SettingsManager
         .getSlideVolumeBrightnessEnabled(context).collectAsStateWithLifecycle(initialValue = true)
-    val setSystemBrightnessEnabled by com.android.purebilibili.core.store.SettingsManager
-        .getSetSystemBrightnessEnabled(context).collectAsStateWithLifecycle(initialValue = false)
-    val lifecycleOwner = LocalLifecycleOwner.current
-    var canWriteSystemSettings by remember(context) {
-        mutableStateOf(Settings.System.canWrite(context))
-    }
-    var showSystemBrightnessPermissionDialog by rememberSaveable { mutableStateOf(false) }
-    var awaitingSystemBrightnessPermission by rememberSaveable { mutableStateOf(false) }
-    fun persistSystemBrightnessSetting(enabled: Boolean) {
-        scope.launch {
-            com.android.purebilibili.core.store.SettingsManager
-                .setSetSystemBrightnessEnabled(context, enabled)
-        }
-    }
-    fun refreshSystemBrightnessPermission(resolvePendingRequest: Boolean) {
-        val granted = Settings.System.canWrite(context)
-        canWriteSystemSettings = granted
-        when {
-            resolvePendingRequest -> persistSystemBrightnessSetting(granted)
-            setSystemBrightnessEnabled && !granted -> persistSystemBrightnessSetting(false)
-        }
-    }
-    val systemBrightnessPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) {
-        refreshSystemBrightnessPermission(resolvePendingRequest = awaitingSystemBrightnessPermission)
-        awaitingSystemBrightnessPermission = false
-    }
-    LaunchedEffect(setSystemBrightnessEnabled, canWriteSystemSettings) {
-        val normalizedSetting = normalizeSystemBrightnessSetting(
-            storedEnabled = setSystemBrightnessEnabled,
-            canWriteSystemSettings = canWriteSystemSettings
-        )
-        if (normalizedSetting != setSystemBrightnessEnabled) {
-            com.android.purebilibili.core.store.SettingsManager
-                .setSetSystemBrightnessEnabled(context, normalizedSetting)
-        }
-    }
-    DisposableEffect(
-        lifecycleOwner,
-        context,
-        setSystemBrightnessEnabled,
-        awaitingSystemBrightnessPermission
-    ) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                val resolvePendingRequest = awaitingSystemBrightnessPermission
-                refreshSystemBrightnessPermission(resolvePendingRequest)
-                if (resolvePendingRequest) {
-                    awaitingSystemBrightnessPermission = false
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
     val inlineSwipeSeekSeconds by com.android.purebilibili.core.store.SettingsManager
         .getInlineSwipeSeekSeconds(context).collectAsStateWithLifecycle(initialValue = 30)
     val fullscreenSwipeSeekEnabled by com.android.purebilibili.core.store.SettingsManager
@@ -1976,51 +1821,6 @@ private fun PlaybackFullscreenGestureSettingsSection(
         .getSeekForwardSeconds(context).collectAsStateWithLifecycle(initialValue = 10)
     val seekBackwardSeconds by com.android.purebilibili.core.store.SettingsManager
         .getSeekBackwardSeconds(context).collectAsStateWithLifecycle(initialValue = 10)
-    if (showSystemBrightnessPermissionDialog) {
-        com.android.purebilibili.core.ui.AppAlertDialog(
-            onDismissRequest = { showSystemBrightnessPermissionDialog = false },
-            title = {
-                AppText(
-                    "允许调节系统亮度",
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            text = {
-                AppText(
-                    "开启后，播放器亮度手势会先调节当前窗口亮度，并同步系统亮度。Android 需要你在系统设置中单独允许 BiliPai 修改系统设置。",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            confirmButton = {
-                com.android.purebilibili.core.ui.AppDialogAction(
-                    onClick = {
-                        showSystemBrightnessPermissionDialog = false
-                        awaitingSystemBrightnessPermission = true
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_WRITE_SETTINGS,
-                            Uri.parse("package:${context.packageName}")
-                        )
-                        runCatching {
-                            systemBrightnessPermissionLauncher.launch(intent)
-                        }.onFailure {
-                            awaitingSystemBrightnessPermission = false
-                            persistSystemBrightnessSetting(false)
-                        }
-                    }
-                ) { AppText("去授权") }
-            },
-            dismissButton = {
-                com.android.purebilibili.core.ui.AppDialogAction(
-                    onClick = { showSystemBrightnessPermissionDialog = false }
-                ) {
-                    AppText(
-                        "取消",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        )
-    }
     AppPreferenceGroup {
         AppSliderDialogPreference(
             title = "手势灵敏度",
@@ -2274,42 +2074,6 @@ private fun PlaybackFullscreenGestureSettingsSection(
             },
             iconTint = iOSTeal
         )
-        AppPreferenceDivider()
-	        AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.SYSTEM_BRIGHTNESS),
-            title = "调节系统亮度",
-            subtitle = when {
-                !slideVolumeBrightnessEnabled -> "依赖“左右侧滑动调节亮度/音量”开关"
-                setSystemBrightnessEnabled && canWriteSystemSettings ->
-                    "亮度手势会同时修改当前画面和设备系统亮度"
-                else -> "关闭时只临时调整当前播放画面；开启需要系统授权"
-            },
-            checked = setSystemBrightnessEnabled && canWriteSystemSettings,
-            enabled = slideVolumeBrightnessEnabled,
-            onCheckedChange = { requestedEnabled ->
-                if (!slideVolumeBrightnessEnabled) return@AppSwitchPreference
-                when (
-                    resolveSystemBrightnessToggleAction(
-                        requestedEnabled = requestedEnabled,
-                        canWriteSystemSettings = Settings.System.canWrite(context)
-                    )
-                ) {
-                    SystemBrightnessToggleAction.ENABLE -> {
-                        canWriteSystemSettings = true
-                        persistSystemBrightnessSetting(true)
-                    }
-                    SystemBrightnessToggleAction.DISABLE -> {
-                        persistSystemBrightnessSetting(false)
-                    }
-                    SystemBrightnessToggleAction.REQUEST_PERMISSION -> {
-                        canWriteSystemSettings = false
-                        showSystemBrightnessPermissionDialog = true
-                    }
-                }
-            },
-            iconTint = iOSOrange
-        )
-
         AppPreferenceDivider()
         SettingsSingleChoicePreference(
             title = "非全屏滑动调进度范围",

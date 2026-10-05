@@ -102,12 +102,6 @@ fun TipsSettingsScreen(
                 iconTint = iOSTeal,
                 title = "7. 小窗和画中画是两种玩法",
                 content = "播放设置中的「后台播放模式」可选择应用内小窗、系统画中画，或让两者同时生效；画中画需先授予权限。"
-            ),
-            TipEntry(
-                iconResId = R.drawable.ms_thumb_up_fill_24,
-                iconTint = iOSOrange,
-                title = "8. 双击点赞可按喜好开关",
-                content = "若你容易误触，可在播放设置关闭「双击点赞」；喜欢快操作就保持开启。"
             )
         )
     }
@@ -117,25 +111,25 @@ fun TipsSettingsScreen(
             TipEntry(
                 iconResId = R.drawable.ms_flare_24,
                 iconTint = iOSBlue,
-                title = "9. 空降助手能跳过片头广告",
+                title = "8. 空降助手能跳过片头广告",
                 content = "在设置开启「空降助手」后，可自动跳过赞助/片头片尾；也可改成仅提示不自动跳过。"
             ),
             TipEntry(
                 iconResId = R.drawable.ms_label_fill_24,
                 iconTint = iOSPink,
-                title = "10. 版本号连点有彩蛋",
+                title = "9. 版本号连点有彩蛋",
                 content = "在设置页连续点击版本号会触发隐藏彩蛋提示，适合探索党。"
             ),
             TipEntry(
                 iconResId = R.drawable.ms_card_giftcard_fill_24,
                 iconTint = iOSOrange,
-                title = "11. 趣味彩蛋可随时关闭",
+                title = "10. 趣味彩蛋可随时关闭",
                 content = "如果不想看到趣味提示，可在设置里关闭「趣味彩蛋」，界面会更克制。"
             ),
             TipEntry(
                 iconResId = R.drawable.ms_link_24,
                 iconTint = iOSTeal,
-                title = "12. 链接默认打开可一步到位",
+                title = "11. 链接默认打开可一步到位",
                 content = "在设置中配置「默认打开链接」后，点到 B 站链接可更稳定地直达应用内页面。"
             )
         )

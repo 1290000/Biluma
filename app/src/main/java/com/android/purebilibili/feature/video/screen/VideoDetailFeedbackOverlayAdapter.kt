@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import com.android.purebilibili.core.ui.AppAlertDialog
-import com.android.purebilibili.core.ui.components.AppText
-import com.android.purebilibili.core.ui.components.AppTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -34,7 +31,6 @@ import com.android.purebilibili.feature.video.share.VideoShareFeedbackEvents
 import com.android.purebilibili.feature.video.viewmodel.VideoMaidAction
 import com.android.purebilibili.core.ui.BlueSnowMaidAnimation
 import com.android.purebilibili.core.ui.MaidAnimation
-import com.android.purebilibili.core.util.FormatUtils
 import com.android.purebilibili.feature.video.ui.feedback.LikeBurstAnchorRegistry
 import com.android.purebilibili.feature.video.ui.components.LikeBurstAnimation
 import com.android.purebilibili.feature.video.ui.components.TripleSuccessAnimation
@@ -234,27 +230,4 @@ internal fun BoxScope.VideoDetailFeedbackOverlayAdapter(
         scale = feedbackHintScale,
         backgroundAlphaOverride = feedbackHintAlpha,
     )
-
-    val resumePlaybackSuggestion by playbackViewModel.resumePlaybackSuggestion.collectAsStateWithLifecycle()
-    resumePlaybackSuggestion?.let { suggestion ->
-        AppAlertDialog(
-            onDismissRequest = playbackViewModel::dismissResumePlaybackSuggestion,
-            title = { AppText("继续播放") },
-            text = {
-                AppText(
-                    text = "检测到上次播放到 ${suggestion.targetLabel}（${FormatUtils.formatDuration(suggestion.positionMs)}），是否跳转继续播放？",
-                )
-            },
-            confirmButton = {
-                AppTextButton(onClick = playbackViewModel::continueResumePlaybackSuggestion) {
-                    AppText("跳转")
-                }
-            },
-            dismissButton = {
-                AppTextButton(onClick = playbackViewModel::dismissResumePlaybackSuggestion) {
-                    AppText("稍后")
-                }
-            },
-        )
-    }
 }

@@ -110,7 +110,6 @@ data class SettingsUiState(
     val auto1080p: Boolean = true,
     val autoSkipOpEd: Boolean = false,
     val prefetchVideo: Boolean = false,
-    val doubleTapLike: Boolean = true,
 
     //  空降助手
     val sponsorBlockEnabled: Boolean = false,
@@ -214,7 +213,6 @@ data class ExperimentalSettings(
     val auto1080p: Boolean,
     val autoSkipOpEd: Boolean,
     val prefetchVideo: Boolean,
-    val doubleTapLike: Boolean,
     //  空降助手
     val sponsorBlockEnabled: Boolean,
     val sponsorBlockAutoSkip: Boolean
@@ -568,7 +566,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         SettingsManager.getAuto1080p(context),
         SettingsManager.getAutoSkipOpEd(context),
         SettingsManager.getPrefetchVideo(context),
-        SettingsManager.getDoubleTapLike(context),
         SettingsManager.getSponsorBlockEnabled(context),
         SettingsManager.getSponsorBlockAutoSkip(context)
     ) { values ->
@@ -576,9 +573,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             auto1080p = values[0],
             autoSkipOpEd = values[1],
             prefetchVideo = values[2],
-            doubleTapLike = values[3],
-            sponsorBlockEnabled = values[4],
-            sponsorBlockAutoSkip = values[5]
+            sponsorBlockEnabled = values[3],
+            sponsorBlockAutoSkip = values[4]
         )
     }
     
@@ -715,7 +711,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             auto1080p = experimental.auto1080p,
             autoSkipOpEd = experimental.autoSkipOpEd,
             prefetchVideo = experimental.prefetchVideo,
-            doubleTapLike = experimental.doubleTapLike,
             //  空降助手
             sponsorBlockEnabled = experimental.sponsorBlockEnabled,
             sponsorBlockAutoSkip = experimental.sponsorBlockAutoSkip
@@ -1081,7 +1076,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleAuto1080p(value: Boolean) { viewModelScope.launch { SettingsManager.setAuto1080p(context, value) } }
     fun toggleAutoSkipOpEd(value: Boolean) { viewModelScope.launch { SettingsManager.setAutoSkipOpEd(context, value) } }
     fun togglePrefetchVideo(value: Boolean) { viewModelScope.launch { SettingsManager.setPrefetchVideo(context, value) } }
-    fun toggleDoubleTapLike(value: Boolean) { viewModelScope.launch { SettingsManager.setDoubleTapLike(context, value) } }
     
     //  [新增] 空降助手
     fun toggleSponsorBlock(value: Boolean) { viewModelScope.launch { SettingsManager.setSponsorBlockEnabled(context, value) } }

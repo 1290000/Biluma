@@ -1,7 +1,6 @@
 package com.android.purebilibili.feature.video.playback.session
 
 import com.android.purebilibili.feature.video.playback.loader.PlaybackRequest
-import com.android.purebilibili.feature.video.policy.ResumePlaybackSuggestion
 import com.android.purebilibili.feature.video.viewmodel.PlaybackEndAction
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,38 +10,6 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class PlaybackSessionStoreTest {
-
-    @Test
-    fun `setResumeSuggestion should update session state`() {
-        val store = PlaybackSessionStore()
-        val suggestion = ResumePlaybackSuggestion(
-            targetBvid = "BV1resume",
-            targetCid = 2233L,
-            targetLabel = "P2",
-            positionMs = 60_000L
-        )
-
-        store.setResumeSuggestion(suggestion)
-
-        assertEquals(suggestion, store.state.value.resumeSuggestion)
-    }
-
-    @Test
-    fun `consumeResumeSuggestion should clear stored suggestion after returning it`() {
-        val store = PlaybackSessionStore()
-        val suggestion = ResumePlaybackSuggestion(
-            targetBvid = "BV1resume",
-            targetCid = 3344L,
-            targetLabel = "P3",
-            positionMs = 90_000L
-        )
-        store.setResumeSuggestion(suggestion)
-
-        val consumed = store.consumeResumeSuggestion()
-
-        assertEquals(suggestion, consumed)
-        assertNull(store.state.value.resumeSuggestion)
-    }
 
     @Test
     fun `recordCompletionAction should persist the last action`() {

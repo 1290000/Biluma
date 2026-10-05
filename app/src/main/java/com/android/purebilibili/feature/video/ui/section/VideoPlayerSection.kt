@@ -772,7 +772,6 @@ private fun VideoPlayerSectionContent(
     val onSendDanmakuComposer = actions.onSendDanmakuComposer
     val onDanmakuComposerDraftChange = actions.onDanmakuComposerDraftChange
     val onDanmakuComposerSelectionChange = actions.onDanmakuComposerSelectionChange
-    val onDoubleTapLike = actions.onDoubleTapLike
     val onSponsorSkip = actions.onSponsorSkip
     val onSponsorDismiss = actions.onSponsorDismiss
     val onSponsorVote = actions.onSponsorVote
@@ -960,12 +959,10 @@ private fun VideoPlayerSectionContent(
     val longPressSpeedHintAlpha = playerInteractionSettings.longPressSpeedHintAlpha
 
     // 📱 [优化] realResolution 现在从 playerState.videoSize 计算（见下方）
-    val doubleTapLikeEnabled = playerInteractionSettings.doubleTapLikeEnabled
     val doubleTapSeekEnabled = playerInteractionSettings.doubleTapSeekEnabled
     val portraitSwipeToFullscreenEnabled = playerInteractionSettings.portraitSwipeToFullscreenEnabled
     val centerSwipeToFullscreenEnabled = playerInteractionSettings.centerSwipeToFullscreenEnabled
     val slideVolumeBrightnessEnabled = playerInteractionSettings.slideVolumeBrightnessEnabled
-    val setSystemBrightnessEnabled = playerInteractionSettings.setSystemBrightnessEnabled
     val pipNoDanmakuEnabled = playerInteractionSettings.pipNoDanmakuEnabled
     val seekForwardSeconds = playerInteractionSettings.seekForwardSeconds
     val seekBackwardSeconds = playerInteractionSettings.seekBackwardSeconds
@@ -2670,18 +2667,6 @@ private fun VideoPlayerSectionContent(
                                     if (kotlin.math.abs(newBrightness - gesturePercent) > 0.02f) {
                                         getActivity()?.window?.attributes = getActivity()?.window?.attributes?.apply {
                                             screenBrightness = newBrightness
-                                        }
-                                        if (setSystemBrightnessEnabled) {
-                                            runCatching {
-                                                if (Settings.System.canWrite(context)) {
-                                                    val value = (newBrightness * 255f).roundToInt().coerceIn(1, 255)
-                                                    Settings.System.putInt(
-                                                        context.contentResolver,
-                                                        Settings.System.SCREEN_BRIGHTNESS,
-                                                        value
-                                                    )
-                                                }
-                                            }
                                         }
                                         gesturePercent = newBrightness
                                     }

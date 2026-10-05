@@ -107,7 +107,6 @@ internal fun LargeScreenVideoLayout(
     paneControlsEnabled: Boolean = true,
     videoAiSummaryEntryEnabled: Boolean = true,
     videoNoteEnabled: Boolean = true,
-    videoNoteDefaultCollapsed: Boolean = true,
     playerContent: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val pageColor = AppSurfaceTokens.chromeBackground()
@@ -196,7 +195,6 @@ internal fun LargeScreenVideoLayout(
                     },
                     videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                     videoNoteEnabled = videoNoteEnabled,
-                    videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                     modifier = modifier,
                     showRelatedVideos = showRelatedInIntro,
                 )
@@ -539,7 +537,6 @@ private fun LargeScreenPlayerHost(
                     onQualityChange = playbackActions.changeQuality,
                     onBack = onBack,
                     onHomeClick = onHomeClick,
-                    onDoubleTapLike = engagementActions.toggleLike,
                     onReloadVideo = playbackActions.reloadVideo,
                     onSwitchCdn = playbackActions.switchCdn,
                     onSwitchCdnTo = playbackActions.switchCdnTo,

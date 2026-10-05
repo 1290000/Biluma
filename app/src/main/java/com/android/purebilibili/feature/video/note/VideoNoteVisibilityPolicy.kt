@@ -10,10 +10,3 @@ internal fun shouldLoadVideoNote(
 internal fun shouldShowVideoNoteCard(isVideoNoteEnabled: Boolean): Boolean {
     return isVideoNoteEnabled
 }
-
-internal fun shouldShowVideoNoteBody(
-    defaultCollapsed: Boolean,
-    userExpanded: Boolean
-): Boolean {
-    return !defaultCollapsed || userExpanded
-}

@@ -189,13 +189,13 @@ class VideoDetailScreenMethodSizeStructureTest {
     }
 
     @Test
-    fun feedbackOverlayOwnsTransientAnimationAndResumeStateReads() {
+    fun feedbackOverlayOwnsTransientAnimationWithoutResumePrompt() {
         val holder = loadSource("VideoDetailScreenStateHolder.kt")
         val adapter = loadSource("VideoDetailFeedbackOverlayAdapter.kt")
 
         assertTrue(adapter.lineSequence().count() <= 350)
         assertTrue(adapter.contains("playbackEventState.popupMessage"))
-        assertTrue(adapter.contains("resumePlaybackSuggestion.collectAsStateWithLifecycle()"))
+        assertFalse(adapter.contains("resumePlaybackSuggestion"))
         assertTrue(adapter.contains("LikeBurstAnimation("))
         assertTrue(adapter.contains("TripleSuccessAnimation("))
         assertFalse(holder.contains("val popupMessage = playbackEventState.popupMessage"))

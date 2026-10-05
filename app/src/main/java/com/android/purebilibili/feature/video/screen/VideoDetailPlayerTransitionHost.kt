@@ -168,7 +168,6 @@ internal fun PortraitInlineVideoPlayerHost(
     danmakuHostActive: Boolean,
     onToggleFullscreen: () -> Unit,
     playbackActions: VideoDetailPlaybackActions,
-    onDoubleTapLike: () -> Unit,
     onBack: () -> Unit,
     onHomeClick: () -> Unit,
     endDrawerRequestKey: Int = 0,
@@ -316,7 +315,6 @@ internal fun PortraitInlineVideoPlayerHost(
                     ?: { _, _ -> },
                 onDanmakuComposerSelectionChange = fullscreenExtras?.onDanmakuComposerSelectionChange
                     ?: { _, _, _ -> },
-                onDoubleTapLike = onDoubleTapLike,
                 onSponsorSkip = { playbackActions.skipSponsorSegment() },
                 onSponsorDismiss = { playbackActions.dismissSponsorSkipButton() },
                 onSponsorVote = { playbackActions.voteSponsorSegment(it) },

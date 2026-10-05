@@ -1,8 +1,6 @@
 package com.android.purebilibili.feature.video.playback.coordinator
 
 import com.android.purebilibili.core.store.PlaybackCompletionBehavior
-import com.android.purebilibili.data.model.response.Page
-import com.android.purebilibili.data.model.response.ViewInfo
 import com.android.purebilibili.feature.video.player.ExternalPlaylistSource
 import com.android.purebilibili.feature.video.player.PlayMode
 import com.android.purebilibili.feature.video.playback.session.PlaybackSessionStore
@@ -10,7 +8,6 @@ import com.android.purebilibili.feature.video.viewmodel.PlaybackEndAction
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class PlaybackCoordinatorTest {
@@ -50,68 +47,6 @@ class PlaybackCoordinatorTest {
 
         assertEquals(PlaybackEndAction.AUTO_CONTINUE, action)
         assertEquals(action, store.state.value.lastCompletionAction)
-    }
-
-    @Test
-    fun `refreshResumeSuggestion should store suggestion and mark prompt as shown`() {
-        val store = PlaybackSessionStore()
-        val coordinator = PlaybackCoordinator(store)
-        val markedPromptKeys = mutableListOf<String>()
-        val info = ViewInfo(
-            bvid = "BV1multi",
-            cid = 101L,
-            pages = listOf(
-                Page(cid = 101L, page = 1, part = "P1"),
-                Page(cid = 205L, page = 5, part = "P5")
-            )
-        )
-
-        val suggestion = coordinator.refreshResumeSuggestion(
-            requestCid = 101L,
-            loadedInfo = info,
-            promptEnabled = true,
-            hasPromptedBefore = { false },
-            markPromptShown = { key -> markedPromptKeys += key },
-            progressLookup = { bvid, cid ->
-                when ("$bvid#$cid") {
-                    "BV1multi#205" -> 15 * 60 * 1000L
-                    else -> 0L
-                }
-            }
-        )
-
-        assertEquals(suggestion, store.state.value.resumeSuggestion)
-        assertEquals(listOf("BV1multi#205"), markedPromptKeys)
-    }
-
-    @Test
-    fun `refreshResumeSuggestion should clear state when prompt is disabled`() {
-        val store = PlaybackSessionStore()
-        val coordinator = PlaybackCoordinator(store)
-        val info = ViewInfo(
-            bvid = "BV1multi",
-            cid = 101L,
-            pages = listOf(
-                Page(cid = 101L, page = 1, part = "P1"),
-                Page(cid = 205L, page = 5, part = "P5")
-            )
-        )
-
-        coordinator.refreshResumeSuggestion(
-            requestCid = 101L,
-            loadedInfo = info,
-            promptEnabled = false,
-            hasPromptedBefore = { false },
-            markPromptShown = { error("prompt should not be marked when disabled") },
-            progressLookup = { bvid, cid ->
-                when ("$bvid#$cid") {
-                    "BV1multi#205" -> 15 * 60 * 1000L
-                    else -> 0L
-                }
-            }
-        )
-
-        assertNull(store.state.value.resumeSuggestion)
     }
 
     @Test

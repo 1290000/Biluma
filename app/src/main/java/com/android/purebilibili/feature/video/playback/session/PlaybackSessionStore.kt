@@ -1,7 +1,6 @@
 package com.android.purebilibili.feature.video.playback.session
 
 import com.android.purebilibili.feature.video.playback.loader.PlaybackRequest
-import com.android.purebilibili.feature.video.policy.ResumePlaybackSuggestion
 import com.android.purebilibili.feature.video.viewmodel.normalizeCodecFamilyKey
 import com.android.purebilibili.feature.video.viewmodel.PlaybackEndAction
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +20,6 @@ internal data class PlaybackSessionState(
     val subtitleLoadToken: Long = 0L,
     val currentRequest: PlaybackRequest? = null,
     val blockedVideoCodecs: Set<String> = emptySet(),
-    val resumeSuggestion: ResumePlaybackSuggestion? = null,
     val lastCompletionAction: PlaybackEndAction? = null
 )
 
@@ -30,12 +28,6 @@ internal class PlaybackSessionStore(
 ) {
     private val _state = MutableStateFlow(initialState)
     val state = _state.asStateFlow()
-
-    fun setResumeSuggestion(suggestion: ResumePlaybackSuggestion?) {
-        _state.update { current ->
-            current.copy(resumeSuggestion = suggestion)
-        }
-    }
 
     fun updateCurrentMedia(
         bvid: String = _state.value.currentBvid,
@@ -116,18 +108,6 @@ internal class PlaybackSessionStore(
             requestToken = requestToken,
             subtitleToken = subtitleToken
         )
-    }
-
-    fun clearResumeSuggestion() {
-        setResumeSuggestion(null)
-    }
-
-    fun consumeResumeSuggestion(): ResumePlaybackSuggestion? {
-        val suggestion = _state.value.resumeSuggestion
-        _state.update { current ->
-            current.copy(resumeSuggestion = null)
-        }
-        return suggestion
     }
 
     fun recordCompletionAction(action: PlaybackEndAction) {

@@ -159,7 +159,6 @@ fun VideoNoteListSheet(
                 onPublicNoteClick = onPublicNoteClick,
                 onAuthorClick = onAuthorClick,
                 onLoadMore = onLoadMore,
-                defaultCollapsed = false,
             )
             VideoNoteSheetFooter(
                 isLoggedIn = isLoggedIn,

@@ -67,13 +67,11 @@
       "audio_focus_enabled": true,
       "video_ai_summary_entry_enabled": false,
       "video_note_enabled": false,
-      "video_info_default_expanded": false,
       "video_detail_chrome_scroll_hide_enabled": false,
       "click_to_play": false,
       "space_played_video_locate_prompt_enabled": false
     },
     "gesture": {
-      "exp_double_tap_like": false,
       "swipe_hide_player": true,
       "portrait_player_collapse_mode": 1,
       "pause_on_player_collapse": false,

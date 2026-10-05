@@ -580,7 +580,7 @@ private fun AppearanceSettingsPage(hazeState: HazeState) {
 @Composable
 private fun PlaybackSettingsPage(hazeState: HazeState) {
     //  iOS 风格交错入场动画
-    val animatedItems = remember { List(7) { Animatable(0f) } }
+    val animatedItems = remember { List(6) { Animatable(0f) } }
     
     LaunchedEffect(Unit) {
         animatedItems.forEachIndexed { index, animatable ->
@@ -697,16 +697,6 @@ private fun PlaybackSettingsPage(hazeState: HazeState) {
             title = "手势控制",
             description = "左右滑动快进，上下调节音量亮度",
             animationProgress = animatedItems[5].value,
-            hazeState = hazeState
-        )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        FeatureListItem(
-            icon = "👍",
-            title = "双击点赞",
-            description = "双击画面快速点赞，设置中可开关",
-            animationProgress = animatedItems[6].value,
             hazeState = hazeState
         )
     }

@@ -23,7 +23,6 @@ class PlayerInteractionSettingsMappingPolicyTest {
         val result = mapPlayerInteractionSettingsFromPreferences(prefs)
 
         assertEquals(1.0f, result.gestureSensitivity)
-        assertTrue(result.doubleTapLikeEnabled)
         assertFalse(result.doubleTapSeekEnabled)
         assertEquals(30, result.inlineSwipeSeekSeconds)
         assertEquals(15, result.fullscreenSwipeSeekSeconds)
@@ -46,7 +45,6 @@ class PlayerInteractionSettingsMappingPolicyTest {
     fun populatedPreferences_mapAndNormalizeInteractionSettings() {
         val prefs = mutablePreferencesOf(
             floatPreferencesKey("gesture_sensitivity") to 2.8f,
-            booleanPreferencesKey("exp_double_tap_like") to false,
             booleanPreferencesKey("double_tap_seek_enabled") to false,
             intPreferencesKey("inline_swipe_seek_seconds") to 12,
             intPreferencesKey("fullscreen_swipe_seek_seconds") to 14,
@@ -67,7 +65,6 @@ class PlayerInteractionSettingsMappingPolicyTest {
         val result = mapPlayerInteractionSettingsFromPreferences(prefs)
 
         assertEquals(2.0f, result.gestureSensitivity)
-        assertFalse(result.doubleTapLikeEnabled)
         assertFalse(result.doubleTapSeekEnabled)
         assertEquals(10, result.inlineSwipeSeekSeconds)
         assertEquals(15, result.fullscreenSwipeSeekSeconds)
@@ -82,6 +79,22 @@ class PlayerInteractionSettingsMappingPolicyTest {
         assertFalse(result.subtitlePositionLocked)
         assertTrue(result.twoFingerVerticalSpeedEnabled)
         assertTrue(result.hiResLongPressCompatHintShown)
+    }
+
+    @Test
+    fun retiredPlaybackPreferences_doNotChangeInteractionSettings() {
+        val preferences = mutablePreferencesOf(
+            booleanPreferencesKey("exp_double_tap_like") to true,
+            booleanPreferencesKey("set_system_brightness") to true,
+            booleanPreferencesKey("resume_playback_prompt_enabled") to true,
+            booleanPreferencesKey("video_info_default_expanded") to false,
+            booleanPreferencesKey("video_note_default_collapsed") to false
+        )
+
+        assertEquals(
+            mapPlayerInteractionSettingsFromPreferences(mutablePreferencesOf()),
+            mapPlayerInteractionSettingsFromPreferences(preferences)
+        )
     }
 
     @Test

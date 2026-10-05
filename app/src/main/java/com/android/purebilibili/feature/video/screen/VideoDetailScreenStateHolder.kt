@@ -1201,9 +1201,6 @@ internal fun VideoDetailScreenStateHolder(
     val videoNoteEnabled by com.android.purebilibili.core.store.SettingsManager
         .getVideoNoteEnabled(context)
         .collectAsStateWithLifecycle(initialValue = true, lifecycle = lifecycleOwner.lifecycle)
-    val videoNoteDefaultCollapsed by com.android.purebilibili.core.store.SettingsManager
-        .getVideoNoteDefaultCollapsed(context)
-        .collectAsStateWithLifecycle(initialValue = true, lifecycle = lifecycleOwner.lifecycle)
     val preferredCommentSortMode = remember(commentDefaultSortMode) {
         CommentSortMode.fromApiMode(commentDefaultSortMode)
     }
@@ -3385,7 +3382,6 @@ internal fun VideoDetailScreenStateHolder(
             danmakuHostActive = !hasCommittedRelatedVideoNavigation,
             onToggleFullscreen = { toggleFullscreen() },
             playbackActions = playbackActions,
-            onDoubleTapLike = engagementViewModel::toggleLike,
             onBack = if (layout.isFullscreen) ({ toggleFullscreen() }) else handleBack,
             onHomeClick = {
                 handleTopBarAction(resolveVideoDetailTopBarAction(isHomeButton = true))
@@ -3699,7 +3695,6 @@ internal fun VideoDetailScreenStateHolder(
                                 com.android.purebilibili.core.store.SettingsManager.setDanmakuSendFontSize(context, fontSize)
                             }
                         },
-                        onDoubleTapLike = { engagementViewModel.toggleLike() },
                         onSponsorSkip = { viewModel.skipCurrentSponsorSegment() },
                         onSponsorDismiss = { viewModel.dismissSponsorSkipButton() },
                         onSponsorVote = viewModel::voteCurrentSponsorSegment,
@@ -3957,7 +3952,6 @@ internal fun VideoDetailScreenStateHolder(
                                 paneControlsEnabled = isTransitionFinished,
                                 videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                                 videoNoteEnabled = videoNoteEnabled,
-                                videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                                 playerContent = continuousPlayerSlot,
                             )
                         } else {
@@ -4030,7 +4024,6 @@ internal fun VideoDetailScreenStateHolder(
                             paneControlsEnabled = isTransitionFinished,
                             videoAiSummaryEntryEnabled = videoAiSummaryEntryEnabled,
                             videoNoteEnabled = videoNoteEnabled,
-                            videoNoteDefaultCollapsed = videoNoteDefaultCollapsed,
                             playerContent = continuousPlayerSlot,
                             )
                         }

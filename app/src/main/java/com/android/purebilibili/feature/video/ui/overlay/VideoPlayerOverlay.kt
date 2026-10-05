@@ -609,8 +609,6 @@ fun VideoPlayerOverlay(
     val onDanmakuSyncNowClick = actions.onDanmakuSyncNowClick
     val subtitleControlState = state.subtitleControlState
     val subtitleControlCallbacks = actions.subtitleControlCallbacks
-    val doubleTapLikeEnabled = state.doubleTapLikeEnabled
-    val onDoubleTapLike = actions.onDoubleTapLike
     val currentAspectRatio = state.currentAspectRatio
     val onAspectRatioChange = actions.onAspectRatioChange
     val onShare = actions.onShare
@@ -1086,7 +1084,6 @@ fun VideoPlayerOverlay(
 
     //  双击检测状态
     var lastTapTime by remember { mutableLongStateOf(0L) }
-    var showLikeAnimation by remember { mutableStateOf(false) }
     val overlayVisualPolicy = remember(
         configuration.screenWidthDp,
         playerControlVisibility.compactPlayerChrome
@@ -1260,14 +1257,6 @@ fun VideoPlayerOverlay(
         }
     }
     
-    //  双击点赞动画自动消失
-    LaunchedEffect(showLikeAnimation) {
-        if (showLikeAnimation) {
-            delay(800)
-            showLikeAnimation = false
-        }
-    }
-
     LaunchedEffect(suppressCenterPlayButtonForSeekTransition) {
         if (suppressCenterPlayButtonForSeekTransition) {
             delay(CENTER_PLAY_BUTTON_SEEK_TRANSITION_GRACE_MS)

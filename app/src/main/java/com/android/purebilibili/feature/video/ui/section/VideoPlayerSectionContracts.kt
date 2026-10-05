@@ -110,7 +110,6 @@ internal data class VideoPlayerSectionActions(
     ) -> Unit = { _, _, _, _, _ -> },
     val onDanmakuComposerDraftChange: (String, Boolean) -> Unit = { _, _ -> },
     val onDanmakuComposerSelectionChange: (Int, Int, Int) -> Unit = { _, _, _ -> },
-    val onDoubleTapLike: () -> Unit = {},
     val onSponsorSkip: () -> Unit = {},
     val onSponsorDismiss: () -> Unit = {},
     val onSponsorVote: (Int) -> Unit = {},
