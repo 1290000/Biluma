@@ -28,7 +28,7 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Updates and feedback | Update checks, release links, About entries, and issue reporting point to Biluma |
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
-| Feature and settings reduction | Items 1, 2, 3, 4, 5, and 6 are implemented; three items remain pending, as listed below |
+| Feature and settings reduction | Items 1, 2, 3, 4, 5, 6, and 7 are implemented; two items remain pending, as listed below |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
@@ -47,7 +47,7 @@ This round is being implemented in batches on `feat/ui-simplification`. Approved
 | 4. Splash icon mask animation | Disabled | Implemented; removed the toggle, animation styles, and startup-only assets; system splash icons are transparent, while wallpaper, preloading, and launcher compatibility entries remain |
 | 5. Native Miuix popups | Enabled | Implemented; switch and its disabled alternatives removed; Miuix dialogs no longer fall back to Material through this switch |
 | 6. Video tag size | Smallest | Implemented; video tags use the smallest size without settings or backup overrides; removed the unused intermediate size and retained standard tags elsewhere |
-| 7. Compact player controls | Enabled | Pending |
+| 7. Compact player controls | Enabled | Implemented; removed the toggle, preference, and classic layout branches; compact spacing and scrims are fixed, with sharing retained in the More menu |
 | 8. Floating bottom bar | Enabled | Pending |
 | 9. Navigation icon cross-scale | Enabled | Pending |
 

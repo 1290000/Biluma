@@ -136,7 +136,6 @@ import com.android.purebilibili.core.ui.rememberAppCoinIcon
 import com.android.purebilibili.core.ui.rememberAppLikeFilledIcon
 import com.android.purebilibili.core.ui.rememberAppLikeIcon
 import com.android.purebilibili.core.ui.rememberAppMoreIcon
-import com.android.purebilibili.core.ui.rememberAppShareIcon
 import com.android.purebilibili.core.util.HapticType
 import com.android.purebilibili.core.util.rememberHapticFeedback
 import com.android.purebilibili.feature.video.usecase.applyPlaybackButtonUserAction
@@ -1089,11 +1088,9 @@ fun VideoPlayerOverlay(
     var showLikeAnimation by remember { mutableStateOf(false) }
     val overlayVisualPolicy = remember(
         configuration.screenWidthDp,
-        playerControlVisibility.compactPlayerChrome
     ) {
         resolveVideoPlayerOverlayVisualPolicy(
             widthDp = configuration.screenWidthDp,
-            compact = playerControlVisibility.compactPlayerChrome
         )
     }
     val landscapeCommentReservedWidth = if (landscapeCommentPanelVisible) {
@@ -1490,7 +1487,6 @@ fun VideoPlayerOverlay(
                         //  [新增] 投屏按钮
                         onCastClick = onCastClickAction,
                         showCastButton = playerControlVisibility.showCastButton,
-                        compactPlayerChrome = playerControlVisibility.compactPlayerChrome,
                         statusBarVisible = playerChromeStatusBarVisible,
                         modifier = Modifier.align(Alignment.TopStart)
                     )
@@ -1523,7 +1519,6 @@ fun VideoPlayerOverlay(
                     isPlaying = effectiveIsPlaying,
                     progress = effectiveProgressState,
                     isFullscreen = isFullscreen,
-                    compactPlayerChrome = playerControlVisibility.compactPlayerChrome,
                     currentSpeed = currentSpeed,
                     currentRatio = currentAspectRatio,
                     onPlayPauseClick = {
@@ -2468,8 +2463,6 @@ private fun PortraitTopBar(
     // 📺 [新增] 投屏
     onCastClick: () -> Unit = {},
     showCastButton: Boolean = true,
-    /** 紧凑布局隐藏顶栏分享，并收紧按钮间距。 */
-    compactPlayerChrome: Boolean = false,
     /** 系统状态栏可见时为顶栏加 statusBarsPadding，避免与系统图标重叠。 */
     statusBarVisible: Boolean = true,
     modifier: Modifier = Modifier
@@ -2481,11 +2474,9 @@ private fun PortraitTopBar(
         (viewportWidthDpOverride ?: configuration.screenWidthDp).coerceAtLeast(1)
     }
     val moreIcon = rememberAppMoreIcon()
-    val shareIcon = rememberAppShareIcon()
-    val layoutPolicy = remember(uiLayoutWidthDp, compactPlayerChrome) {
+    val layoutPolicy = remember(uiLayoutWidthDp) {
         resolvePortraitTopBarLayoutPolicy(
             widthDp = uiLayoutWidthDp,
-            compact = compactPlayerChrome
         )
     }
 
@@ -2616,12 +2607,10 @@ private fun PortraitTopBar(
                         text = { AppText("不感兴趣") },
                         onClick = { showMoreMenu = false; onNotInterested() },
                     )
-                    if (compactPlayerChrome) {
-                        AppDropdownMenuItem(
-                            text = { AppText("分享") },
-                            onClick = { showMoreMenu = false; onShare() },
-                        )
-                    }
+                    AppDropdownMenuItem(
+                        text = { AppText("分享") },
+                        onClick = { showMoreMenu = false; onShare() },
+                    )
                 }
             } else {
                 AppDropdownMenu(
@@ -2643,26 +2632,9 @@ private fun PortraitTopBar(
                         text = { AppText("不感兴趣") },
                         onClick = { showMoreMenu = false; onNotInterested() }
                     )
-                    if (compactPlayerChrome) {
-                        AppDropdownMenuItem(
-                            text = { AppText("分享") },
-                            onClick = { showMoreMenu = false; onShare() }
-                        )
-                    }
-                }
-            }
-
-            if (!compactPlayerChrome) {
-                // 分享按钮 - 无背景
-                AppIconButton(
-                    onClick = onShare,
-                    modifier = Modifier.size(layoutPolicy.buttonSizeDp.dp)
-                ) {
-                    AppIcon(
-                        imageVector = shareIcon,
-                        contentDescription = "分享",
-                        tint = Color.White,
-                        modifier = Modifier.size(layoutPolicy.iconSizeDp.dp)
+                    AppDropdownMenuItem(
+                        text = { AppText("分享") },
+                        onClick = { showMoreMenu = false; onShare() }
                     )
                 }
             }

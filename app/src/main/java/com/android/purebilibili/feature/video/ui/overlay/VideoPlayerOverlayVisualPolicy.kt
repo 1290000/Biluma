@@ -30,13 +30,12 @@ data class VideoPlayerOverlayVisualPolicy(
 )
 
 fun resolveVideoPlayerOverlayVisualPolicy(
-    widthDp: Int,
-    compact: Boolean = false
+    widthDp: Int
 ): VideoPlayerOverlayVisualPolicy {
     if (widthDp >= 1600) {
         return VideoPlayerOverlayVisualPolicy(
-            topScrimHeightDp = if (compact) 150 else 200,
-            bottomScrimHeightDp = if (compact) 210 else 280,
+            topScrimHeightDp = 150,
+            bottomScrimHeightDp = 210,
             lockButtonEndPaddingDp = 40,
             lockButtonSizeDp = 64,
             lockButtonCornerRadiusDp = 16,
@@ -66,8 +65,8 @@ fun resolveVideoPlayerOverlayVisualPolicy(
 
     if (widthDp >= 840) {
         return VideoPlayerOverlayVisualPolicy(
-            topScrimHeightDp = if (compact) 126 else 168,
-            bottomScrimHeightDp = if (compact) 180 else 240,
+            topScrimHeightDp = 126,
+            bottomScrimHeightDp = 180,
             lockButtonEndPaddingDp = 30,
             lockButtonSizeDp = 56,
             lockButtonCornerRadiusDp = 14,
@@ -97,8 +96,8 @@ fun resolveVideoPlayerOverlayVisualPolicy(
 
     if (widthDp >= 600) {
         return VideoPlayerOverlayVisualPolicy(
-            topScrimHeightDp = if (compact) 114 else 152,
-            bottomScrimHeightDp = if (compact) 165 else 220,
+            topScrimHeightDp = 114,
+            bottomScrimHeightDp = 165,
             lockButtonEndPaddingDp = 26,
             lockButtonSizeDp = 52,
             lockButtonCornerRadiusDp = 13,
@@ -127,8 +126,8 @@ fun resolveVideoPlayerOverlayVisualPolicy(
     }
 
     return VideoPlayerOverlayVisualPolicy(
-        topScrimHeightDp = if (compact) 105 else 140,
-        bottomScrimHeightDp = if (compact) 150 else 200,
+        topScrimHeightDp = 105,
+        bottomScrimHeightDp = 150,
         lockButtonEndPaddingDp = 24,
         lockButtonSizeDp = 48,
         lockButtonCornerRadiusDp = 12,

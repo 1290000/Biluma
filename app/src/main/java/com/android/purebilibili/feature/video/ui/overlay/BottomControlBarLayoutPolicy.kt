@@ -74,14 +74,13 @@ internal fun resolveVideoDetailProgressPlacement(
 }
 
 fun resolveBottomControlBarLayoutPolicy(
-    widthDp: Int,
-    compact: Boolean = false
+    widthDp: Int
 ): BottomControlBarLayoutPolicy {
     if (widthDp >= 1600) {
         return BottomControlBarLayoutPolicy(
             bottomPaddingDp = 18,
-            progressSpacingDp = if (compact) 5 else 12,
-            horizontalPaddingDp = if (compact) 14 else 32,
+            progressSpacingDp = 5,
+            horizontalPaddingDp = 14,
             playButtonSizeDp = 48,
             playIconSizeDp = 36,
             afterPlaySpacingDp = resolveTimeToIconSpacingDp(timeFontSp = 15, iconSizeDp = 36),
@@ -109,8 +108,8 @@ fun resolveBottomControlBarLayoutPolicy(
     if (widthDp >= 840) {
         return BottomControlBarLayoutPolicy(
             bottomPaddingDp = 14,
-            progressSpacingDp = if (compact) 4 else 10,
-            horizontalPaddingDp = if (compact) 10 else 24,
+            progressSpacingDp = 4,
+            horizontalPaddingDp = 10,
             playButtonSizeDp = 40,
             playIconSizeDp = 32,
             afterPlaySpacingDp = resolveTimeToIconSpacingDp(timeFontSp = 13, iconSizeDp = 32),
@@ -138,8 +137,8 @@ fun resolveBottomControlBarLayoutPolicy(
     if (widthDp >= 600) {
         return BottomControlBarLayoutPolicy(
             bottomPaddingDp = 13,
-            progressSpacingDp = if (compact) 3 else 9,
-            horizontalPaddingDp = if (compact) 8 else 20,
+            progressSpacingDp = 3,
+            horizontalPaddingDp = 8,
             playButtonSizeDp = 36,
             playIconSizeDp = 30,
             afterPlaySpacingDp = resolveTimeToIconSpacingDp(timeFontSp = 13, iconSizeDp = 30),
@@ -166,8 +165,8 @@ fun resolveBottomControlBarLayoutPolicy(
 
     return BottomControlBarLayoutPolicy(
         bottomPaddingDp = 12,
-        progressSpacingDp = if (compact) 3 else 0,
-        horizontalPaddingDp = if (compact) 5 else 12,
+        progressSpacingDp = 3,
+        horizontalPaddingDp = 5,
         playButtonSizeDp = 32,
         playIconSizeDp = 28,
         afterPlaySpacingDp = resolveTimeToIconSpacingDp(timeFontSp = 12, iconSizeDp = 28),

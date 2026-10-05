@@ -32,6 +32,16 @@ class FixedUiSettingsStructureTest {
         assertTrue(info.contains("AppTagChipSize.SMALL"))
     }
 
+    @Test
+    fun compactPlayerHasNoClassicBranchAndKeepsSharingInTheMenu() {
+        val settings = loadSource("core/store/SettingsManager.kt")
+        val overlay = loadSource("feature/video/ui/overlay/VideoPlayerOverlay.kt")
+        assertFalse(settings.contains("compact_player_chrome"))
+        assertFalse(overlay.contains("compactPlayerChrome"))
+        assertTrue(overlay.contains("onClick = { showMoreMenu = false; onShare() }"))
+        assertFalse(overlay.contains("onClick = onShare,"))
+    }
+
     private fun loadSource(path: String): String {
         val relativePath = "src/main/java/com/android/purebilibili/$path"
         return listOf(File("app/$relativePath"), File(relativePath))

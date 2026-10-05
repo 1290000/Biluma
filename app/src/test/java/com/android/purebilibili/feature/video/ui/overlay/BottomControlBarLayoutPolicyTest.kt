@@ -17,7 +17,7 @@ class BottomControlBarLayoutPolicyTest {
         assertEquals(12, policy.timeFontSp)
         assertEquals(13, policy.actionTextFontSp)
         assertEquals(4, policy.danmakuSettingEndPaddingDp)
-        assertEquals(12, policy.horizontalPaddingDp)
+        assertEquals(5, policy.horizontalPaddingDp)
         assertEquals(8, policy.danmakuSwitchToInputSpacingDp)
         assertEquals(10, policy.afterInputSpacingDp)
         assertEquals(8, policy.rightActionSpacingDp)

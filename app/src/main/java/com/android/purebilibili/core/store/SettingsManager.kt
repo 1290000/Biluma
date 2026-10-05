@@ -487,8 +487,6 @@ enum class PlayerProgressPlacement(
 data class PlayerControlVisibilitySettings(
     val showCastButton: Boolean = true,
     val showFollowButton: Boolean = true,
-    /** 紧凑播放器控件：隐藏顶栏分享并收紧顶底栏间距。默认经典布局。 */
-    val compactPlayerChrome: Boolean = false
 )
 
 internal fun normalizeDanmakuDisplayArea(value: Float): Float {
@@ -1383,7 +1381,6 @@ object SettingsManager {
     private val KEY_DANMAKU_CLOUD_SYNC_ENABLED = booleanPreferencesKey("danmaku_cloud_sync_enabled")
     private val KEY_SHOW_PLAYER_CAST_BUTTON = booleanPreferencesKey("show_player_cast_button")
     private val KEY_SHOW_VIDEO_FOLLOW_BUTTON = booleanPreferencesKey("show_video_follow_button")
-    private val KEY_COMPACT_PLAYER_CHROME = booleanPreferencesKey("compact_player_chrome")
     private val KEY_PLAYER_PROGRESS_PLACEMENT = intPreferencesKey("player_progress_placement")
     private val KEY_SEARCH_HOT_SECTION_ENABLED = booleanPreferencesKey("search_hot_section_enabled")
     private val KEY_SEARCH_DISCOVER_SECTION_ENABLED = booleanPreferencesKey("search_discover_section_enabled")
@@ -1969,7 +1966,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             PlayerControlVisibilitySettings(
                 showCastButton = preferences[KEY_SHOW_PLAYER_CAST_BUTTON] ?: true,
                 showFollowButton = preferences[KEY_SHOW_VIDEO_FOLLOW_BUTTON] ?: true,
-                compactPlayerChrome = preferences[KEY_COMPACT_PLAYER_CHROME] ?: false
             )
         }
         .distinctUntilChanged()
@@ -1980,10 +1976,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     suspend fun setShowVideoFollowButton(context: Context, visible: Boolean) {
         context.settingsDataStore.edit { it[KEY_SHOW_VIDEO_FOLLOW_BUTTON] = visible }
-    }
-
-    suspend fun setCompactPlayerChrome(context: Context, enabled: Boolean) {
-        context.settingsDataStore.edit { it[KEY_COMPACT_PLAYER_CHROME] = enabled }
     }
 
     fun getPlayerProgressPlacement(context: Context): Flow<PlayerProgressPlacement> =
