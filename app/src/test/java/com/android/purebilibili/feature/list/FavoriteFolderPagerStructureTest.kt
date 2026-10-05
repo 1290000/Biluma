@@ -37,6 +37,7 @@ class FavoriteFolderPagerStructureTest {
         assertTrue(pager.contains("playFavoriteVideo(folderUiState.items, bvid, cid, coverUrl, page, false)"))
         assertTrue(pager.contains("favoriteBatchMode = isFavoriteBatchMode && page == selectedFolderIndex"))
         assertTrue(pager.contains("onFavoriteToggleSelect = toggleFavoriteResourceSelection"))
+        assertTrue(pager.contains("searchQuery = searchQuery"))
         assertTrue(pager.contains("pinchEnabled = pinchToZoomColumnsEnabled"))
     }
 
@@ -51,6 +52,7 @@ class FavoriteFolderPagerStructureTest {
         assertTrue(singleFolder.contains("favoriteVm.loadFolder(0)"))
         assertTrue(singleFolder.contains("favoriteVm.loadMoreForFolder(0)"))
         assertTrue(singleFolder.contains("gridState = primaryGridState"))
+        assertTrue(singleFolder.contains("searchQuery = searchQuery"))
     }
 
     @Test
@@ -71,12 +73,17 @@ class FavoriteFolderPagerStructureTest {
     }
 
     @Test
-    fun favoriteHeaderRetainsSearchColumnToggleAndCompactBatchActions() {
+    fun favoriteHeaderUsesScopedSearchAndRetainsColumnToggleAndCompactBatchActions() {
         val source = loadSource()
         val favoriteActions = source.substringAfter("if (favoriteViewModel != null && favoriteSection == FavoriteSection.VIDEO) {")
             .substringBefore("if (historyViewModel != null)")
 
-        assertTrue(source.contains("favoriteViewModel == null && shouldHideListTopSearchBar("))
+        val searchPolicy = source.substringAfter("val hideListTopSearchBar = ")
+            .substringBefore("val showListScopedSearchActiveBar")
+
+        assertTrue(searchPolicy.trimStart().startsWith("shouldHideListTopSearchBar("))
+        assertTrue(searchPolicy.contains("hasScopedSearchEntry = listScopedSearchChannel != null"))
+        assertTrue(searchPolicy.contains("isSearchDestination = isSearchDestination"))
         assertTrue(source.contains("VideoListLayoutToggle("))
         assertTrue(source.contains("singleColumn = personalListColumns == 1"))
         assertTrue(favoriteActions.contains("AppWindowActionMenu("))

@@ -53,7 +53,6 @@ import com.android.purebilibili.core.util.LocalWindowSizeClass
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackAnimationStyle
 import com.android.purebilibili.navigation3.predictiveback.BiliPaiPredictiveBackExitDirection
 import com.android.purebilibili.navigation.resolveVisibleBottomBarItems
-import com.android.purebilibili.feature.home.components.resolveBottomBarVisibleItemsForSearchMode
 import com.android.purebilibili.core.ui.components.*
 import com.android.purebilibili.core.ui.animation.EntranceGroup
 import com.android.purebilibili.core.ui.animation.entrance
@@ -181,18 +180,8 @@ fun AnimationSettingsContent(
         .collectAsStateWithLifecycle(initialValue = false)
     val appNavigationSettings by SettingsManager.getAppNavigationSettings(context)
         .collectAsStateWithLifecycle(initialValue = AppNavigationSettings())
-    val previewBottomBarItems = remember(
-        appNavigationSettings.orderedVisibleTabIds,
-        state.bottomBarSearchEnabled,
-        state.bottomBarSearchLayoutMode,
-    ) {
-        resolveBottomBarVisibleItemsForSearchMode(
-            visibleItems = resolveVisibleBottomBarItems(
-                appNavigationSettings.orderedVisibleTabIds
-            ),
-            bottomBarSearchEnabled = state.bottomBarSearchEnabled,
-            searchLayoutMode = state.bottomBarSearchLayoutMode,
-        )
+    val previewBottomBarItems = remember(appNavigationSettings.orderedVisibleTabIds) {
+        resolveVisibleBottomBarItems(appNavigationSettings.orderedVisibleTabIds)
     }
     val videoTransitionRealtimeBlurEnabled by SettingsManager
         .getVideoTransitionRealtimeBlurEnabled(context)
@@ -631,7 +620,6 @@ fun AnimationSettingsContent(
                                 persistedAdvancedSettings = liquidGlassAdvancedSettings,
                                 persistedReadabilityMode = liquidGlassReadabilityMode,
                                 bottomBarItems = previewBottomBarItems,
-                                bottomBarSearchEnabled = state.bottomBarSearchEnabled,
                                 onProgressCommitted = viewModel::setLiquidGlassProgress,
                                 onPreviewImageChanged = viewModel::setLiquidGlassPreviewImageUri,
                                 onAdvancedSettingsCommitted =

@@ -310,7 +310,6 @@ class TopTabStylePolicyTest {
         )
     }
 
-
     @Test
     fun `clicking selected top tab scrolls to top while other tabs select`() {
         assertEquals(
@@ -408,7 +407,7 @@ class TopTabStylePolicyTest {
         val bottomBarIndicatorBlock = sourceText(
             "app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt"
         ).substringAfter("internal fun BoxScope.BiliPaiMiuixBottomBarIndicatorLayer(")
-            .substringBefore("@Composable\nprivate fun BiliPaiBottomBarSearchSlot(")
+            .substringBefore("@Composable\ninternal fun BiliPaiBottomBarSearchVisualContent(")
 
         assertFalse(source.contains("topTabIndicatorDrag("))
         assertFalse(source.contains("awaitHorizontalTouchSlopOrCancellation"))
@@ -692,7 +691,6 @@ class TopTabStylePolicyTest {
         assertEquals(15.sp, spec.labelTextSize)
     }
 
-
     @Test
     fun `top tabs only draw outer dock for liquid glass`() {
         assertTrue(
@@ -800,7 +798,6 @@ class TopTabStylePolicyTest {
             )
         )
     }
-
 
     @Test
     fun `md3 preset uses material tab indicator style`() {

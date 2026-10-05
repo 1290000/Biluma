@@ -125,8 +125,8 @@ class SettingsMiuixSimplificationStructureTest {
         assertTrue(source.contains("applyLiquidGlassImport(importSession)"))
         assertTrue(source.contains("预览图片和其他应用设置不会改变"))
         assertTrue(source.contains("resolveVisibleBottomBarItems("))
-        assertTrue(source.contains("resolveBottomBarVisibleItemsForSearchMode("))
-        assertTrue(source.contains("bottomBarSearchEnabled = state.bottomBarSearchEnabled"))
+        assertFalse(source.contains("resolveBottomBarVisibleItemsForSearchMode("))
+        assertFalse(source.contains("bottomBarSearchEnabled = state.bottomBarSearchEnabled"))
         assertTrue(source.contains("Intent.ACTION_SEND"))
         assertTrue(source.contains("Intent.FLAG_GRANT_READ_URI_PERMISSION"))
     }

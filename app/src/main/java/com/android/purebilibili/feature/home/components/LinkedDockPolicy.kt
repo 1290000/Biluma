@@ -14,16 +14,6 @@ internal fun shouldExpandPlaybackFromSearch(
 internal fun accumulateDockScroll(previous: Float, delta: Float): Float =
     if (previous * delta < 0f) delta else previous + delta
 
-internal fun resolveLinkedDockRestingPhase(
-    collapseRequested: Boolean,
-    hasAudio: Boolean,
-): LinkedDockPhase = when {
-    !collapseRequested -> LinkedDockPhase.Expanded
-    hasAudio -> LinkedDockPhase.Playback
-    // 没有播放条时保持完整导航，不再收成播放条联动的小球。
-    else -> LinkedDockPhase.Expanded
-}
-
 fun resolveLinkedDockPhaseOnAudioChange(
     currentPhase: LinkedDockPhase,
     hasAudio: Boolean,
@@ -35,20 +25,11 @@ fun resolveLinkedDockPhaseOnAudioChange(
 }
 
 fun resolveLinkedDockInitialPhase(
-    currentItem: BottomNavItem,
-    collapseRequested: Boolean,
     hasAudio: Boolean,
     savedPhase: LinkedDockPhase? = null,
-): LinkedDockPhase {
-    if (savedPhase != null) {
-        return resolveLinkedDockPhaseOnAudioChange(savedPhase, hasAudio)
-    }
-    return if (currentItem == BottomNavItem.HOME) {
-        LinkedDockPhase.Expanded
-    } else {
-        resolveLinkedDockRestingPhase(collapseRequested, hasAudio)
-    }
-}
+): LinkedDockPhase = savedPhase?.let {
+    resolveLinkedDockPhaseOnAudioChange(it, hasAudio)
+} ?: LinkedDockPhase.Expanded
 
 fun shouldEnableLinkedDockBackHandler(
     phase: LinkedDockPhase,
@@ -79,10 +60,9 @@ internal fun resolveLinkedDockNavigationX(
     navigationWidth: Int,
     button: Int,
     gap: Int,
-    searchEnabled: Boolean,
 ): Int {
     val safeMaximumWidth = maximumWidth.coerceAtLeast(0)
-    val searchReservation = if (searchEnabled) button.coerceAtLeast(0) + gap.coerceAtLeast(0) else 0
+    val searchReservation = button.coerceAtLeast(0) + gap.coerceAtLeast(0)
     val clusterWidth = (navigationWidth.coerceAtLeast(0) + searchReservation)
         .coerceAtMost(safeMaximumWidth)
     return ((safeMaximumWidth - clusterWidth) / 2).coerceAtLeast(0)
@@ -102,7 +82,6 @@ internal fun resolveLinkedDockSearchX(
         navigationWidth = navigationWidth,
         button = button,
         gap = gap,
-        searchEnabled = true,
     ) + navigationWidth.coerceAtLeast(0) + gap.coerceAtLeast(0)
     val endX = (maximumWidth - searchWidth).coerceAtLeast(0)
     val expansionProgress = maxOf(mergeProgress, searchProgress).coerceIn(0f, 1f)
@@ -116,7 +95,6 @@ internal fun resolveLinkedDockGeometry(
     barHeight: Int,
     gap: Int,
     hasAudio: Boolean,
-    searchEnabled: Boolean,
     mergeProgress: Float,
     searchProgress: Float,
     verticalGap: Int = gap,
@@ -130,13 +108,13 @@ internal fun resolveLinkedDockGeometry(
     val search = searchProgress.coerceIn(0f, 1f)
     val presence = presenceProgress.coerceIn(0f, 1f)
     val top = ((if (hasAudio) barHeight + verticalGap else 0) * (1f - merge)).roundToInt()
-    val searchWidth = if (!searchEnabled) 0 else (
+    val searchWidth = (
         button + (width - button * (if (hasAudio) 3 else 2) - gap * (if (hasAudio) 2 else 1)) * search
     ).roundToInt().coerceAtLeast(button).coerceAtMost((width - button).coerceAtLeast(0))
     // Both playback and search retain separate capsule surfaces.
     val playbackGap = gap
     val compactAudioWidth = (width - button - searchWidth -
-        playbackGap * (if (searchEnabled) 2 else 1)).coerceAtLeast(0)
+        playbackGap * 2).coerceAtLeast(0)
     val expandedAudio = expandedAudioWidth.coerceIn(0, width)
     val targetAudioWidth = if (hasAudio) {
         (expandedAudio + (compactAudioWidth - expandedAudio) * merge).roundToInt()

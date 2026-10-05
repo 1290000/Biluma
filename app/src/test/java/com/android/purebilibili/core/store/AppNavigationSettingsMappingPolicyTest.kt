@@ -28,7 +28,6 @@ class AppNavigationSettingsMappingPolicyTest {
         assertEquals(emptyMap(), result.bottomBarItemColors)
         assertEquals(emptyMap(), result.bottomBarItemLabels)
         assertFalse(result.tabletUseSidebar)
-        assertTrue(result.sidebarAccountSwitcherEnabled)
         assertTrue(result.predictiveBackEnabled)
         assertEquals("miuix", result.predictiveBackAnimationStyle)
         assertEquals("always_right", result.predictiveBackExitDirection)
@@ -76,7 +75,6 @@ class AppNavigationSettingsMappingPolicyTest {
             stringPreferencesKey("bottom_bar_item_labels") to
                 "home=%E9%A6%96%E9%A1%B5%2C%E6%96%B0,PROFILE=%E8%B4%A6%E5%8F%B7",
             booleanPreferencesKey("tablet_use_sidebar") to true,
-            booleanPreferencesKey("sidebar_account_switcher_enabled") to false,
             booleanPreferencesKey("miuix_transition_blur_enabled") to false,
             intPreferencesKey("miuix_predictive_back_max_progress_percent") to 120,
             booleanPreferencesKey("video_shared_return_gesture_follow_enabled") to false,
@@ -89,7 +87,6 @@ class AppNavigationSettingsMappingPolicyTest {
         assertEquals(mapOf("HOME" to 2, "PROFILE" to 4, "INVALID" to 0), result.bottomBarItemColors)
         assertEquals(mapOf("HOME" to "首页,新", "PROFILE" to "账号"), result.bottomBarItemLabels)
         assertTrue(result.tabletUseSidebar)
-        assertFalse(result.sidebarAccountSwitcherEnabled)
         assertFalse(result.miuixTransitionBlurEnabled)
         assertEquals(100, result.miuixPredictiveBackMaxProgressPercent)
         assertFalse(result.videoSharedReturnGestureFollowEnabled)

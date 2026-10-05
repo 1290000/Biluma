@@ -91,7 +91,10 @@ import java.io.File
 import kotlin.math.abs
 
 // 声明 DataStore 扩展属性
-internal val Context.settingsDataStore by preferencesDataStore(name = "settings_prefs")
+internal val Context.settingsDataStore by preferencesDataStore(
+    name = "settings_prefs",
+    produceMigrations = { listOf(HomeNavigationSettingsMigration) },
+)
 
 internal const val DEFAULT_CRASH_TRACKING_ENABLED = true
 internal const val DEFAULT_ANALYTICS_ENABLED = true
@@ -638,14 +641,6 @@ data class HomeSettings(
     val isBottomBarLiquidGlassEnabled: Boolean = false,
     val bottomBarLiquidGlassPreset: BottomBarLiquidGlassPreset =
         BottomBarLiquidGlassPreset.BILIPAI_TUNED,
-    val isBottomBarSearchEnabled: Boolean = false,
-    val keepHomeTopSearchWithBottomSearch: Boolean = false,
-    val listScopedSearchEnabled: Boolean = false,
-    val linkedDockMergeOnScrollEnabled: Boolean = true,
-    val bottomBarSearchAutoExpandMode: BottomBarSearchAutoExpandMode =
-        BottomBarSearchAutoExpandMode.EXPAND_AT_HOME_TOP,
-    val bottomBarSearchLayoutMode: BottomBarSearchLayoutMode =
-        BottomBarSearchLayoutMode.FULL_DOCK,
     val androidNativeLiquidGlassEnabled: Boolean = false,
     val liquidGlassStyle: LiquidGlassStyle = LiquidGlassStyle.CLASSIC, // [New]
     val liquidGlassMode: LiquidGlassMode = LiquidGlassMode.BALANCED,
@@ -665,8 +660,6 @@ data class HomeSettings(
     val pinchToChangeGridColumnsEnabled: Boolean = true, // [新增] 双指缩放切换网格列数
     val homeFeedCardWidthPreset: HomeFeedCardWidthPreset = HomeFeedCardWidthPreset.AUTO,
     val homeFeedCardStyle: HomeFeedCardStyle = HomeFeedCardStyle.BILIPAI,
-    val homeHeroCarouselEnabled: Boolean = true,
-    val homeHeroCarouselAutoplayEnabled: Boolean = false,
     val homeRefreshTipVisible: Boolean = true, // 推荐流刷新后在旧内容分界处显示提示
     val cardAnimationEnabled: Boolean = false,    //  卡片进场动画（默认关闭）
     val cardTransitionEnabled: Boolean = true,    //  卡片过渡动画（默认开启）
@@ -759,27 +752,6 @@ data class ThemeRoleOverrides(
         controlAccentHex = "#9ECAFF"
     )
 )
-
-enum class BottomBarSearchAutoExpandMode(val value: Int, val label: String) {
-    EXPAND_WHEN_SCROLLING_DOWN(0, "下滑展开"),
-    EXPAND_AT_HOME_TOP(1, "顶部展开"),
-    DISABLED(2, "不自动展开");
-
-    companion object {
-        fun fromValue(value: Int): BottomBarSearchAutoExpandMode =
-            entries.find { it.value == value } ?: EXPAND_AT_HOME_TOP
-    }
-}
-
-enum class BottomBarSearchLayoutMode(val value: Int, val label: String) {
-    FULL_DOCK(0, "完整底栏"),
-    HOME_AND_SEARCH(1, "首页与搜索");
-
-    companion object {
-        fun fromValue(value: Int): BottomBarSearchLayoutMode =
-            entries.find { it.value == value } ?: FULL_DOCK
-    }
-}
 
 enum class HomeWallpaperEffectMode(val value: Int, val label: String) {
     OFF(0, "关闭"),
@@ -1020,7 +992,6 @@ data class AppNavigationSettings(
     val bottomBarItemLabels: Map<String, String> = emptyMap(),
     val tabletUseSidebar: Boolean = false,
     val sidebarExpanded: Boolean = true,
-    val sidebarAccountSwitcherEnabled: Boolean = true,
     val predictiveBackEnabled: Boolean = true,
     val predictiveBackAnimationStyle: String = "miuix",
     val predictiveBackExitDirection: String = "always_right",
@@ -1526,15 +1497,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_HOME_SEARCH_LIQUID_GLASS_ENABLED =
         booleanPreferencesKey("home_search_liquid_glass_enabled")
     private val KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED = booleanPreferencesKey("bottom_bar_liquid_glass_enabled")
-    private val KEY_BOTTOM_BAR_SEARCH_ENABLED = booleanPreferencesKey("bottom_bar_search_enabled")
-    private val KEY_KEEP_HOME_TOP_SEARCH = booleanPreferencesKey("keep_home_top_search_with_bottom_search")
-    private val KEY_LINKED_DOCK_MERGE_ON_SCROLL_ENABLED =
-        booleanPreferencesKey("linked_dock_merge_on_scroll_enabled")
-    private val KEY_LIST_SCOPED_SEARCH_ENABLED = booleanPreferencesKey("list_scoped_search_enabled")
-    private val KEY_BOTTOM_BAR_SEARCH_AUTO_EXPAND_MODE =
-        intPreferencesKey("bottom_bar_search_auto_expand_mode")
-    private val KEY_BOTTOM_BAR_SEARCH_LAYOUT_MODE =
-        intPreferencesKey("bottom_bar_search_layout_mode")
     private val KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED =
         booleanPreferencesKey("android_native_liquid_glass_enabled")
     private val KEY_LEGACY_ANDROID_NATIVE_TOP_TAB_LIQUID_GLASS_ENABLED =
@@ -1562,10 +1524,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_HOME_FEED_CARD_WIDTH_PRESET =
         intPreferencesKey("home_feed_card_width_preset")
     private val KEY_HOME_FEED_CARD_STYLE = intPreferencesKey("home_feed_card_style")
-    private val KEY_HOME_HERO_CAROUSEL_ENABLED =
-        booleanPreferencesKey("home_hero_carousel_enabled")
-    private val KEY_HOME_HERO_CAROUSEL_AUTOPLAY_ENABLED =
-        booleanPreferencesKey("home_hero_carousel_autoplay_enabled")
     //  [新增] 卡片动画开关
     private val KEY_CARD_ANIMATION_ENABLED = booleanPreferencesKey("card_animation_enabled")
     //  [新增] 卡片过渡动画开关
@@ -1766,18 +1724,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 preferences[KEY_HOME_SEARCH_LIQUID_GLASS_ENABLED]
                     ?: (preferences[KEY_TOP_BAR_LIQUID_GLASS_ENABLED] ?: false),
             isBottomBarLiquidGlassEnabled = preferences[KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED] ?: legacyLiquidGlassEnabled,
-            isBottomBarSearchEnabled = preferences[KEY_BOTTOM_BAR_SEARCH_ENABLED] ?: false,
-            keepHomeTopSearchWithBottomSearch = preferences[KEY_KEEP_HOME_TOP_SEARCH] ?: false,
-            linkedDockMergeOnScrollEnabled = preferences[KEY_LINKED_DOCK_MERGE_ON_SCROLL_ENABLED] ?: true,
-            listScopedSearchEnabled = preferences[KEY_LIST_SCOPED_SEARCH_ENABLED] ?: false,
-            bottomBarSearchAutoExpandMode = BottomBarSearchAutoExpandMode.fromValue(
-                preferences[KEY_BOTTOM_BAR_SEARCH_AUTO_EXPAND_MODE]
-                    ?: BottomBarSearchAutoExpandMode.EXPAND_AT_HOME_TOP.value
-            ),
-            bottomBarSearchLayoutMode = BottomBarSearchLayoutMode.fromValue(
-                preferences[KEY_BOTTOM_BAR_SEARCH_LAYOUT_MODE]
-                    ?: BottomBarSearchLayoutMode.FULL_DOCK.value
-            ),
             androidNativeLiquidGlassEnabled =
                 preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED]
                     ?: false,
@@ -1807,9 +1753,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             homeFeedCardStyle = HomeFeedCardStyle.fromValue(
                 preferences[KEY_HOME_FEED_CARD_STYLE] ?: HomeFeedCardStyle.BILIPAI.value
             ),
-            homeHeroCarouselEnabled = preferences[KEY_HOME_HERO_CAROUSEL_ENABLED] ?: false,
-            homeHeroCarouselAutoplayEnabled =
-                preferences[KEY_HOME_HERO_CAROUSEL_AUTOPLAY_ENABLED] ?: false,
             homeRefreshTipVisible = preferences[KEY_HOME_REFRESH_TIP_VISIBLE] ?: true,
             cardAnimationEnabled = preferences[KEY_CARD_ANIMATION_ENABLED] ?: false,
             cardTransitionEnabled = preferences[KEY_CARD_TRANSITION_ENABLED] ?: true,
@@ -3093,28 +3036,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         }
     }
 
-    fun getHomeHeroCarouselEnabled(context: Context): Flow<Boolean> =
-        context.settingsDataStore.data.map { preferences ->
-            preferences[KEY_HOME_HERO_CAROUSEL_ENABLED] ?: false
-        }
-
-    suspend fun setHomeHeroCarouselEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_HOME_HERO_CAROUSEL_ENABLED] = value
-        }
-    }
-
-    fun getHomeHeroCarouselAutoplayEnabled(context: Context): Flow<Boolean> =
-        context.settingsDataStore.data.map { preferences ->
-            preferences[KEY_HOME_HERO_CAROUSEL_AUTOPLAY_ENABLED] ?: false
-        }
-
-    suspend fun setHomeHeroCarouselAutoplayEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_HOME_HERO_CAROUSEL_AUTOPLAY_ENABLED] = value
-        }
-    }
-
     //  [新增] --- 卡片进场动画开关 ---
     fun getCardAnimationEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_CARD_ANIMATION_ENABLED] ?: false }  // 默认关闭
@@ -4227,79 +4148,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     suspend fun setBottomBarLiquidGlassEnabled(context: Context, value: Boolean) {
         context.settingsDataStore.edit { preferences ->
             preferences[KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED] = value
-        }
-    }
-
-    fun getBottomBarSearchEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_BOTTOM_BAR_SEARCH_ENABLED] ?: false }
-
-    fun getKeepHomeTopSearchWithBottomSearch(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { it[KEY_KEEP_HOME_TOP_SEARCH] ?: false }
-
-    suspend fun setKeepHomeTopSearchWithBottomSearch(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { it[KEY_KEEP_HOME_TOP_SEARCH] = value }
-    }
-
-    suspend fun setBottomBarSearchEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_BOTTOM_BAR_SEARCH_ENABLED] = value
-        }
-    }
-
-    fun getListScopedSearchEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_LIST_SCOPED_SEARCH_ENABLED] ?: false }
-
-    suspend fun setListScopedSearchEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_LIST_SCOPED_SEARCH_ENABLED] = value
-        }
-    }
-
-    fun getBottomBarSearchAutoExpandMode(context: Context): Flow<BottomBarSearchAutoExpandMode> =
-        context.settingsDataStore.data
-            .map { preferences ->
-                BottomBarSearchAutoExpandMode.fromValue(
-                    preferences[KEY_BOTTOM_BAR_SEARCH_AUTO_EXPAND_MODE]
-                        ?: BottomBarSearchAutoExpandMode.EXPAND_AT_HOME_TOP.value
-                )
-            }
-
-    suspend fun setBottomBarSearchAutoExpandMode(
-        context: Context,
-        value: BottomBarSearchAutoExpandMode
-    ) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_BOTTOM_BAR_SEARCH_AUTO_EXPAND_MODE] = value.value
-        }
-    }
-
-    fun getLinkedDockMergeOnScrollEnabled(context: Context): Flow<Boolean> =
-        context.settingsDataStore.data
-            .map { preferences ->
-                preferences[KEY_LINKED_DOCK_MERGE_ON_SCROLL_ENABLED] ?: true
-            }
-
-    suspend fun setLinkedDockMergeOnScrollEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_LINKED_DOCK_MERGE_ON_SCROLL_ENABLED] = value
-        }
-    }
-
-    fun getBottomBarSearchLayoutMode(context: Context): Flow<BottomBarSearchLayoutMode> =
-        context.settingsDataStore.data
-            .map { preferences ->
-                BottomBarSearchLayoutMode.fromValue(
-                    preferences[KEY_BOTTOM_BAR_SEARCH_LAYOUT_MODE]
-                        ?: BottomBarSearchLayoutMode.FULL_DOCK.value
-                )
-            }
-
-    suspend fun setBottomBarSearchLayoutMode(
-        context: Context,
-        value: BottomBarSearchLayoutMode
-    ) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_BOTTOM_BAR_SEARCH_LAYOUT_MODE] = value.value
         }
     }
 
@@ -7641,8 +7489,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     
     private val KEY_TABLET_NAVIGATION_MODE = booleanPreferencesKey("tablet_use_sidebar")
     private val KEY_SIDEBAR_EXPANDED = booleanPreferencesKey("sidebar_expanded")
-    private val KEY_SIDEBAR_ACCOUNT_SWITCHER_ENABLED =
-        booleanPreferencesKey("sidebar_account_switcher_enabled")
     private val KEY_PREDICTIVE_BACK_ENABLED = booleanPreferencesKey("predictive_back_enabled")
     private val KEY_PREDICTIVE_BACK_ANIMATION_STYLE = stringPreferencesKey("predictive_back_animation_style")
     private val KEY_PREDICTIVE_BACK_EXIT_DIRECTION = stringPreferencesKey("predictive_back_exit_direction")
@@ -7667,9 +7513,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 ?: defaultTabletUseSidebar(isLargeScreenOrFoldableConfiguration(context))
         }
 
-    fun getSidebarAccountSwitcherEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SIDEBAR_ACCOUNT_SWITCHER_ENABLED] ?: true }
-
     internal fun mapAppNavigationSettingsFromPreferences(
         preferences: Preferences,
         defaultTabletUseSidebar: Boolean = false
@@ -7689,8 +7532,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             ),
             tabletUseSidebar = preferences[KEY_TABLET_NAVIGATION_MODE] ?: defaultTabletUseSidebar,
             sidebarExpanded = preferences[KEY_SIDEBAR_EXPANDED] ?: true,
-            sidebarAccountSwitcherEnabled =
-                preferences[KEY_SIDEBAR_ACCOUNT_SWITCHER_ENABLED] ?: true,
             predictiveBackEnabled = preferences[KEY_PREDICTIVE_BACK_ENABLED] ?: true,
             predictiveBackAnimationStyle = preferences[KEY_PREDICTIVE_BACK_ANIMATION_STYLE] ?: "miuix",
             predictiveBackExitDirection =
@@ -7728,10 +7569,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     suspend fun setSidebarExpanded(context: Context, expanded: Boolean) {
         NavigationSettingsStore.setSidebarExpanded(context, expanded)
-    }
-
-    suspend fun setSidebarAccountSwitcherEnabled(context: Context, enabled: Boolean) {
-        NavigationSettingsStore.setSidebarAccountSwitcherEnabled(context, enabled)
     }
 
     suspend fun setPredictiveBackEnabled(context: Context, enabled: Boolean) {
@@ -8021,7 +7858,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 SettingsShareSection.APPEARANCE,
             ),
             BooleanShareablePreferenceDefinition(KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED, SettingsShareSection.APPEARANCE),
-            IntShareablePreferenceDefinition(KEY_BOTTOM_BAR_SEARCH_LAYOUT_MODE, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(
                 KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED,
                 SettingsShareSection.APPEARANCE
@@ -8082,8 +7918,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 SettingsShareSection.APPEARANCE
             ),
             IntShareablePreferenceDefinition(KEY_HOME_FEED_CARD_STYLE, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(KEY_HOME_HERO_CAROUSEL_ENABLED, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(KEY_HOME_HERO_CAROUSEL_AUTOPLAY_ENABLED, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(KEY_CARD_ANIMATION_ENABLED, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(KEY_UI_ENTRANCE_ANIMATION_ENABLED, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(KEY_CARD_TRANSITION_ENABLED, SettingsShareSection.APPEARANCE),
@@ -8294,10 +8128,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             BooleanShareablePreferenceDefinition(KEY_SHOW_PGC_TIMELINE, SettingsShareSection.NAVIGATION),
             BooleanShareablePreferenceDefinition(KEY_TABLET_NAVIGATION_MODE, SettingsShareSection.NAVIGATION),
             BooleanShareablePreferenceDefinition(KEY_SIDEBAR_EXPANDED, SettingsShareSection.NAVIGATION),
-            BooleanShareablePreferenceDefinition(
-                KEY_SIDEBAR_ACCOUNT_SWITCHER_ENABLED,
-                SettingsShareSection.NAVIGATION
-            ),
             IntShareablePreferenceDefinition(KEY_DYNAMIC_PAGE_LAYOUT_DIRECTION, SettingsShareSection.NAVIGATION),
             IntShareablePreferenceDefinition(KEY_FEED_API_TYPE, SettingsShareSection.NAVIGATION),
             BooleanShareablePreferenceDefinition(KEY_INCREMENTAL_TIMELINE_REFRESH, SettingsShareSection.NAVIGATION),

@@ -215,20 +215,10 @@ fun BottomBarSettingsContent(
     val navigationIconCrossScaleEnabled by SettingsManager
         .getNavigationIconCrossScaleEnabled(context)
         .collectAsStateWithLifecycle(initialValue = false)
-    val bottomBarSearchEnabled by SettingsManager.getBottomBarSearchEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = false)
-    val keepHomeTopSearch by SettingsManager.getKeepHomeTopSearchWithBottomSearch(context)
-        .collectAsStateWithLifecycle(initialValue = false)
-    val linkedDockMergeOnScrollEnabled by SettingsManager.getLinkedDockMergeOnScrollEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = true)
-    val listScopedSearchEnabled by SettingsManager.getListScopedSearchEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = false)
     val isLargeScreenCapable = windowSizeClass.isTabletDevice ||
         displayContext.isKnownFoldableDevice
     val tabletUseSidebar by SettingsManager.getTabletUseSidebar(context)
         .collectAsStateWithLifecycle(initialValue = isLargeScreenCapable)
-    val sidebarAccountSwitcherEnabled by SettingsManager.getSidebarAccountSwitcherEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = true)
     
     // 可编辑的本地状态
     var localOrder by remember(order) { mutableStateOf(order) }
@@ -392,56 +382,7 @@ fun BottomBarSettingsContent(
                             },
                             iconTint = com.android.purebilibili.core.theme.iOSBlue,
                         )
-                        AppPreferenceDivider()
-                        AppSwitchPreference(
-                            icon = rememberSettingsSemanticIcon(SettingsIconRole.BOTTOM_BAR_SEARCH),
-                            title = "底栏搜索联动",
-                            subtitle = "显示独立搜索胶囊，并与推荐和视频小横条随滚动自然收拢或展开",
-                            checked = bottomBarSearchEnabled,
-                            onCheckedChange = { enabled ->
-                                scope.launch { SettingsManager.setBottomBarSearchEnabled(context, enabled) }
-                            },
-                            iconTint = com.android.purebilibili.core.theme.iOSTeal,
-                        )
-                        if (bottomBarSearchEnabled) {
-                            AppPreferenceDivider()
-                            AppSwitchPreference(
-                                icon = rememberSettingsSemanticIcon(SettingsIconRole.BOTTOM_BAR_SEARCH),
-                                title = "保留首页顶部搜索条",
-                                subtitle = "开启时顶部与底栏搜索同时显示；关闭时隐藏首页顶部搜索条",
-                                checked = keepHomeTopSearch,
-                                onCheckedChange = { enabled ->
-                                    scope.launch { SettingsManager.setKeepHomeTopSearchWithBottomSearch(context, enabled) }
-                                },
-                                iconTint = com.android.purebilibili.core.theme.iOSTeal,
-                            )
-                            AppPreferenceDivider()
-                            AppSwitchPreference(
-                                icon = rememberSettingsSemanticIcon(SettingsIconRole.BOTTOM_BAR_SEARCH),
-                                title = "下滑合体",
-                                subtitle = "下滑时搜索胶囊与导航 dock 收拢合并；关闭后保持分体的圆钮与完整底栏",
-                                checked = linkedDockMergeOnScrollEnabled,
-                                onCheckedChange = { enabled ->
-                                    scope.launch {
-                                        SettingsManager.setLinkedDockMergeOnScrollEnabled(context, enabled)
-                                    }
-                                },
-                                iconTint = com.android.purebilibili.core.theme.iOSTeal,
-                            )
-                            AppPreferenceDivider()
-                            AppSwitchPreference(
-                                icon = rememberSettingsSemanticIcon(SettingsIconRole.BOTTOM_BAR_SEARCH),
-                                title = "列表精简搜索",
-                                subtitle = "隐藏收藏、历史与稍后再看页顶部搜索栏；底栏搜索仅搜索当前页内容",
-                                checked = listScopedSearchEnabled,
-                                onCheckedChange = { enabled ->
-                                    scope.launch {
-                                        SettingsManager.setListScopedSearchEnabled(context, enabled)
-                                    }
-                                },
-                                iconTint = com.android.purebilibili.core.theme.iOSTeal,
-                            )
-                        }
+
                     }
                 }
             }
@@ -801,18 +742,6 @@ fun BottomBarSettingsContent(
                             onCheckedChange = { checked ->
                                 scope.launch {
                                     SettingsManager.setTabletUseSidebar(context, checked)
-                                }
-                            },
-                            iconTint = com.android.purebilibili.core.theme.iOSBlue
-                        )
-                        AppSwitchPreference(
-                            icon = com.android.purebilibili.feature.settings.rememberMaterialSymbol(com.android.purebilibili.R.drawable.ms_swap_horiz_24),
-                            title = "侧边栏账号切换",
-                            subtitle = "在平板首页侧边栏底部显示切换账号按钮",
-                            checked = sidebarAccountSwitcherEnabled,
-                            onCheckedChange = { checked ->
-                                scope.launch {
-                                    SettingsManager.setSidebarAccountSwitcherEnabled(context, checked)
                                 }
                             },
                             iconTint = com.android.purebilibili.core.theme.iOSBlue

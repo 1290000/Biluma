@@ -15,7 +15,6 @@ class LinkedDockPolicyTest {
                 navigationWidth = 144,
                 button = 56,
                 gap = 8,
-                searchEnabled = true,
             ),
         )
         assertEquals(
@@ -44,13 +43,6 @@ class LinkedDockPolicyTest {
         )
     }
 
-    @Test
-    fun globalCollapseRequestUsesCompactPlaybackPhaseWhenAudioIsPresent() {
-        assertEquals(
-            LinkedDockPhase.Playback,
-            resolveLinkedDockRestingPhase(collapseRequested = true, hasAudio = true),
-        )
-    }
 
     @Test
     fun compactSearchDockKeepsHomeAndSearchOnOneRowWithoutAudio() {
@@ -60,7 +52,6 @@ class LinkedDockPolicyTest {
             barHeight = 64,
             gap = 8,
             hasAudio = false,
-            searchEnabled = true,
             mergeProgress = 1f,
             searchProgress = 1f,
         )
@@ -70,17 +61,6 @@ class LinkedDockPolicyTest {
         assertEquals(64, geometry.height)
     }
 
-    @Test
-    fun collapsedWithoutAudioKeepsSearchShrunk() {
-        assertEquals(
-            LinkedDockPhase.Expanded,
-            resolveLinkedDockRestingPhase(collapseRequested = true, hasAudio = false),
-        )
-        assertEquals(
-            LinkedDockPhase.Expanded,
-            resolveLinkedDockRestingPhase(collapseRequested = false, hasAudio = true),
-        )
-    }
 
     @Test
     fun audioDismissalRestoresExpandedDockAndPreservesSearch() {
@@ -114,58 +94,22 @@ class LinkedDockPolicyTest {
     fun initialPhasePreservesSavedPhaseAcrossMounts() {
         assertEquals(
             LinkedDockPhase.Playback,
-            resolveLinkedDockInitialPhase(
-                currentItem = BottomNavItem.HOME,
-                collapseRequested = false,
-                hasAudio = true,
-                savedPhase = LinkedDockPhase.Playback,
-            ),
+            resolveLinkedDockInitialPhase(hasAudio = true, savedPhase = LinkedDockPhase.Playback),
         )
         assertEquals(
             LinkedDockPhase.Search,
-            resolveLinkedDockInitialPhase(
-                currentItem = BottomNavItem.HOME,
-                collapseRequested = false,
-                hasAudio = true,
-                savedPhase = LinkedDockPhase.Search,
-            ),
+            resolveLinkedDockInitialPhase(hasAudio = true, savedPhase = LinkedDockPhase.Search),
         )
         assertEquals(
             LinkedDockPhase.Expanded,
-            resolveLinkedDockInitialPhase(
-                currentItem = BottomNavItem.HOME,
-                collapseRequested = false,
-                hasAudio = false,
-                savedPhase = LinkedDockPhase.Playback,
-            ),
+            resolveLinkedDockInitialPhase(hasAudio = false, savedPhase = LinkedDockPhase.Playback),
         )
-        assertEquals(
-            LinkedDockPhase.Expanded,
-            resolveLinkedDockInitialPhase(
-                currentItem = BottomNavItem.HOME,
-                collapseRequested = false,
-                hasAudio = true,
-                savedPhase = null,
-            ),
-        )
-        assertEquals(
-            LinkedDockPhase.Playback,
-            resolveLinkedDockInitialPhase(
-                currentItem = BottomNavItem.DYNAMIC,
-                collapseRequested = true,
-                hasAudio = true,
-                savedPhase = null,
-            ),
-        )
-        assertEquals(
-            LinkedDockPhase.Expanded,
-            resolveLinkedDockInitialPhase(
-                currentItem = BottomNavItem.DYNAMIC,
-                collapseRequested = true,
-                hasAudio = false,
-                savedPhase = null,
-            ),
-        )
+    }
+
+    @Test
+    fun freshDockAlwaysStartsExpandedWithOrWithoutAudio() {
+        assertEquals(LinkedDockPhase.Expanded, resolveLinkedDockInitialPhase(hasAudio = true))
+        assertEquals(LinkedDockPhase.Expanded, resolveLinkedDockInitialPhase(hasAudio = false))
     }
 
     @Test
@@ -200,13 +144,11 @@ class LinkedDockPolicyTest {
     @Test
     fun playbackGapsRemainVisibleAcrossWindowWidths() {
         for (width in listOf(240, 296, 336, 600)) {
-            for (searchEnabled in listOf(false, true)) {
-                val geometry = resolveLinkedDockGeometry(width, 56, 64, 8, true, searchEnabled, 1f, 0f)
-                assertEquals(8, geometry.audioX - 56)
-                val trailingGap = width - geometry.searchWidth - geometry.audioX - geometry.audioWidth
-                assertEquals(if (searchEnabled) 8 else 0, trailingGap)
-                assertTrue(geometry.audioWidth >= 112)
-            }
+            val geometry = resolveLinkedDockGeometry(width, 56, 64, 8, true, 1f, 0f)
+            assertEquals(8, geometry.audioX - 56)
+            val trailingGap = width - geometry.searchWidth - geometry.audioX - geometry.audioWidth
+            assertEquals(8, trailingGap)
+            assertTrue(geometry.audioWidth >= 112)
         }
     }
 
@@ -222,7 +164,7 @@ class LinkedDockPolicyTest {
     fun narrowAndWideLayoutsDoNotOverlapAtRest() {
         for (width in listOf(240, 296, 336, 600)) {
             for (hasAudio in listOf(false, true)) {
-                val geometry = resolveLinkedDockGeometry(width, 56, 64, 8, hasAudio, true, 1f, 1f)
+                val geometry = resolveLinkedDockGeometry(width, 56, 64, 8, hasAudio, 1f, 1f)
                 assertTrue(geometry.searchWidth >= 56)
                 assertTrue(geometry.audioWidth >= 0)
                 val occupiedWidth = 56 + geometry.audioWidth + geometry.searchWidth +
@@ -244,19 +186,19 @@ class LinkedDockPolicyTest {
     fun presenceCollapsesTowardTheRightEdgeWithoutMovingTheAnchor() {
         val full = resolveLinkedDockGeometry(
             width = 336, button = 56, barHeight = 64, gap = 8,
-            hasAudio = true, searchEnabled = true,
+            hasAudio = true,
             mergeProgress = 1f, searchProgress = 0f,
             presenceProgress = 1f,
         )
         val half = resolveLinkedDockGeometry(
             width = 336, button = 56, barHeight = 64, gap = 8,
-            hasAudio = true, searchEnabled = true,
+            hasAudio = true,
             mergeProgress = 1f, searchProgress = 0f,
             presenceProgress = 0.5f,
         )
         val gone = resolveLinkedDockGeometry(
             width = 336, button = 56, barHeight = 64, gap = 8,
-            hasAudio = true, searchEnabled = true,
+            hasAudio = true,
             mergeProgress = 1f, searchProgress = 0f,
             presenceProgress = 0f,
         )
@@ -272,7 +214,7 @@ class LinkedDockPolicyTest {
     fun expandedPresenceAnchorsToTheContainerRightEdge() {
         val half = resolveLinkedDockGeometry(
             width = 336, button = 56, barHeight = 64, gap = 8,
-            hasAudio = true, searchEnabled = true,
+            hasAudio = true,
             mergeProgress = 0f, searchProgress = 0f,
             presenceProgress = 0.5f,
         )
@@ -330,7 +272,7 @@ class LinkedDockPolicyTest {
         val clusterX = 124
         val geometry = resolveLinkedDockGeometry(
             width = 600, button = 56, barHeight = 64, gap = 8,
-            hasAudio = true, searchEnabled = true,
+            hasAudio = true,
             mergeProgress = 0f, searchProgress = 0f,
             presenceProgress = 1f,
             expandedAudioWidth = clusterWidth,
@@ -346,7 +288,7 @@ class LinkedDockPolicyTest {
         val clusterX = 124
         val full = resolveLinkedDockGeometry(
             width = 600, button = 56, barHeight = 64, gap = 8,
-            hasAudio = true, searchEnabled = true,
+            hasAudio = true,
             mergeProgress = 0f, searchProgress = 0f,
             presenceProgress = 1f,
             expandedAudioWidth = clusterWidth,
@@ -354,7 +296,7 @@ class LinkedDockPolicyTest {
         )
         val half = resolveLinkedDockGeometry(
             width = 600, button = 56, barHeight = 64, gap = 8,
-            hasAudio = true, searchEnabled = true,
+            hasAudio = true,
             mergeProgress = 0f, searchProgress = 0f,
             presenceProgress = 0.5f,
             expandedAudioWidth = clusterWidth,
@@ -370,7 +312,7 @@ class LinkedDockPolicyTest {
         // 对齐底栏簇只改展开态落点；merge 动画终点（并入首按钮旁的胶囊）不变。
         val geometry = resolveLinkedDockGeometry(
             width = 600, button = 56, barHeight = 64, gap = 8,
-            hasAudio = true, searchEnabled = true,
+            hasAudio = true,
             mergeProgress = 1f, searchProgress = 0f,
             presenceProgress = 1f,
             expandedAudioWidth = 352,
@@ -381,5 +323,5 @@ class LinkedDockPolicyTest {
     }
 
     private fun geometry(merge: Float, search: Float) =
-        resolveLinkedDockGeometry(336, 56, 64, 8, true, true, merge, search)
+        resolveLinkedDockGeometry(336, 56, 64, 8, true, merge, search)
 }

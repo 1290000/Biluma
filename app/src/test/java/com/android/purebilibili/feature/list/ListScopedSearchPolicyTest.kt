@@ -6,87 +6,31 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ListScopedSearchPolicyTest {
-
     @Test
-    fun listScopedSearch_requiresBottomBarSearchEnabled() {
-        assertTrue(
-            isListScopedSearchActive(
-                bottomBarSearchEnabled = true,
-                listScopedSearchEnabled = true,
-            )
-        )
-        assertFalse(
-            isListScopedSearchActive(
-                bottomBarSearchEnabled = false,
-                listScopedSearchEnabled = true,
-            )
-        )
-        assertFalse(
-            isListScopedSearchActive(
-                bottomBarSearchEnabled = true,
-                listScopedSearchEnabled = false,
-            )
-        )
-        assertFalse(
-            isListScopedSearchActive(
-                bottomBarSearchEnabled = false,
-                listScopedSearchEnabled = false,
-            )
-        )
+    fun hostedListsUseScopedSearchWithoutASetting() {
+        assertTrue(shouldHideListTopSearchBar(hasScopedSearchEntry = true))
     }
 
     @Test
-    fun hideTopSearchBar_keepsSearchDestinationChrome() {
-        assertTrue(
-            shouldHideListTopSearchBar(
-                bottomBarSearchEnabled = true,
-                listScopedSearchEnabled = true,
-                isSearchDestination = false,
-            )
-        )
+    fun standaloneListsAndSearchDestinationsKeepAnInput() {
+        assertFalse(shouldHideListTopSearchBar(hasScopedSearchEntry = false))
         assertFalse(
             shouldHideListTopSearchBar(
-                bottomBarSearchEnabled = true,
-                listScopedSearchEnabled = true,
+                hasScopedSearchEntry = true,
                 isSearchDestination = true,
             )
         )
-        assertFalse(
-            shouldHideListTopSearchBar(
-                bottomBarSearchEnabled = false,
-                listScopedSearchEnabled = true,
-                isSearchDestination = false,
-            )
-        )
     }
 
     @Test
-    fun activeBar_requiresNonBlankQueryAndEnabledFlags() {
-        assertTrue(
-            shouldShowListScopedSearchActiveBar(
-                bottomBarSearchEnabled = true,
-                listScopedSearchEnabled = true,
-                searchQuery = "  靖  ",
-            )
-        )
-        assertFalse(
-            shouldShowListScopedSearchActiveBar(
-                bottomBarSearchEnabled = true,
-                listScopedSearchEnabled = true,
-                searchQuery = "   ",
-            )
-        )
-        assertFalse(
-            shouldShowListScopedSearchActiveBar(
-                bottomBarSearchEnabled = true,
-                listScopedSearchEnabled = false,
-                searchQuery = "靖",
-            )
-        )
+    fun activeBarRequiresANonBlankQuery() {
+        assertTrue(shouldShowListScopedSearchActiveBar(searchQuery = "  靖  "))
+        assertFalse(shouldShowListScopedSearchActiveBar(searchQuery = "   "))
+        assertFalse(shouldShowListScopedSearchActiveBar(searchQuery = ""))
     }
 
     @Test
-    fun activeBarLabel_usesTrimmedQuery() {
+    fun activeBarLabelUsesTrimmedQuery() {
         assertEquals("搜索中：靖", resolveListScopedSearchActiveBarLabel("  靖  "))
         assertEquals("搜索中", resolveListScopedSearchActiveBarLabel("   "))
     }

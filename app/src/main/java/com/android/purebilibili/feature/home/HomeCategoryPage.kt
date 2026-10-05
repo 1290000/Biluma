@@ -46,7 +46,6 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -64,8 +63,6 @@ import com.android.purebilibili.core.util.responsiveContentWidth
 import kotlinx.collections.immutable.ImmutableSet
 import com.android.purebilibili.data.model.response.VideoItem
 import com.android.purebilibili.feature.home.components.BottomBarLiquidSegmentedControl
-import com.android.purebilibili.feature.home.components.HomeHeroCarousel
-import com.android.purebilibili.feature.home.components.HomeHeroCarouselImmersive
 import top.yukonga.miuix.kmp.blur.Backdrop as MiuixBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -99,7 +96,7 @@ internal fun resolveHomeCategoryVideoGridKey(
 internal fun resolveHomeCategoryVideoGridKeys(videos: List<VideoItem>): List<String> {
     val occurrences = mutableMapOf<String, Int>()
     return videos.map { video ->
-        val identity = resolveHomeHeroCarouselDedupKey(video)
+        val identity = resolveHomeFeedVideoDedupKey(video)
         val duplicateOrdinal = occurrences.getOrDefault(identity, 0)
         occurrences[identity] = duplicateOrdinal + 1
         resolveHomeCategoryVideoGridKey(video, duplicateOrdinal)
@@ -153,7 +150,7 @@ internal fun resolveHomeOldContentGridItemIndex(
     return headerItemCount + contentItemIndex + if (dividerItemBeforeAnchor) 1 else 0
 }
 
-internal fun resolveHomeHeroCarouselDedupKey(video: VideoItem): String {
+internal fun resolveHomeFeedVideoDedupKey(video: VideoItem): String {
     return when {
         video.bvid.isNotBlank() -> "bvid_${video.bvid}"
         video.id > 0L -> "id_${video.id}"
@@ -225,10 +222,6 @@ internal fun HomeCategoryPageContent(
     homeDurationStyle: HomeDurationStyle = HomeDurationStyle.OUTSIDE_COVER,
     homeFeedCardStyle: HomeFeedCardStyle = HomeFeedCardStyle.BILIPAI,
     showFullVideoCardContent: Boolean = false,
-    homeHeroCarouselEnabled: Boolean = true,
-    homeHeroCarouselAutoplayEnabled: Boolean = false,
-    onHeroCarouselGestureActiveChange: (Boolean) -> Unit = {},
-    onGetPreviewUrl: suspend (String, Long) -> String? = { _, _ -> null },
     oldContentAnchorBvid: String? = null,
     oldContentStartIndex: Int? = null,
     oldContentLocatorRefreshKey: Long = 0L,
@@ -322,29 +315,7 @@ internal fun HomeCategoryPageContent(
         if (shouldLoadMore) onLoadMore()
     }
 
-    val carouselVideos = remember(category, categoryState.videos) {
-        if (category == HomeCategory.RECOMMEND) {
-            selectHomeHeroCarouselItems(categoryState.videos)
-        } else {
-            emptyList()
-        }
-    }
-    val showHeroCarousel = shouldShowHomeHeroCarousel(
-        enabled = homeHeroCarouselEnabled,
-        category = category,
-        itemCount = carouselVideos.size
-    )
-    val visibleGridVideos = remember(categoryState.videos, carouselVideos, showHeroCarousel) {
-        if (showHeroCarousel) {
-            excludeHomeHeroCarouselItems(
-                items = categoryState.videos,
-                carouselItems = carouselVideos,
-                keySelector = ::resolveHomeHeroCarouselDedupKey
-            )
-        } else {
-            categoryState.videos
-        }
-    }
+    val visibleGridVideos = categoryState.videos
     val videoGridKeys = remember(visibleGridVideos) {
         resolveHomeCategoryVideoGridKeys(visibleGridVideos)
     }
@@ -362,7 +333,6 @@ internal fun HomeCategoryPageContent(
         showFullVideoCardContent,
         oldContentVideoIndex,
         oldContentDividerIndex,
-        showHeroCarousel,
         todayWatchEnabled,
     ) {
         if (category != HomeCategory.RECOMMEND) {
@@ -375,8 +345,7 @@ internal fun HomeCategoryPageContent(
                     columns = gridColumns,
                     showFullVideoCardContent = showFullVideoCardContent,
                     dividerIndex = oldContentDividerIndex,
-                    headerItemCount = (if (showHeroCarousel) 1 else 0) +
-                        (if (todayWatchEnabled) 1 else 0),
+                    headerItemCount = if (todayWatchEnabled) 1 else 0,
                 )
             }
         }
@@ -595,54 +564,6 @@ internal fun HomeCategoryPageContent(
         } else {
             // Video Category Content
             if (category == HomeCategory.RECOMMEND) {
-                if (showHeroCarousel) {
-                    item(
-                        key = "home_hero_carousel",
-                        contentType = "home_hero_carousel",
-                        span = StaggeredGridItemSpan.FullLine
-                    ) {
-                        if (LocalConfiguration.current.screenWidthDp >= HOME_HERO_CAROUSEL_WIDE_BREAKPOINT_DP.toInt()) {
-                            // 折叠屏/平板展开态:全幅沉浸式 hero(与 TV 首页同一视觉语言)
-                            HomeHeroCarouselImmersive(
-                                videos = carouselVideos,
-                                horizontalEscapeDp = contentPadding.calculateLeftPadding(LocalLayoutDirection.current),
-                                onVideoClick = { video ->
-                                    onVideoClick(
-                                        HomeVideoClickRequest(
-                                            bvid = video.bvid,
-                                            dynamicId = video.dynamicId,
-                                            cid = video.cid,
-                                            coverUrl = video.pic,
-                                            isVerticalVideo = video.isVertical,
-                                            source = HomeVideoClickSource.GRID,
-                                            sourceRoute = sourceRoute
-                                        )
-                                    )
-                                },
-                            )
-                        } else {
-                            HomeHeroCarousel(
-                                videos = carouselVideos,
-                                autoplayEnabled = homeHeroCarouselAutoplayEnabled,
-                                onGestureActiveChange = onHeroCarouselGestureActiveChange,
-                                onVideoClick = { video ->
-                                    onVideoClick(
-                                        HomeVideoClickRequest(
-                                            bvid = video.bvid,
-                                            dynamicId = video.dynamicId,
-                                            cid = video.cid,
-                                            coverUrl = video.pic,
-                                            isVerticalVideo = video.isVertical,
-                                            source = HomeVideoClickSource.GRID,
-                                            sourceRoute = sourceRoute
-                                        )
-                                    )
-                                },
-                                onGetPreviewUrl = onGetPreviewUrl
-                            )
-                        }
-                    }
-                }
                 if (todayWatchEnabled) {
                     item(span = StaggeredGridItemSpan.FullLine) {
                         TodayWatchPlanCard(

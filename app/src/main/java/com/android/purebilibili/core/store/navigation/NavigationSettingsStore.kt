@@ -65,8 +65,6 @@ internal fun parseBottomBarItemLabels(raw: String): Map<String, String> {
 object NavigationSettingsStore {
     private val keyTabletUseSidebar = booleanPreferencesKey("tablet_use_sidebar")
     private val keySidebarExpanded = booleanPreferencesKey("sidebar_expanded")
-    private val keySidebarAccountSwitcherEnabled =
-        booleanPreferencesKey("sidebar_account_switcher_enabled")
     private val keyPredictiveBackEnabled = booleanPreferencesKey("predictive_back_enabled")
     private val keyPredictiveBackAnimationStyle = stringPreferencesKey("predictive_back_animation_style")
     private val keyPredictiveBackExitDirection = stringPreferencesKey("predictive_back_exit_direction")
@@ -179,12 +177,6 @@ object NavigationSettingsStore {
     suspend fun setSidebarExpanded(context: Context, expanded: Boolean) {
         context.settingsDataStore.edit { preferences ->
             preferences[keySidebarExpanded] = expanded
-        }
-    }
-
-    suspend fun setSidebarAccountSwitcherEnabled(context: Context, enabled: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[keySidebarAccountSwitcherEnabled] = enabled
         }
     }
 

@@ -90,7 +90,6 @@ internal fun LiquidGlassAdjustmentPanel(
     persistedAdvancedSettings: LiquidGlassAdvancedSettings,
     persistedReadabilityMode: LiquidGlassReadabilityMode,
     bottomBarItems: List<BottomNavItem>,
-    bottomBarSearchEnabled: Boolean,
     onProgressCommitted: (Float) -> Unit,
     onPreviewImageChanged: (String?) -> Unit,
     onAdvancedSettingsCommitted: (LiquidGlassAdvancedSettings) -> Unit,
@@ -176,7 +175,6 @@ internal fun LiquidGlassAdjustmentPanel(
             advancedSettings = advancedSettings,
             readabilityMode = readabilityMode,
             bottomBarItems = bottomBarItems,
-            bottomBarSearchEnabled = bottomBarSearchEnabled,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -723,7 +721,6 @@ private fun LiquidGlassHomeSample(
     advancedSettings: LiquidGlassAdvancedSettings,
     readabilityMode: LiquidGlassReadabilityMode,
     bottomBarItems: List<BottomNavItem>,
-    bottomBarSearchEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val backdropSource = rememberChromeBackdropSource()
@@ -955,29 +952,27 @@ private fun LiquidGlassHomeSample(
                     }
                 }
             }
-            if (bottomBarSearchEnabled) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Row(
-                    modifier = Modifier
-                        .width(48.dp)
-                        .height(48.dp)
-                        .biliPaiFloatingDockShell(
-                            backdrop = backdrop,
-                            containerColor = glassColor,
-                            pressProgress = 0f,
-                            shape = CircleShape,
-                            liquidGlassTuning = tuning,
-                        )
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = com.android.purebilibili.feature.settings.rememberMaterialSymbol(com.android.purebilibili.R.drawable.ms_search_24),
-                        contentDescription = "底栏搜索",
-                        tint = bottomContentColor,
+            Spacer(modifier = Modifier.width(8.dp))
+            Row(
+                modifier = Modifier
+                    .width(48.dp)
+                    .height(48.dp)
+                    .biliPaiFloatingDockShell(
+                        backdrop = backdrop,
+                        containerColor = glassColor,
+                        pressProgress = 0f,
+                        shape = CircleShape,
+                        liquidGlassTuning = tuning,
                     )
-                }
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = com.android.purebilibili.feature.settings.rememberMaterialSymbol(com.android.purebilibili.R.drawable.ms_search_24),
+                    contentDescription = "底栏搜索",
+                    tint = bottomContentColor,
+                )
             }
         }
     }

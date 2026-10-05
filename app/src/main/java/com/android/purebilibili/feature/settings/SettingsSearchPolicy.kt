@@ -77,7 +77,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "导航与标签",
         subtitle = "底栏、顶部标签、搜索分类栏、平板侧边栏与项目顺序",
         section = "设置",
-        aliases = listOf("导航", "底栏", "底部栏", "顶部标签", "顶部标签页", "首页搜索框", "全局顶栏显示", "首页顶栏显示", "列表顶部栏", "历史记录顶部栏", "稍后再看顶部栏", "仅回顶显示", "始终显示", "首页顶栏收起", "顶栏收起", "标签排序", "平板侧边栏", "侧边导航栏", "底栏顺序", "底栏项目", "底栏搜索入口", "搜索入口", "悬浮搜索", "搜索分类", "搜索分类顺序")
+        aliases = listOf("导航", "底栏", "底部栏", "顶部标签", "顶部标签页", "首页搜索框", "全局顶栏显示", "首页顶栏显示", "列表顶部栏", "历史记录顶部栏", "稍后再看顶部栏", "仅回顶显示", "始终显示", "首页顶栏收起", "顶栏收起", "标签排序", "平板侧边栏", "侧边导航栏", "底栏顺序", "底栏项目", "搜索分类", "搜索分类顺序")
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.PLAYBACK_QUALITY,
@@ -674,29 +674,14 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.BOTTOM_BAR,
-        title = "悬浮底栏 / 搜索联动",
-        subtitle = "底栏形态、图标交叉缩放、搜索与视频小横条联动",
+        title = "悬浮底栏 / 图标动效",
+        subtitle = "底栏形态与导航图标交叉缩放",
         section = settingsDestinationCopy(SettingsSearchTarget.BOTTOM_BAR).title,
         aliases = listOf(
             "悬浮底栏",
-            "底栏搜索",
-            "底栏搜索联动",
-            "搜索入口",
-            "悬浮搜索",
             "导航图标交叉缩放",
             "图标放大缩小",
             "选中图标 1.10 倍",
-            "视频小横条联动",
-            "底栏收拢",
-            "列表精简搜索",
-            "精简搜索",
-            "隐藏列表搜索栏",
-            "隐藏搜索栏",
-            "收藏搜索",
-            "历史搜索",
-            "稍后看搜索",
-            "稍后再看搜索",
-            "页内搜索",
         ),
         focusId = SettingsSearchFocusIds.BOTTOM_BAR_BEHAVIOR
     ),

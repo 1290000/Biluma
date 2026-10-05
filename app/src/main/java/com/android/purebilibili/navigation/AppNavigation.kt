@@ -494,7 +494,6 @@ fun AppNavigation(
     var inAppSearchKeyword by remember { mutableStateOf<String?>(null) }
     var searchEntryMotionSource by remember { mutableStateOf(SearchEntryMotionSource.NONE) }
     var searchEntryMotionKey by remember { mutableIntStateOf(0) }
-    var bottomBarSearchLaunchKey by remember { mutableIntStateOf(0) }
     var navigation3ReturnSession by remember { mutableStateOf(BiliPaiReturnSessionState()) }
     val effectiveInitialSearchKeyword = inAppSearchKeyword ?: initialSearchKeyword
     val consumeInitialSearchKeyword: (String) -> Unit = { consumedKeyword ->
@@ -1001,10 +1000,6 @@ fun AppNavigation(
                 searchEntryMotionSource = SearchEntryMotionSource.BOTTOM_BAR
                 searchEntryMotionKey += 1
             }
-        }
-        fun requestSearchFromBottomBar() {
-            bottomBarSearchLaunchKey += 1
-            navigateToSearchFromBottomBar()
         }
         fun navigateToPortraitStoryInNavigation3(
             seed: PortraitStoryNavigationSeed,
@@ -1518,8 +1513,6 @@ fun AppNavigation(
         // This raw signal is intentionally independent from the user's bottom-bar visibility
         // mode: the linked playback strip still compacts on downward browsing when the bar itself
         // is configured to remain visible.
-        val collapseLinkedPlaybackDock = !isBottomBarVisible ||
-            (currentBottomNavItem == BottomNavItem.DYNAMIC && scrollOffsetState.floatValue > 50f)
         val bottomBarVisibilityState = remember { MutableTransitionState(finalBottomBarVisible) }
         bottomBarVisibilityState.targetState = finalBottomBarVisible
         val bottomBarCanMount =
@@ -1687,12 +1680,7 @@ fun AppNavigation(
             }
         }
         val submitBottomBarSearchKeyword: (String) -> Unit = { keyword ->
-            val listScopedSearchActive = com.android.purebilibili.feature.list.isListScopedSearchActive(
-                bottomBarSearchEnabled = effectiveHomeSettings.isBottomBarSearchEnabled,
-                listScopedSearchEnabled = effectiveHomeSettings.listScopedSearchEnabled,
-            )
             val scopedChannel = if (
-                listScopedSearchActive &&
                 currentNavigation3Key == BiliPaiNavKey.MainHost
             ) {
                 when (currentBottomNavItem) {
@@ -2067,13 +2055,7 @@ fun AppNavigation(
                                     SettingsManager.setTabletUseSidebar(context, false)
                                 }
                             },
-                            onAccountSwitchClick = if (
-                                appNavigationSettings.sidebarAccountSwitcherEnabled
-                            ) {
-                                { sidebarAccountSwitcherVisible = true }
-                            } else {
-                                null
-                            },
+                            onAccountSwitchClick = { sidebarAccountSwitcherVisible = true },
                         )
                     }
                 }
@@ -2273,6 +2255,10 @@ fun AppNavigation(
                     isBottomPagerPageActive: Boolean = true,
                     isBottomPagerHosted: Boolean = false,
                 ) {
+                    val hasListScopedSearchEntry = isBottomPagerHosted &&
+                        !useSideNavigation && isBottomBarFloating &&
+                        bottomBarVisibilityMode != SettingsManager.BottomBarVisibilityMode.ALWAYS_HIDDEN
+
                     @Composable
                     fun SettingsTabletEntry(content: @Composable () -> Unit) {
                         SettingsTabletNavEntryShell(
@@ -2356,13 +2342,7 @@ fun AppNavigation(
                                         homeViewModel.refresh()
                                     }
                                 },
-                                onAccountSwitchClick = if (
-                                    appNavigationSettings.sidebarAccountSwitcherEnabled
-                                ) {
-                                    { sidebarAccountSwitcherVisible = true }
-                                } else {
-                                    null
-                                },
+                                onAccountSwitchClick = { sidebarAccountSwitcherVisible = true },
                                 onSettingsClick = { pushNavigation3Route(ScreenRoutes.Settings.route) },
                                 onPluginsClick = { pushNavigation3Key(BiliPaiNavKey.PluginsSettings()) },
                                 onDynamicClick = { pushNavigation3Route(ScreenRoutes.Dynamic.route) },
@@ -2480,7 +2460,7 @@ fun AppNavigation(
                                     onOpenSearchDestination = if (historySearchKey == null) {
                                         { query -> pushNavigation3Key(BiliPaiNavKey.HistorySearch(query)) }
                                     } else null,
-                                    listScopedSearchChannel = if (historySearchKey == null) {
+                                    listScopedSearchChannel = if (hasListScopedSearchEntry && historySearchKey == null) {
                                         historyListScopedSearchChannel
                                     } else {
                                         null
@@ -3372,7 +3352,7 @@ fun AppNavigation(
                                     onOpenSearchDestination = if (watchLaterSearchKey == null) {
                                         { query -> pushNavigation3Key(BiliPaiNavKey.WatchLaterSearch(query)) }
                                     } else null,
-                                    listScopedSearchChannel = if (watchLaterSearchKey == null) {
+                                    listScopedSearchChannel = if (hasListScopedSearchEntry && watchLaterSearchKey == null) {
                                         watchLaterListScopedSearchChannel
                                     } else {
                                         null
@@ -3600,7 +3580,7 @@ fun AppNavigation(
                                     onOpenSearchDestination = if (favoriteSearchKey == null) {
                                         { query -> pushNavigation3Key(BiliPaiNavKey.FavoriteSearch(query)) }
                                     } else null,
-                                    listScopedSearchChannel = if (favoriteSearchKey == null) {
+                                    listScopedSearchChannel = if (hasListScopedSearchEntry && favoriteSearchKey == null) {
                                         favoriteListScopedSearchChannel
                                     } else {
                                         null
@@ -4602,9 +4582,8 @@ fun AppNavigation(
                                             DynamicScrollRequest.SCROLL_TO_TOP_AND_REFRESH
                                         )
                                     },
-                                    onSearchClick = { requestSearchFromBottomBar() },
+                                    onSearchClick = { navigateToSearchFromBottomBar() },
                                     onSearchKeywordSubmit = submitBottomBarSearchKeyword,
-                                    searchLaunchKey = bottomBarSearchLaunchKey,
                                     hazeState = if (isBottomBarBlurEnabled) mainHazeState else null,
                                     isFloating = true,
                                     labelMode = bottomBarLabelMode,
@@ -4620,7 +4599,6 @@ fun AppNavigation(
                                     // 避免先卸载折射效果、页面落定后再等待 backdrop 重新捕获。
                                     forceLowBlurBudget = false,
                                     isFeedScrollInProgress = homeFeedScrollInProgressState.value,
-                                    collapseLinkedDock = collapseLinkedPlaybackDock,
                                     indicatorPositionProvider =
                                         mainBottomPagerState.indicatorPositionProvider,
                                     isPagerScrollInProgressProvider =
@@ -4657,9 +4635,8 @@ fun AppNavigation(
                                         DynamicScrollRequest.SCROLL_TO_TOP_AND_REFRESH
                                     )
                                 },
-                                onSearchClick = { requestSearchFromBottomBar() },
+                                onSearchClick = { navigateToSearchFromBottomBar() },
                                 onSearchKeywordSubmit = submitBottomBarSearchKeyword,
-                                searchLaunchKey = bottomBarSearchLaunchKey,
                                 hazeState = if (isBottomBarBlurEnabled) mainHazeState else null,
                                 isFloating = false,
                                 labelMode = bottomBarLabelMode,
@@ -4674,7 +4651,6 @@ fun AppNavigation(
                                 // 固定底栏同样保持材质连续，切页预算只作用于页面内容。
                                 forceLowBlurBudget = false,
                                 isFeedScrollInProgress = homeFeedScrollInProgressState.value,
-                                collapseLinkedDock = collapseLinkedPlaybackDock,
                                 indicatorPositionProvider =
                                     mainBottomPagerState.indicatorPositionProvider,
                                 isPagerScrollInProgressProvider =

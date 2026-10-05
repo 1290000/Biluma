@@ -1,7 +1,6 @@
 package com.android.purebilibili.feature.onboarding
 
 import android.content.Context
-import com.android.purebilibili.core.store.BottomBarSearchAutoExpandMode
 import com.android.purebilibili.core.store.HomeTopLayoutOrder
 import com.android.purebilibili.core.store.SettingsManager
 import com.android.purebilibili.core.store.applyOnboardingRecommendedUiStyle
@@ -29,7 +28,6 @@ data class OnboardingSettingsGuidePreset(
     val bottomBarFloating: Boolean,
     val bottomBarLiquidGlassEnabled: Boolean,
     val androidNativeLiquidGlassEnabled: Boolean,
-    val bottomBarSearchEnabled: Boolean,
     val topTabLabelMode: Int,
     val topTabOrderIds: List<String>,
     val topTabVisibleIds: Set<String>,
@@ -62,7 +60,6 @@ fun resolveOnboardingSettingsGuidePreset(
             bottomBarFloating = true,
             bottomBarLiquidGlassEnabled = true,
             androidNativeLiquidGlassEnabled = true,
-            bottomBarSearchEnabled = false,
             topTabLabelMode = SettingsManager.TopTabLabelMode.TEXT_ONLY,
             topTabOrderIds = DEFAULT_ONBOARDING_TOP_TAB_IDS,
             topTabVisibleIds = DEFAULT_ONBOARDING_TOP_TAB_IDS.toSet(),
@@ -78,7 +75,6 @@ fun resolveOnboardingSettingsGuidePreset(
             bottomBarFloating = true,
             bottomBarLiquidGlassEnabled = true,
             androidNativeLiquidGlassEnabled = true,
-            bottomBarSearchEnabled = false,
             topTabLabelMode = SettingsManager.TopTabLabelMode.TEXT_ONLY,
             topTabOrderIds = DEFAULT_ONBOARDING_TOP_TAB_IDS,
             topTabVisibleIds = DEFAULT_ONBOARDING_TOP_TAB_IDS.toSet(),
@@ -94,7 +90,6 @@ fun resolveOnboardingSettingsGuidePreset(
             bottomBarFloating = true,
             bottomBarLiquidGlassEnabled = true,
             androidNativeLiquidGlassEnabled = true,
-            bottomBarSearchEnabled = false,
             topTabLabelMode = SettingsManager.TopTabLabelMode.TEXT_ONLY,
             topTabOrderIds = DEFAULT_ONBOARDING_TOP_TAB_IDS,
             topTabVisibleIds = DEFAULT_ONBOARDING_TOP_TAB_IDS.toSet(),
@@ -119,7 +114,6 @@ suspend fun applyOnboardingSettingsGuidePreset(
         context,
         preset.androidNativeLiquidGlassEnabled
     )
-    SettingsManager.setBottomBarSearchEnabled(context, preset.bottomBarSearchEnabled)
     SettingsManager.setTopTabLabelMode(context, preset.topTabLabelMode)
     SettingsManager.setTopTabOrder(context, preset.topTabOrderIds)
     SettingsManager.setTopTabVisibleTabs(context, preset.topTabVisibleIds)

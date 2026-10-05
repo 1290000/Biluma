@@ -4,7 +4,7 @@ An independently maintained third-party Bilibili Android client based on [BiliPa
 
 [简体中文](README.md) · [Repository](https://github.com/1290000/Biluma) · [Issues](https://github.com/1290000/Biluma/issues) · [Releases](https://github.com/1290000/Biluma/releases)
 
-> **This project is in early development and has no independent Biluma release yet.** The first playback-settings cleanup has begun, but the full feature-reduction list is still undecided; this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
+> **This project is in early development and has no independent Biluma release yet.** The first playback, home, and navigation settings cleanup has begun, but the full feature-reduction list is still undecided; this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
 
 ## Project identity
 
@@ -29,7 +29,7 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
 | Favorites page | Restored direct folder-content browsing, the top folder dropdown, and checkbox selection from upstream [v0.2.3-alpha.5](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.3-alpha.5), retaining the four-page switch animation cap from [PR #840](https://github.com/jay3-yy/BiliPai/pull/840); tests and compilation have not been run |
-| Feature and settings reduction | The first six playback settings/informational entries are removed with fixed playback behavior, and the favorites page has been adjusted; further scope is pending |
+| Feature and settings reduction | The first six playback settings/informational entries and six home/navigation settings are removed with fixed behavior, and the favorites page has been adjusted; further scope is pending |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
@@ -45,6 +45,17 @@ Changes have only received static checks and an update API connectivity check. R
 - The settings-page comment IP-location explanation is removed; comments still show location data when available.
 
 Related settings entries, search aliases, preference accessors, and dedicated logic are removed. Legacy preferences no longer control these behaviors, and settings-share imports skip retired fields. This batch has received static checks only; regression test code is updated but has not been run.
+
+## Fixed home and navigation behavior
+
+The main app no longer exposes these switches. Legacy preferences, shared settings, and restored backups cannot override the fixed behavior:
+
+- The home cover carousel is removed, including its autoplay option and dedicated implementation; recommendations use the complete regular video feed.
+- Bottom-bar search is enabled and the home top search bar is retained. Scrolling down no longer merges the search control, navigation dock, and playback strip.
+- Favorites, history, and watch-later use compact page-scoped search when hosted in the main navigation with an available bottom search entry. Search results can still be inspected and cleared. Standalone search pages, sidebar layouts, and lists without bottom search retain a top search entry.
+- The sidebar account-switch entry is always available when using the sidebar; sidebar navigation itself is not forced on.
+
+Unused legacy bottom-search auto-expansion and layout modes are also removed. Active search input, search-page transitions, playback-strip state transitions, and shared navigation visuals remain. The TV module is unchanged. Regression tests are added and static checks are performed; tests, compilation, and on-device verification have not been run for this batch.
 
 ## Downloads and feedback
 

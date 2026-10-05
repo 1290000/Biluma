@@ -729,14 +729,11 @@ fun WatchLaterScreen(
     var pendingManagementAction by rememberSaveable { mutableStateOf<WatchLaterManagementAction?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf(initialSearchQuery) }
     val hideListTopSearchBar = com.android.purebilibili.feature.list.shouldHideListTopSearchBar(
-        bottomBarSearchEnabled = homeSettings.isBottomBarSearchEnabled,
-        listScopedSearchEnabled = homeSettings.listScopedSearchEnabled,
+        hasScopedSearchEntry = listScopedSearchChannel != null,
         isSearchDestination = isSearchDestination,
     )
     val showListScopedSearchActiveBar =
         com.android.purebilibili.feature.list.shouldShowListScopedSearchActiveBar(
-            bottomBarSearchEnabled = homeSettings.isBottomBarSearchEnabled,
-            listScopedSearchEnabled = homeSettings.listScopedSearchEnabled,
             searchQuery = searchQuery,
         )
     LaunchedEffect(listScopedSearchChannel) {
