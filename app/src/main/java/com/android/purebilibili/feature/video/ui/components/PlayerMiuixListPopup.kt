@@ -1,28 +1,14 @@
 package com.android.purebilibili.feature.video.ui.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.android.purebilibili.core.ui.LocalAppThemeConfig
-import com.android.purebilibili.core.ui.components.AppSurface
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
@@ -79,7 +65,6 @@ fun PlayerMiuixListPopup(
     minWidth: Dp = ListPopupDefaults.MinWidth,
     content: @Composable () -> Unit,
 ) {
-    val useNativePopup = LocalAppThemeConfig.current.nativeMiuixPopupsEnabled
     val alignment = when (placement) {
         PlayerListPopupPlacement.CENTER,
         PlayerListPopupPlacement.START -> PopupPositionProvider.Align.Start
@@ -98,37 +83,6 @@ fun PlayerMiuixListPopup(
             SmallTitle(text = title)
             content()
         }
-    }
-
-    if (!useNativePopup) {
-        Dialog(
-            onDismissRequest = onDismissRequest,
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onDismissRequest,
-                    ),
-                contentAlignment = when (placement) {
-                    PlayerListPopupPlacement.CENTER -> Alignment.Center
-                    PlayerListPopupPlacement.START -> Alignment.CenterStart
-                    PlayerListPopupPlacement.END -> Alignment.CenterEnd
-                    PlayerListPopupPlacement.END_BOTTOM -> Alignment.BottomEnd
-                },
-            ) {
-                AppSurface(
-                    modifier = modifier
-                        .widthIn(min = minWidth, max = 320.dp)
-                        .then(if (maxHeight != null) Modifier.heightIn(max = maxHeight) else Modifier),
-                ) { popupContent() }
-            }
-        }
-        return
     }
 
     WindowListPopup(

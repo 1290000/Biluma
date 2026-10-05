@@ -1010,7 +1010,6 @@ fun HomeScreen(
         )
     }
     val displayMode = homeSettings.displayMode
-    val isBottomBarFloating = homeSettings.isBottomBarFloating
     val bottomBarLabelMode = homeSettings.bottomBarLabelMode
     val baseIsHeaderBlurEnabled = remember(homeSettings.headerBlurMode) {
         resolveHomeHeaderBlurEnabled(
@@ -1650,12 +1649,11 @@ fun HomeScreen(
     
     // Constants
     val topTabStyle = remember(
-        isBottomBarFloating,
         isHeaderBlurEnabled,
         homePerformanceConfig.topBarLiquidGlassEnabled,
     ) {
         resolveTopTabStyle(
-            isBottomBarFloating = isBottomBarFloating,
+            isBottomBarFloating = true,
             isBottomBarBlurEnabled = isHeaderBlurEnabled,
             isLiquidGlassEnabled = homePerformanceConfig.topBarLiquidGlassEnabled,
         )

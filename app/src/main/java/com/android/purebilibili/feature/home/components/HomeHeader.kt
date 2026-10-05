@@ -9,8 +9,6 @@ import com.android.purebilibili.core.ui.AppTopChromePolicy
 import com.android.purebilibili.core.ui.blur.TopSolidProgressiveFadeOverlay
 import com.android.purebilibili.core.ui.globalWallpaperAwareChromeColor
 import com.android.purebilibili.core.ui.AppTopTabPresentation
-import com.android.purebilibili.core.theme.AppUiStyle
-import com.android.purebilibili.core.theme.LocalAppUiStyle
 import com.android.purebilibili.core.ui.AppSemanticIconFamily
 import com.android.purebilibili.core.ui.resolveAppInboxIcon
 import com.android.purebilibili.core.ui.resolveAppSearchIcon
@@ -214,7 +212,7 @@ internal fun resolveHomeTopLinkedBottomBarAppearance(
         homeSettings = resolvedHomeSettings,
     )
     return HomeTopLinkedBottomBarAppearance(
-        isFloating = navigationAppearance.bottomBarFloating,
+        isFloating = true,
         blurEnabled = navigationAppearance.bottomBarBlurEnabled && !(
             presentation == AppTopTabPresentation.MATERIAL_UNDERLINE &&
                 !resolvedHomeSettings.androidNativeLiquidGlassEnabled
@@ -224,11 +222,6 @@ internal fun resolveHomeTopLinkedBottomBarAppearance(
         )
     )
 }
-
-internal fun shouldUseLegacyHomeTopTabs(
-    liquidGlassEnabled: Boolean,
-    bottomBarFloating: Boolean,
-): Boolean = !liquidGlassEnabled && !bottomBarFloating
 
 internal fun formatHomeTopRightUnreadBadge(
     action: HomeTopRightAction,
@@ -1576,11 +1569,6 @@ fun HomeHeader(
     } else {
         onSettingsClick
     }
-    val useLegacyHomeTopTabs = shouldUseLegacyHomeTopTabs(
-        liquidGlassEnabled = topChromeLiquidGlassEnabled,
-        bottomBarFloating = linkedBottomBarAppearance.isFloating,
-    )
-
     // 状态栏高度
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     
@@ -2222,8 +2210,7 @@ fun HomeHeader(
                     forceLowBlurBudget = forceLowBlurBudget,
                     isViewportSyncEnabled = isTopTabViewportSyncEnabled,
                     maxDockWidthDp = maxDockWidth.value,
-                    forceMaterialUnderline = useLegacyHomeTopTabs &&
-                        LocalAppUiStyle.current == AppUiStyle.MATERIAL3
+                    forceMaterialUnderline = false
                 )
             }
         }
@@ -2443,7 +2430,7 @@ fun HomeHeader(
                 ) {
                     if (!hideTopTabs && topLayoutOrder == HomeTopLayoutOrder.TABS_THEN_SEARCH) {
                         topTabsContent(
-                            if (topTabInnerOwnsFloatingDockShell || useLegacyHomeTopTabs) {
+                            if (topTabInnerOwnsFloatingDockShell) {
                                 fullTopDockWidth
                             } else {
                                 topControlsContentWidth
@@ -2870,7 +2857,7 @@ fun HomeHeader(
                         }
 
                         topTabsContent(
-                            if (topTabInnerOwnsFloatingDockShell || useLegacyHomeTopTabs) {
+                            if (topTabInnerOwnsFloatingDockShell) {
                                 fullTopDockWidth
                             } else {
                                 topControlsContentWidth

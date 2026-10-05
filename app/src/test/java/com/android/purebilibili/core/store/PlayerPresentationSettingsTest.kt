@@ -28,6 +28,5 @@ class PlayerPresentationSettingsTest {
         val settings = PlayerControlVisibilitySettings()
         assertTrue(settings.showCastButton)
         assertTrue(settings.showFollowButton)
-        assertFalse(settings.compactPlayerChrome)
     }
 }

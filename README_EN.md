@@ -4,7 +4,7 @@ An independently maintained third-party Bilibili Android client based on [BiliPa
 
 [简体中文](README.md) · [Repository](https://github.com/1290000/Biluma) · [Issues](https://github.com/1290000/Biluma/issues) · [Releases](https://github.com/1290000/Biluma/releases)
 
-> **This project is in early development and has no independent Biluma release yet.** The first playback, home, and navigation settings cleanup has begun, but the full feature-reduction list is still undecided; this is not a completed slimmed-down edition. It is not an official release by the BiliPai authors or Bilibili.
+> **This project is in early development and has no independent Biluma release yet.** All nine initial UI and settings reductions are implemented in source, but tests, compilation, and on-device verification have not been performed. It is not an official release by the BiliPai authors or Bilibili.
 
 ## Project identity
 
@@ -29,12 +29,30 @@ These settings apply only to the main `:app` module. The retained `app-tv` modul
 | Empty release list | Informational handling is implemented, without empty changelog dialogs or fallback to BiliPai downloads |
 | Upstream attribution | The About page retains BiliPai attribution and contributor credits |
 | Favorites page | Restored direct folder-content browsing, the top folder dropdown, and checkbox selection from upstream [v0.2.3-alpha.5](https://github.com/jay3-yy/BiliPai/releases/tag/v0.2.3-alpha.5), retaining the four-page switch animation cap from [PR #840](https://github.com/jay3-yy/BiliPai/pull/840); tests and compilation have not been run |
-| Feature and settings reduction | The first six playback settings/informational entries and six home/navigation settings are removed with fixed behavior, and the favorites page has been adjusted; further scope is pending |
+| Feature and settings reduction | All nine initial UI reductions, six playback settings/informational-entry reductions, and six home/navigation setting reductions are implemented in source; favorites are adjusted, without runtime verification |
 | Icons and other branding | Not replaced; some copy and assets still come from upstream |
 | APK naming and publication | Upstream export names remain; independent signing and version policy are pending |
 | Automation | GitHub Actions is currently disabled in this repository's settings |
 
 Changes have only received static checks and an update API connectivity check. Regression test code has been added, but tests, compilation, installation, and on-device verification have not been performed. Configuration and command examples do not establish that a build succeeds.
+
+## UI simplification progress
+
+All nine items have been implemented in batches and merged into `main`. Approved targets and source implementation status are separate; neither implies a release or successful runtime verification.
+
+| Item | Fixed target | Source status |
+| --- | --- | --- |
+| 1. UI preset | Miuix only; remove MD3-specific UI | Implemented; removed the user-facing preset entry and related resources, fixed runtime selection to Miuix, and retained Material 3 infrastructure for compatibility and fallback |
+| 2. Liquid glass | Enabled; retain non-glass UI and compatibility/performance fallbacks | Implemented; removed the global switch, search entry, and old-backup share entry; runtime is fixed on, with non-glass fallback on unsupported devices |
+| 3. Single-choice presentation | Anchored popup | Implemented; centered single-choice dialog, setting, and preference access removed |
+| 4. Splash icon mask animation | Disabled | Implemented; removed the toggle, animation styles, and startup-only assets; system splash icons are transparent, while wallpaper, preloading, and launcher compatibility entries remain |
+| 5. Native Miuix popups | Enabled | Implemented; switch and its disabled alternatives removed; Miuix dialogs no longer fall back to Material through this switch |
+| 6. Video tag size | Smallest | Implemented; video tags use the smallest size without settings or backup overrides; removed the unused intermediate size and retained standard tags elsewhere |
+| 7. Compact player controls | Enabled | Implemented; removed the toggle, preference, and classic layout branches; compact spacing and scrims are fixed, with sharing retained in the More menu |
+| 8. Floating bottom bar | Enabled | Implemented; removed the switch, preference, old-backup field, and docked renderers; search integration, the playback mini-bar, and large-screen side navigation remain |
+| 9. Navigation icon cross-scale | Enabled | Implemented; removed the switch and disabled branch; icons scale during indicator transitions and return to their authored size when settled |
+
+All nine options no longer have user-facing selection entries; their dedicated alternatives and inactive child settings have been removed. Legacy theme and liquid-glass keys remain only at necessary migration compatibility boundaries, while runtime selection is fixed to Miuix with liquid glass enabled. Confirmation/input dialogs, slider dialogs, and hinge-safe layouts are outside this batch's removal scope; Material 3 infrastructure and unsupported-device non-glass fallbacks are also retained.
 
 ## Fixed playback behavior
 

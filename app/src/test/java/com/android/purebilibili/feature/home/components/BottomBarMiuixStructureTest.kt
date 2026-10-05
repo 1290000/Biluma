@@ -254,73 +254,11 @@ class BottomBarMiuixStructureTest {
         assertFalse(source.contains("LocalAndroidNativeVariant"))
         assertFalse(source.contains("AndroidNativeVariant"))
         assertTrue(source.contains("MiuixBottomBar("))
-        assertTrue(source.contains("if (isFloating) {"))
         assertTrue(source.contains("BiliPaiFloatingBottomBar("))
         assertTrue(source.contains("iconStyle = sharedBarIconStyle"))
         assertTrue(source.contains("private enum class SharedFloatingBottomBarIconStyle"))
-        assertTrue(source.contains("AppNavigationBar("))
-        assertTrue(source.contains("AppPlatformNavigationBar("))
-        assertTrue(source.contains("MiuixDockedBottomBarItem("))
-        assertTrue(source.contains("fun Md3BottomBarDisplayMode.toAppPlatformNavigationDisplayMode()"))
         assertFalse(source.contains("import top.yukonga.miuix.kmp.basic.NavigationBar as MiuixNavigationBar"))
         assertFalse(source.contains("import top.yukonga.miuix.kmp.basic.NavigationBarItem as MiuixNavigationBarItem"))
-    }
-
-    @Test
-    fun `docked miuix bottom bar avoids floating navigation insets`() {
-        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
-        val miuixRendererSource = source
-            .substringAfter("private fun MiuixBottomBar(")
-            .substringBefore("@Composable\nprivate fun RowScope.MiuixDockedBottomBarItem(")
-
-        assertTrue(miuixRendererSource.contains("showDivider = !sharedLiquidGlassEnabled"))
-        assertTrue(miuixRendererSource.contains("AppPlatformNavigationBar("))
-        assertTrue(miuixRendererSource.contains("AppPlatformNavigationBarItem("))
-        assertTrue(miuixRendererSource.contains("colors = MiuixNavigationBarDefaults.navigationBarItemColors("))
-        assertTrue(miuixRendererSource.contains("selectedContentColor = skinItemColors.selectedColor"))
-        assertTrue(miuixRendererSource.contains("unselectedContentColor = skinItemColors.unselectedColor"))
-        assertTrue(miuixRendererSource.contains("AppPlatformNavigationBadge {"))
-        assertTrue(miuixRendererSource.contains("shouldUseMiuixOfficialNavigationBarItem("))
-        assertTrue(miuixRendererSource.contains("MiuixDockedBottomBarItem("))
-        assertTrue(miuixRendererSource.contains("resolveSharedBottomBarIcon("))
-        assertTrue(miuixRendererSource.contains("resolveSharedBottomBarSidebarIcon("))
-        assertFalse(miuixRendererSource.contains("icon = resolveMaterialBottomBarIcon("))
-        assertFalse(miuixRendererSource.contains("MiuixFloatingNavigationBar("))
-        assertFalse(miuixRendererSource.contains("MiuixFloatingNavigationBarItem("))
-    }
-
-    @Test
-    fun `docked bottom bars render skin trim behind navigation items`() {
-        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
-        val materialRendererSource = source
-            .substringAfter("private fun MaterialBottomBar(")
-            .substringBefore("@Composable\nprivate fun MiuixBottomBar(")
-        val miuixRendererSource = source
-            .substringAfter("private fun MiuixBottomBar(")
-            .substringBefore("@Composable\nprivate fun RowScope.MiuixDockedBottomBarItem(")
-        val miuixDockedItemSource = source
-            .substringAfter("private fun RowScope.MiuixDockedBottomBarItem(")
-            .substringBefore("@Composable\nprivate fun BiliPaiFloatingBottomBar(")
-
-        assertTrue(materialRendererSource.contains("DockedBottomBarSkinContainer("))
-        assertTrue(materialRendererSource.contains("decoration = uiSkinDecoration"))
-        assertTrue(materialRendererSource.indexOf("DockedBottomBarSkinContainer(") < materialRendererSource.indexOf("AppNavigationBar("))
-        assertTrue(materialRendererSource.contains("AppNavigationBarItem("))
-        assertTrue(materialRendererSource.contains("BottomBarReminderBadgeAnchor("))
-        assertTrue(materialRendererSource.contains("val skinIconPath = uiSkinDecoration?.iconPathFor(item, selected = currentItem == item)"))
-        assertTrue(materialRendererSource.contains("if (skinIconPath != null)"))
-        assertTrue(materialRendererSource.contains("BottomBarSkinIcon("))
-        assertTrue(materialRendererSource.contains("MaterialBottomBarAnimatedIcon("))
-        assertTrue(materialRendererSource.contains("indicatorColor = dockedIndicatorColor"))
-        assertTrue(materialRendererSource.contains("rememberNavigationSelectionTransform("))
-        assertTrue(miuixRendererSource.contains("DockedBottomBarSkinContainer("))
-        assertTrue(miuixRendererSource.contains("decoration = uiSkinDecoration"))
-        assertTrue(miuixRendererSource.indexOf("DockedBottomBarSkinContainer(") < miuixRendererSource.indexOf("AppPlatformNavigationBar("))
-        assertTrue(miuixRendererSource.contains("AppPlatformNavigationBadge {"))
-        assertTrue(miuixRendererSource.contains("indicatorColor = dockedIndicatorColor"))
-        assertTrue(miuixRendererSource.contains("modifier.height(resolveBottomBarSkinDockHeight())"))
-        assertTrue(miuixDockedItemSource.contains("height(resolveMiuixDockedBottomBarItemHeight(skinIconPath != null))"))
-        assertFalse(miuixDockedItemSource.contains("height(64.dp)"))
     }
 
     @Test

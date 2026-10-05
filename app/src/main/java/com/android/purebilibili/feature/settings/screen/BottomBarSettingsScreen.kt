@@ -210,11 +210,6 @@ fun BottomBarSettingsContent(
 
     val homeTopRightAction by SettingsManager.getHomeTopRightAction(context)
         .collectAsStateWithLifecycle(initialValue = HomeTopRightAction.SETTINGS)
-    val isBottomBarFloating by SettingsManager.getBottomBarFloating(context)
-        .collectAsStateWithLifecycle(initialValue = true)
-    val navigationIconCrossScaleEnabled by SettingsManager
-        .getNavigationIconCrossScaleEnabled(context)
-        .collectAsStateWithLifecycle(initialValue = false)
     val isLargeScreenCapable = windowSizeClass.isTabletDevice ||
         displayContext.isKnownFoldableDevice
     val tabletUseSidebar by SettingsManager.getTabletUseSidebar(context)
@@ -351,42 +346,6 @@ fun BottomBarSettingsContent(
                 }
             }
 
-            item {
-                Box(modifier = Modifier.entrance()) {
-                    AppPreferenceSectionTitle("导航行为")
-                }
-            }
-            item {
-                Box(modifier = Modifier.entrance()) {
-                    AppPreferenceGroup {
-                        AppSwitchPreference(
-                            icon = rememberSettingsSemanticIcon(SettingsIconRole.FLOATING_BOTTOM_BAR),
-                            title = "悬浮底栏",
-                            subtitle = "开启后底栏与屏幕边缘留出间距；关闭后贴近底部显示",
-                            checked = isBottomBarFloating,
-                            onCheckedChange = { enabled ->
-                                scope.launch { SettingsManager.setBottomBarFloating(context, enabled) }
-                            },
-                            iconTint = com.android.purebilibili.core.theme.iOSPurple,
-                        )
-                        AppPreferenceDivider()
-                        AppSwitchPreference(
-                            icon = rememberSettingsSemanticIcon(SettingsIconRole.NAV_ICON_CROSS_SCALE),
-                            title = "导航图标交叉缩放",
-                            subtitle = "指示器滑动途中图标短暂放大，停稳后恢复原始大小",
-                            checked = navigationIconCrossScaleEnabled,
-                            onCheckedChange = { enabled ->
-                                scope.launch {
-                                    SettingsManager.setNavigationIconCrossScaleEnabled(context, enabled)
-                                }
-                            },
-                            iconTint = com.android.purebilibili.core.theme.iOSBlue,
-                        )
-
-                    }
-                }
-            }
-            
             // 底部导航
             item {
                 Box(modifier = Modifier.entrance()) {

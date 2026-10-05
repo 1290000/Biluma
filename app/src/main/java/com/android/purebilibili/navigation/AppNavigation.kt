@@ -470,7 +470,6 @@ fun AppNavigation(
         .collectAsStateWithLifecycle(initialValue = true)
     val isBottomBarBlurEnabled = appearance.bottomBarBlurEnabled
     val bottomBarLabelMode = appearance.bottomBarLabelMode
-    val isBottomBarFloating = appearance.bottomBarFloating
     val showUpBadges by SettingsManager
         .getHomeUpBadgesVisible(context)
         .collectAsStateWithLifecycle(initialValue = false)
@@ -1507,7 +1506,7 @@ fun AppNavigation(
             (
                 bottomBarVisibilityMode == SettingsManager.BottomBarVisibilityMode.ALWAYS_VISIBLE ||
                     isBottomBarVisible ||
-                    (isBottomBarFloating && audioNowPlayingBarEnabled && audioNowPlayingActive &&
+                    (audioNowPlayingBarEnabled && audioNowPlayingActive &&
                         audioNowPlayingItem != null)
             )
         // This raw signal is intentionally independent from the user's bottom-bar visibility
@@ -1531,7 +1530,7 @@ fun AppNavigation(
                 .asPaddingValues()
                 .calculateBottomPadding(),
             reserveBottomBar = bottomBarReservesSpace && !useSideNavigation,
-            isBottomBarFloating = isBottomBarFloating,
+            isBottomBarFloating = true,
             hasUiSkinDecoration = bottomBarUiSkinDecoration != null,
         )
         val latestBrandFeedbackInsetCallback by androidx.compose.runtime.rememberUpdatedState(onBrandFeedbackBottomInsetChanged)
@@ -2256,7 +2255,7 @@ fun AppNavigation(
                     isBottomPagerHosted: Boolean = false,
                 ) {
                     val hasListScopedSearchEntry = isBottomPagerHosted &&
-                        !useSideNavigation && isBottomBarFloating &&
+                        !useSideNavigation &&
                         bottomBarVisibilityMode != SettingsManager.BottomBarVisibilityMode.ALWAYS_HIDDEN
 
                     @Composable
@@ -4543,7 +4542,7 @@ fun AppNavigation(
                                         liquidGlassTuning = liquidGlassRenderConfig.tuning,
                                         liftAboveBottomBar = false,
                                         consumeNavigationBarsPadding = false,
-                                        dockHosted = isBottomBarFloating,
+                                        dockHosted = true,
                                         dockMergeProgress = dockMergeProgress,
                                         surfaceMergeProgress = surfaceMergeProgress,
                                         iconOnlyProgress = iconOnlyProgress,
@@ -4551,78 +4550,21 @@ fun AppNavigation(
                                     )
                                 }
                             } else null
-                        if (!isBottomBarFloating) {
-                            dockAudioContent?.invoke(Modifier, { 0f }, { 0f }, { 0f }, null, true)
-                        }
-                        if (isBottomBarFloating) {
-                            val isBookPosture = appWindowAdaptiveInfo.posture == com.android.purebilibili.core.util.AppFoldPosture.Book
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .then(
-                                        if (isBookPosture) {
-                                            Modifier.padding(start = 24.dp)
-                                        } else {
-                                            Modifier
-                                        }
-                                    ),
-                                contentAlignment = if (isBookPosture) Alignment.CenterStart else Alignment.Center
-                            ) {
-                                FrostedBottomBar(
-                                    nowPlayingContent = dockAudioContent,
-                                    currentItem = currentBottomNavItem,
-                                    onItemClick = handleNavItemClick,
-                                    onHomeDoubleTap = {
-                                        homeScrollChannel.trySend(
-                                            com.android.purebilibili.feature.home.HomeScrollRequest.SCROLL_TO_TOP_AND_REFRESH
-                                        )
-                                    },
-                                    onDynamicDoubleTap = {
-                                        dynamicScrollChannel.trySend(
-                                            DynamicScrollRequest.SCROLL_TO_TOP_AND_REFRESH
-                                        )
-                                    },
-                                    onSearchClick = { navigateToSearchFromBottomBar() },
-                                    onSearchKeywordSubmit = submitBottomBarSearchKeyword,
-                                    hazeState = if (isBottomBarBlurEnabled) mainHazeState else null,
-                                    isFloating = true,
-                                    labelMode = bottomBarLabelMode,
-                                    visibleItems = visibleBottomBarItems,
-                                    itemColorIndices = bottomBarItemColors,
-                                    itemLabels = bottomBarItemLabels,
-                                    dynamicUnreadCount = dynamicUnreadCount,
-                                    homeSettings = effectiveHomeSettings,
-                                    miuixBackdrop = bottomBarBackdrop,
-                                    motionTier = com.android.purebilibili.core.ui.adaptive.MotionTier.Normal,
-                                    isTransitionRunning = bottomPagerRenderBudget.isTransitionRunning,
-                                    // 底栏是独立的常驻材质层。栏目切换时保持液态玻璃渲染树，
-                                    // 避免先卸载折射效果、页面落定后再等待 backdrop 重新捕获。
-                                    forceLowBlurBudget = false,
-                                    isFeedScrollInProgress = homeFeedScrollInProgressState.value,
-                                    indicatorPositionProvider =
-                                        mainBottomPagerState.indicatorPositionProvider,
-                                    isPagerScrollInProgressProvider =
-                                        mainBottomPagerState.scrollInProgressProvider,
-                                    uiSkinDecoration = bottomBarUiSkinDecoration,
-                                    linkedDockPhase = linkedDockPhase,
-                                    onLinkedDockPhaseChange = { linkedDockPhase = it },
-                                    isTopLevelDestination = currentNavigation3Key == BiliPaiNavKey.MainHost,
-                                    // 共享过渡驱动的开关（点条进详情/返回落位）瞬时切换小横条
-                                    // presence，morph 是唯一几何时间轴；仅会话起止播放动画。
-                                    animateNowPlayingPresence = !driveBottomBarByProgress,
-                                    onToggleSidebar = if (tabletUseSidebar) {
-                                        {
-                                            coroutineScope.launch {
-                                                SettingsManager.setTabletUseSidebar(context, true)
-                                            }
-                                        }
+                        val isBookPosture = appWindowAdaptiveInfo.posture == com.android.purebilibili.core.util.AppFoldPosture.Book
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (isBookPosture) {
+                                        Modifier.padding(start = 24.dp)
                                     } else {
-                                        null
+                                        Modifier
                                     }
-                                )
-                            }
-                        } else {
+                                ),
+                            contentAlignment = if (isBookPosture) Alignment.CenterStart else Alignment.Center
+                        ) {
                             FrostedBottomBar(
+                                nowPlayingContent = dockAudioContent,
                                 currentItem = currentBottomNavItem,
                                 onItemClick = handleNavItemClick,
                                 onHomeDoubleTap = {
@@ -4638,7 +4580,6 @@ fun AppNavigation(
                                 onSearchClick = { navigateToSearchFromBottomBar() },
                                 onSearchKeywordSubmit = submitBottomBarSearchKeyword,
                                 hazeState = if (isBottomBarBlurEnabled) mainHazeState else null,
-                                isFloating = false,
                                 labelMode = bottomBarLabelMode,
                                 visibleItems = visibleBottomBarItems,
                                 itemColorIndices = bottomBarItemColors,
@@ -4648,7 +4589,8 @@ fun AppNavigation(
                                 miuixBackdrop = bottomBarBackdrop,
                                 motionTier = com.android.purebilibili.core.ui.adaptive.MotionTier.Normal,
                                 isTransitionRunning = bottomPagerRenderBudget.isTransitionRunning,
-                                // 固定底栏同样保持材质连续，切页预算只作用于页面内容。
+                                // 底栏是独立的常驻材质层。栏目切换时保持液态玻璃渲染树，
+                                // 避免先卸载折射效果、页面落定后再等待 backdrop 重新捕获。
                                 forceLowBlurBudget = false,
                                 isFeedScrollInProgress = homeFeedScrollInProgressState.value,
                                 indicatorPositionProvider =
@@ -4659,6 +4601,8 @@ fun AppNavigation(
                                 linkedDockPhase = linkedDockPhase,
                                 onLinkedDockPhaseChange = { linkedDockPhase = it },
                                 isTopLevelDestination = currentNavigation3Key == BiliPaiNavKey.MainHost,
+                                // 共享过渡驱动的开关（点条进详情/返回落位）瞬时切换小横条
+                                // presence，morph 是唯一几何时间轴；仅会话起止播放动画。
                                 animateNowPlayingPresence = !driveBottomBarByProgress,
                                 onToggleSidebar = if (tabletUseSidebar) {
                                     {

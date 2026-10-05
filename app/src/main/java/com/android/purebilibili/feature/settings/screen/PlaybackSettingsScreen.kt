@@ -192,8 +192,6 @@ fun PlaybackSettingsContent(
         .getDefaultPlaybackSpeed(context).collectAsStateWithLifecycle(initialValue = 1.0f)
     val rememberLastPlaybackSpeed by com.android.purebilibili.core.store.SettingsManager
         .getRememberLastPlaybackSpeed(context).collectAsStateWithLifecycle(initialValue = false)
-    val nativeMiuixPlayerPopups by PlayerSettingsStore
-        .getNativeMiuixPlayerPopups(context).collectAsStateWithLifecycle(initialValue = true)
     val longPressSpeedHintHidden by SettingsManager
         .getLongPressSpeedHintHidden(context)
         .collectAsStateWithLifecycle(
@@ -312,20 +310,7 @@ fun PlaybackSettingsContent(
                         else -> "未知"
                     }
                     AppPreferenceGroup {
-		                        AppSwitchPreference(
-	                            icon = rememberSettingsSemanticIcon(SettingsIconRole.NATIVE_MIUIX_DIALOG),
-                            title = "使用原生 Miuix 弹窗",
-                            subtitle = "用于播放器、动态、用户空间等页面；关闭后使用 Material 3 弹窗",
-                            checked = nativeMiuixPlayerPopups,
-                            onCheckedChange = { enabled ->
-                                scope.launch {
-                                    PlayerSettingsStore.setNativeMiuixPlayerPopups(context, enabled)
-                                }
-                            },
-                            iconTint = com.android.purebilibili.core.theme.iOSBlue,
-                        )
-                        AppPreferenceDivider()
-		                        AppSwitchPreference(
+                        AppSwitchPreference(
                             icon = rememberSettingsSemanticIcon(SettingsIconRole.HARDWARE_DECODER),
                             title = "启用硬件解码",
                             subtitle = "推荐保持开启；只有遇到绿屏或无法播放时再尝试关闭，关闭后更耗电",
@@ -1590,24 +1575,6 @@ private fun PlaybackInteractionSettingsSection(
             iconTint = com.android.purebilibili.core.theme.iOSTeal,
         )
         AppPreferenceDivider()
-        val videoTagSizePreset by com.android.purebilibili.core.store.SettingsManager
-            .getVideoTagSizePreset(context)
-            .collectAsStateWithLifecycle(
-                initialValue = com.android.purebilibili.core.ui.components.AppTagChipSize.STANDARD
-            )
-        SettingsSingleChoicePreference(
-            title = "视频标签大小：${videoTagSizePreset.label}",
-            subtitle = "调整视频简介区标签的字号与间距",
-            options = resolveVideoTagSizeSegmentOptions(),
-            selectedValue = videoTagSizePreset,
-            onSelectionChange = { size ->
-                scope.launch {
-                    com.android.purebilibili.core.store.SettingsManager
-                        .setVideoTagSizePreset(context, size)
-                }
-            }
-        )
-        AppPreferenceDivider()
         AppSwitchPreference(
             icon = rememberSettingsSemanticIcon(SettingsIconRole.AI_SUMMARY),
             title = "显示 AI 总结入口",
@@ -2270,19 +2237,6 @@ private fun PlaybackFullscreenGestureSettingsSection(
                 }
             },
             iconTint = com.android.purebilibili.core.theme.iOSPink
-        )
-        AppPreferenceDivider()
-        AppSwitchPreference(
-            icon = rememberSettingsSemanticIcon(SettingsIconRole.CAST_BUTTON),
-            title = "紧凑播放器控件",
-            subtitle = "隐藏顶栏分享，收紧按钮间距与黑色遮罩；分享仍可在「更多」中使用",
-            checked = playerControlVisibility.compactPlayerChrome,
-            onCheckedChange = {
-                scope.launch {
-                    SettingsManager.setCompactPlayerChrome(context, it)
-                }
-            },
-            iconTint = com.android.purebilibili.core.theme.iOSBlue
         )
         AppPreferenceDivider()
         SettingsSingleChoicePreference(

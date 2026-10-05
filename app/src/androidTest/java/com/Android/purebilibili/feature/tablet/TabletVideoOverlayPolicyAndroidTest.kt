@@ -20,7 +20,7 @@ class TabletVideoOverlayPolicyAndroidTest {
         val fullscreen = resolvePortraitFullscreenOverlayLayoutPolicy(widthDp = 720)
         val progress = resolvePortraitProgressBarLayoutPolicy(widthDp = 720)
 
-        assertEquals(152, visual.topScrimHeightDp)
+        assertEquals(114, visual.topScrimHeightDp)
         assertEquals(36, bottom.playButtonSizeDp)
         assertEquals(16, fullscreen.topHorizontalPaddingDp)
         assertEquals(52, progress.touchAreaHeightDp)

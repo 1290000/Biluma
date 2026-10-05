@@ -75,7 +75,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -266,7 +265,6 @@ fun FullscreenPlayerOverlay(
     //  画质选择菜单状态
     var showQualityMenu by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf(false) }
-    var contextMenuOffset by remember { mutableStateOf(DpOffset.Zero) }
     val rootFocusRequester = remember { FocusRequester() }
     val inputDevicePolicy = com.android.purebilibili.core.ui.adaptive.resolveInputDevicePolicy(
         com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo.current,
@@ -711,15 +709,11 @@ fun FullscreenPlayerOverlay(
                 contentDescription = "全屏视频播放器"
                 stateDescription = if (isPlaying) "正在播放" else "已暂停"
             }
-            .pointerInput(density) {
+            .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
                         val event = awaitPointerEvent()
                         if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
-                            val position = event.changes.firstOrNull()?.position ?: continue
-                            contextMenuOffset = with(density) {
-                                DpOffset(position.x.toDp(), position.y.toDp())
-                            }
                             showContextMenu = true
                             event.changes.forEach { it.consume() }
                         }
@@ -951,7 +945,6 @@ fun FullscreenPlayerOverlay(
         AppDropdownMenu(
             expanded = showContextMenu,
             onDismissRequest = { showContextMenu = false },
-            offset = contextMenuOffset,
         ) {
             AppDropdownMenuItem(
                 text = { AppText(if (isPlaying) "暂停" else "播放") },

@@ -98,7 +98,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "互动与评论",
         subtitle = "评论发送检测、评论装扮、AI 总结、收藏点按、视频简介与笔记",
         section = "设置",
-        aliases = listOf("互动", "评论", "楼中楼", "评论楼中楼", "评论检测", "发评反诈", "评论发送检测", "评论装扮", "个性装扮", "视频详情评论数", "评论标签数量", "简介评论数量", "ai总结", "视频总结", "收藏", "收藏夹", "快速收藏", "点按收藏", "收藏点按", "默认收藏夹", "视频简介", "视频笔记", "显示视频笔记", "视频标签", "视频标签大小", "标签大小", "标签紧凑", "标签更小", "tag")
+        aliases = listOf("互动", "评论", "楼中楼", "评论楼中楼", "评论检测", "发评反诈", "评论发送检测", "评论装扮", "个性装扮", "视频详情评论数", "评论标签数量", "简介评论数量", "ai总结", "视频总结", "收藏", "收藏夹", "快速收藏", "点按收藏", "收藏点按", "默认收藏夹", "视频简介", "视频笔记", "显示视频笔记")
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.INTERACTION_COMMENT,
@@ -301,12 +301,6 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
             "仅弹窗一次",
             "点击视频直接播放",
             "视频简介",
-            "视频标签",
-            "视频标签大小",
-            "标签大小",
-            "标签紧凑",
-            "标签更小",
-            "tag",
             "手势"
         )
     ),
@@ -338,7 +332,6 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
             "底栏项目",
             "底栏隐藏",
             "底栏显示",
-            "悬浮底栏"
         )
     ),
     SettingsSearchEntry(
@@ -503,34 +496,6 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         focusId = SettingsSearchFocusIds.APPEARANCE_THEME
     ),
     SettingsSearchEntry(
-        target = SettingsSearchTarget.APPEARANCE,
-        title = "界面预设 / 主题模式",
-        subtitle = "切换界面风格、明暗模式、颜色来源和应用语言",
-        section = settingsDestinationCopy(SettingsSearchTarget.APPEARANCE).title,
-        // 只保留本项专属别名；MD3 颜色/取色类词归「自定义 MD3 颜色」，避免重叠稀释精准度
-        aliases = listOf("界面预设", "主题模式", "深色风格", "应用语言", "语言"),
-        focusId = SettingsSearchFocusIds.APPEARANCE_THEME
-    ),
-    SettingsSearchEntry(
-        target = SettingsSearchTarget.APPEARANCE,
-        title = "安卓液态玻璃",
-        subtitle = "统一应用到首页顶部标签栏、搜索框、底部导航栏和评论区底栏",
-        section = settingsDestinationCopy(SettingsSearchTarget.APPEARANCE).title,
-        aliases = listOf(
-            "安卓原生液态玻璃",
-            "全局液态玻璃",
-            "评论区液态玻璃",
-            "Android Native 液态玻璃",
-            "顶部标签栏液态玻璃",
-            "顶部 Dock 液态玻璃",
-            "顶部dock栏液态玻璃",
-            "首页搜索框液态玻璃",
-            "底部导航栏液态玻璃",
-            "底栏液态玻璃",
-        ),
-        focusId = SettingsSearchFocusIds.APPEARANCE_THEME
-    ),
-    SettingsSearchEntry(
         target = SettingsSearchTarget.HOME_FEED,
         title = "卡片毛玻璃",
         subtitle = "独立控制视频卡片信息区的壁纸模糊",
@@ -567,7 +532,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "开屏壁纸 / 启动画面",
         subtitle = "开屏壁纸、自定义壁纸、随机壁纸、图标遮罩动画",
         section = settingsDestinationCopy(SettingsSearchTarget.APPEARANCE).title,
-        aliases = listOf("开屏壁纸", "自定义壁纸", "相册壁纸", "启动画面", "随机壁纸", "开屏图标遮罩动画", "图标遮罩动画", "显示开屏图标", "隐藏开屏图标", "开屏图标动画", "启动壁纸"),
+        aliases = listOf("开屏壁纸", "自定义壁纸", "相册壁纸", "启动画面", "随机壁纸", "启动壁纸"),
         focusId = SettingsSearchFocusIds.APPEARANCE_SPLASH
     ),
     SettingsSearchEntry(
@@ -637,7 +602,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "自动连播 / 跳过片头片尾 / 双击操作 / 弹幕 / 字幕 / 笔记",
         subtitle = "管理视频播放中的快捷操作、字幕、弹幕和内容辅助功能",
         section = settingsDestinationCopy(SettingsSearchTarget.PLAYBACK).title,
-        aliases = listOf("自动连播", "自动播放下一个", "进入视频自动播放", "进入视频不要自动播放", "不要自动播放", "自动跳过片头片尾", "跳过片头", "跳过片尾", "跳过op", "跳过ed", "双击跳转", "取消双击跳转", "关闭双击跳转", "双击快进", "双击后退", "快进秒数", "后退秒数", "关注点赞弹幕", "关注弹幕", "点赞弹幕", "三连弹幕", "弹幕屏蔽", "弹幕同步", "弹幕云同步", "同步弹幕设置", "弹幕设置同步", "网页版弹幕", "字幕", "自动启用字幕", "ai总结", "视频简介", "视频标签", "视频标签大小", "标签大小", "标签紧凑", "标签更小", "tag", "视频笔记", "显示视频笔记", "播放器缩小策略", "竖屏视频缩小", "竖屏评论区缩小", "评论上滑缩小播放器", "详情页控件随滚动隐藏", "详情页标签栏隐藏", "评论排序隐藏", "下滑隐藏详情控件", "回顶显示详情控件", "横屏视频缩小", "上滑隐藏播放器", "暂停时缩小", "暂停评论缩小", "缩小后自动暂停", "自动暂停", "相关推荐暂停", "点击视频直接播放"),
+        aliases = listOf("自动连播", "自动播放下一个", "进入视频自动播放", "进入视频不要自动播放", "不要自动播放", "自动跳过片头片尾", "跳过片头", "跳过片尾", "跳过op", "跳过ed", "双击跳转", "取消双击跳转", "关闭双击跳转", "双击快进", "双击后退", "快进秒数", "后退秒数", "关注点赞弹幕", "关注弹幕", "点赞弹幕", "三连弹幕", "弹幕屏蔽", "弹幕同步", "弹幕云同步", "同步弹幕设置", "弹幕设置同步", "网页版弹幕", "字幕", "自动启用字幕", "ai总结", "视频简介", "视频笔记", "显示视频笔记", "播放器缩小策略", "竖屏视频缩小", "竖屏评论区缩小", "评论上滑缩小播放器", "详情页控件随滚动隐藏", "详情页标签栏隐藏", "评论排序隐藏", "下滑隐藏详情控件", "回顶显示详情控件", "横屏视频缩小", "上滑隐藏播放器", "暂停时缩小", "暂停评论缩小", "缩小后自动暂停", "自动暂停", "相关推荐暂停", "点击视频直接播放"),
         focusId = SettingsSearchFocusIds.PLAYBACK_INTERACTION
     ),
     SettingsSearchEntry(
@@ -645,7 +610,7 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         title = "自动横竖屏 / 全屏方向 / 平板布局",
         subtitle = "设置进入和退出全屏的方式，以及平板播放页布局",
         section = settingsDestinationCopy(SettingsSearchTarget.PLAYBACK).title,
-        aliases = listOf("自动横竖屏", "自动旋转", "全屏方向", "固定全屏比例", "全屏手势反向", "自动进入全屏", "自动退出全屏", "横屏适配", "平板评论区宽度", "评论区宽度", "评论折叠数量", "评论回复预览", "评论预览数量", "楼中楼", "评论楼中楼", "楼中楼已加载数量", "已加载条数", "评论检测", "发评反诈", "评论发送检测", "评论装扮", "个性装扮", "评论区个性装扮", "图片长按保存", "长按保存图片", "查看图片保存", "播放页隐藏状态栏", "隐藏状态栏", "状态栏", "进度条峰值弹幕", "峰值弹幕", "弹幕热度曲线", "紧凑播放器控件", "紧凑布局", "紧凑控件", "隐藏分享", "隐藏顶栏分享", "顶栏分享", "播放器间距", "控件间距", "播放器控件布局"),
+        aliases = listOf("自动横竖屏", "自动旋转", "全屏方向", "固定全屏比例", "全屏手势反向", "自动进入全屏", "自动退出全屏", "横屏适配", "平板评论区宽度", "评论区宽度", "评论折叠数量", "评论回复预览", "评论预览数量", "楼中楼", "评论楼中楼", "楼中楼已加载数量", "已加载条数", "评论检测", "发评反诈", "评论发送检测", "评论装扮", "个性装扮", "评论区个性装扮", "图片长按保存", "长按保存图片", "查看图片保存", "播放页隐藏状态栏", "隐藏状态栏", "状态栏", "进度条峰值弹幕", "峰值弹幕", "弹幕热度曲线"),
         focusId = SettingsSearchFocusIds.PLAYBACK_FULLSCREEN
     ),
     SettingsSearchEntry(
@@ -671,19 +636,6 @@ private val SETTINGS_SEARCH_INDEX: List<SettingsSearchEntry> = listOf(
         section = settingsDestinationCopy(SettingsSearchTarget.PLAYBACK).title,
         aliases = listOf("播放器诊断日志", "详细统计信息", "调试", "日志"),
         focusId = SettingsSearchFocusIds.PLAYBACK_DEBUG
-    ),
-    SettingsSearchEntry(
-        target = SettingsSearchTarget.BOTTOM_BAR,
-        title = "悬浮底栏 / 图标动效",
-        subtitle = "底栏形态与导航图标交叉缩放",
-        section = settingsDestinationCopy(SettingsSearchTarget.BOTTOM_BAR).title,
-        aliases = listOf(
-            "悬浮底栏",
-            "导航图标交叉缩放",
-            "图标放大缩小",
-            "选中图标 1.10 倍",
-        ),
-        focusId = SettingsSearchFocusIds.BOTTOM_BAR_BEHAVIOR
     ),
     SettingsSearchEntry(
         target = SettingsSearchTarget.BOTTOM_BAR,

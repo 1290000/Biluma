@@ -14,7 +14,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.android.purebilibili.core.ui.AppIconStyle
 import com.android.purebilibili.core.ui.AppListItemStyle
-import com.android.purebilibili.core.ui.components.AppSingleChoicePresentation
 import com.android.purebilibili.core.ui.resolveAppIconStylePreference
 import com.android.purebilibili.core.ui.resolveAppListItemStylePreference
 import com.android.purebilibili.core.ui.blur.BlurIntensity
@@ -33,7 +32,6 @@ import com.android.purebilibili.core.store.player.longPressSpeedPreferenceKey
 import com.android.purebilibili.core.store.player.playbackSpeedOptionsPreferenceKey
 import com.android.purebilibili.core.theme.AppFontWeightPreset
 import com.android.purebilibili.core.theme.AppFontSizePreset
-import com.android.purebilibili.core.ui.components.AppTagChipSize
 import com.android.purebilibili.core.theme.AppUiScalePreset
 import com.android.purebilibili.core.theme.AndroidNativeVariant
 import com.android.purebilibili.core.theme.AppUiStyle
@@ -492,8 +490,6 @@ enum class PlayerProgressPlacement(
 data class PlayerControlVisibilitySettings(
     val showCastButton: Boolean = true,
     val showFollowButton: Boolean = true,
-    /** 紧凑播放器控件：隐藏顶栏分享并收紧顶底栏间距。默认经典布局。 */
-    val compactPlayerChrome: Boolean = false
 )
 
 internal fun normalizeDanmakuDisplayArea(value: Float): Float {
@@ -626,8 +622,6 @@ enum class BottomBarLiquidGlassPreset(
 
 data class HomeSettings(
     val displayMode: Int = 0,              // 展示模式 (0=网格, 1=故事卡片)
-    val isBottomBarFloating: Boolean = true,
-    val navigationIconCrossScaleEnabled: Boolean = true,
     val bottomBarLabelMode: Int = 0,       // (0=图标+文字, 1=仅图标, 2=仅文字)
     val topTabLabelMode: Int = 2,          // (0=图标+文字, 1=仅图标, 2=仅文字)
     val hideTopTabs: Boolean = false,
@@ -641,7 +635,7 @@ data class HomeSettings(
     val isBottomBarLiquidGlassEnabled: Boolean = false,
     val bottomBarLiquidGlassPreset: BottomBarLiquidGlassPreset =
         BottomBarLiquidGlassPreset.BILIPAI_TUNED,
-    val androidNativeLiquidGlassEnabled: Boolean = false,
+    val androidNativeLiquidGlassEnabled: Boolean = true,
     val liquidGlassStyle: LiquidGlassStyle = LiquidGlassStyle.CLASSIC, // [New]
     val liquidGlassMode: LiquidGlassMode = LiquidGlassMode.BALANCED,
     val liquidGlassStrength: Float = 0.52f,
@@ -704,7 +698,7 @@ internal fun resolveHomeCardFrostedGlassEnabled(
 ): Boolean = storedValue ?: legacyCombinedValue ?: false
 
 data class AppThemeSettings(
-    val uiStyle: AppUiStyle = AppUiStyle.MATERIAL3,
+    val uiStyle: AppUiStyle = AppUiStyle.MIUIX,
     val themeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM,
     val darkThemeStyle: DarkThemeStyle = DarkThemeStyle.DEFAULT,
     val appLanguage: AppLanguage = AppLanguage.FOLLOW_SYSTEM,
@@ -726,8 +720,6 @@ data class AppThemeSettings(
         AppScreenshotCaptureMode.FULL_WINDOW,
     val appIconStyle: AppIconStyle = AppIconStyle.AUTO,
     val appListItemStyle: AppListItemStyle = AppListItemStyle.AUTO,
-    val singleChoicePresentation: AppSingleChoicePresentation =
-        AppSingleChoicePresentation.WINDOW_POPUP,
 )
 
 data class ThemeModeRoleOverrides(
@@ -1343,8 +1335,6 @@ object SettingsManager {
     private val KEY_THEME_DARK_CONTROL_ACCENT = stringPreferencesKey("theme_dark_control_accent")
     private val KEY_THEME_COLOR_STYLE = stringPreferencesKey("theme_color_style")
     private val KEY_THEME_COLOR_SPEC = stringPreferencesKey("theme_color_spec")
-    private val KEY_SINGLE_CHOICE_PRESENTATION =
-        stringPreferencesKey("single_choice_presentation")
     private val KEY_BG_PLAY = booleanPreferencesKey("bg_play")
     //  [新增] 触感反馈 (默认开启)
     private val KEY_HAPTIC_FEEDBACK_ENABLED = booleanPreferencesKey("haptic_feedback_enabled")
@@ -1357,7 +1347,6 @@ object SettingsManager {
     private val KEY_DANMAKU_CLOUD_SYNC_ENABLED = booleanPreferencesKey("danmaku_cloud_sync_enabled")
     private val KEY_SHOW_PLAYER_CAST_BUTTON = booleanPreferencesKey("show_player_cast_button")
     private val KEY_SHOW_VIDEO_FOLLOW_BUTTON = booleanPreferencesKey("show_video_follow_button")
-    private val KEY_COMPACT_PLAYER_CHROME = booleanPreferencesKey("compact_player_chrome")
     private val KEY_PLAYER_PROGRESS_PLACEMENT = intPreferencesKey("player_progress_placement")
     private val KEY_SEARCH_HOT_SECTION_ENABLED = booleanPreferencesKey("search_hot_section_enabled")
     private val KEY_SEARCH_DISCOVER_SECTION_ENABLED = booleanPreferencesKey("search_discover_section_enabled")
@@ -1408,9 +1397,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_APP_ICON_STYLE = stringPreferencesKey("app_icon_style")
     private val KEY_APP_LIST_ITEM_STYLE = stringPreferencesKey("app_list_item_style")
     //  [新增] 底部栏样式 (true=悬浮, false=贴底)
-    private val KEY_BOTTOM_BAR_FLOATING = booleanPreferencesKey("bottom_bar_floating")
-    private val KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED =
-        booleanPreferencesKey("navigation_icon_cross_scale_enabled")
     //  [新增] 底栏显示模式 (0=图标+文字, 1=仅图标, 2=仅文字)
     private val KEY_BOTTOM_BAR_LABEL_MODE = intPreferencesKey("bottom_bar_label_mode")
     //  [新增] 顶部标签显示模式 (0=图标+文字, 1=仅图标, 2=仅文字)
@@ -1443,8 +1429,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_SPLASH_RANDOM_POOL_URIS = stringPreferencesKey("splash_random_pool_uris")
     private val KEY_SPLASH_ENABLED = booleanPreferencesKey("splash_enabled")
     private val KEY_SPLASH_RANDOM_ENABLED = booleanPreferencesKey("splash_random_enabled")
-    private val KEY_STARTUP_ANIMATION_STYLE = stringPreferencesKey("startup_animation_style")
-    private val KEY_SPLASH_ICON_ANIMATION_ENABLED = booleanPreferencesKey("splash_icon_animation_enabled")
     private val KEY_SPLASH_ALIGNMENT_MOBILE = floatPreferencesKey("splash_alignment_mobile")
     private val KEY_SPLASH_ALIGNMENT_TABLET = floatPreferencesKey("splash_alignment_tablet")
     private const val SPLASH_PREFS = "splash_prefs"
@@ -1453,8 +1437,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private const val SPLASH_PREFS_KEY_RANDOM_POOL_URIS = "random_pool_uris"
     private const val SPLASH_PREFS_KEY_ENABLED = "enabled"
     private const val SPLASH_PREFS_KEY_RANDOM_ENABLED = "random_enabled"
-    private const val SPLASH_PREFS_KEY_ANIMATION_STYLE = "animation_style"
-    private const val SPLASH_PREFS_KEY_ICON_ANIMATION_ENABLED = "icon_animation_enabled"
     private const val SPLASH_PREFS_KEY_ALIGNMENT_MOBILE = "alignment_mobile"
     private const val SPLASH_PREFS_KEY_ALIGNMENT_TABLET = "alignment_tablet"
 
@@ -1649,7 +1631,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     private val KEY_VIDEO_AI_SUMMARY_ENTRY_ENABLED = booleanPreferencesKey("video_ai_summary_entry_enabled")
     private val KEY_VIDEO_NOTE_ENABLED = booleanPreferencesKey("video_note_enabled")
     private val KEY_VIDEO_ARGUE_MSG_SHOWN = booleanPreferencesKey("video_argue_msg_shown")
-    private val KEY_VIDEO_TAG_SIZE_PRESET = intPreferencesKey("video_tag_size_preset")
     private val KEY_VIDEO_DETAIL_CHROME_SCROLL_HIDE_ENABLED =
         booleanPreferencesKey("video_detail_chrome_scroll_hide_enabled")
     private const val VIDEO_NOTE_CACHE_PREFS = "video_note_settings"
@@ -1704,9 +1685,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         )
         return HomeSettings(
             displayMode = preferences[KEY_DISPLAY_MODE] ?: 0,
-            isBottomBarFloating = preferences[KEY_BOTTOM_BAR_FLOATING] ?: true,
-            navigationIconCrossScaleEnabled =
-                preferences[KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED] ?: true,
             bottomBarLabelMode = preferences[KEY_BOTTOM_BAR_LABEL_MODE] ?: BottomBarLabelMode.ICON_AND_TEXT,
             topTabLabelMode = preferences[KEY_TOP_TAB_LABEL_MODE] ?: TopTabLabelMode.TEXT_ONLY,
             hideTopTabs = preferences[KEY_HIDE_TOP_TABS] ?: false,
@@ -1724,9 +1702,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 preferences[KEY_HOME_SEARCH_LIQUID_GLASS_ENABLED]
                     ?: (preferences[KEY_TOP_BAR_LIQUID_GLASS_ENABLED] ?: false),
             isBottomBarLiquidGlassEnabled = preferences[KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED] ?: legacyLiquidGlassEnabled,
-            androidNativeLiquidGlassEnabled =
-                preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED]
-                    ?: false,
+            androidNativeLiquidGlassEnabled = true,
             liquidGlassStyle = legacyLiquidGlassStyle,
             liquidGlassMode = liquidGlassMode,
             liquidGlassStrength = liquidGlassStrength,
@@ -1916,7 +1892,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             PlayerControlVisibilitySettings(
                 showCastButton = preferences[KEY_SHOW_PLAYER_CAST_BUTTON] ?: true,
                 showFollowButton = preferences[KEY_SHOW_VIDEO_FOLLOW_BUTTON] ?: true,
-                compactPlayerChrome = preferences[KEY_COMPACT_PLAYER_CHROME] ?: false
             )
         }
         .distinctUntilChanged()
@@ -1927,10 +1902,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     suspend fun setShowVideoFollowButton(context: Context, visible: Boolean) {
         context.settingsDataStore.edit { it[KEY_SHOW_VIDEO_FOLLOW_BUTTON] = visible }
-    }
-
-    suspend fun setCompactPlayerChrome(context: Context, enabled: Boolean) {
-        context.settingsDataStore.edit { it[KEY_COMPACT_PLAYER_CHROME] = enabled }
     }
 
     fun getPlayerProgressPlacement(context: Context): Flow<PlayerProgressPlacement> =
@@ -2112,13 +2083,8 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     internal fun mapAppThemeSettingsFromPreferences(preferences: Preferences): AppThemeSettings {
         val rawDpiOverride = preferences[KEY_APP_DPI_OVERRIDE_PERCENT] ?: 0
         val defaultRoleOverrides = ThemeRoleOverrides()
-        // 两值运行时模型：优先新键；缺失时回退旧键解析并归一化。
-        // 新用户缺失主题键默认 Material 3；历史/非法组合由迁移表兼容为 MIUIX。
-        val uiStyle = resolveThemeSelectionFromPreferences(
-            preferences,
-            KEY_UI_PRESET,
-            KEY_ANDROID_NATIVE_VARIANT
-        )
+        // Biluma 当前仅提供 Miuix 界面；旧主题键保留在迁移和分享兼容层中，运行时忽略。
+        val uiStyle = AppUiStyle.MIUIX
         return AppThemeSettings(
             uiStyle = uiStyle,
             themeMode = resolveThemeModePreference(
@@ -2199,9 +2165,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             appScreenshotCaptureMode = AppScreenshotCaptureMode.fromValue(
                 preferences[KEY_APP_SCREENSHOT_CAPTURE_MODE]
                     ?: AppScreenshotCaptureMode.FULL_WINDOW.value
-            ),
-            singleChoicePresentation = AppSingleChoicePresentation.fromStorageValue(
-                preferences[KEY_SINGLE_CHOICE_PRESENTATION]
             ),
             appIconStyle = resolveAppIconStylePreference(preferences[KEY_APP_ICON_STYLE]),
             appListItemStyle = resolveAppListItemStylePreference(preferences[KEY_APP_LIST_ITEM_STYLE])
@@ -2297,15 +2260,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         )
     }
 
-    suspend fun setSingleChoicePresentation(
-        context: Context,
-        presentation: AppSingleChoicePresentation,
-    ) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_SINGLE_CHOICE_PRESENTATION] = presentation.storageValue
-        }
-    }
-
     fun getAppLanguageSync(context: Context): AppLanguage {
         val rawValue = context.getSharedPreferences("theme_cache", Context.MODE_PRIVATE)
             .getInt("app_language", AppLanguage.FOLLOW_SYSTEM.value)
@@ -2320,13 +2274,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     fun getAppListItemStyle(context: Context): Flow<AppListItemStyle> =
         context.settingsDataStore.data.map { preferences ->
             resolveAppListItemStylePreference(preferences[KEY_APP_LIST_ITEM_STYLE])
-        }
-
-    fun getSingleChoicePresentation(context: Context): Flow<AppSingleChoicePresentation> =
-        context.settingsDataStore.data.map { preferences ->
-            AppSingleChoicePresentation.fromStorageValue(
-                preferences[KEY_SINGLE_CHOICE_PRESENTATION]
-            )
         }
 
     suspend fun setDarkThemeStyle(context: Context, style: DarkThemeStyle) {
@@ -2345,21 +2292,15 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
         ensureThemeSelectionMigrated(context, KEY_UI_PRESET, KEY_ANDROID_NATIVE_VARIANT)
         emitAll(
             context.settingsDataStore.data
-                .map { preferences ->
-                    resolveThemeSelectionFromPreferences(
-                        preferences,
-                        KEY_UI_PRESET,
-                        KEY_ANDROID_NATIVE_VARIANT
-                    )
-                }
+                .map { AppUiStyle.MIUIX }
                 .distinctUntilChanged()
         )
     }
 
     suspend fun setUiStyle(context: Context, uiStyle: AppUiStyle) {
-        // 只写新稳定键，不再双写旧键；两值模型不存在非法运行时值。
+        // 保留旧调用边界，但不允许旧偏好或外部调用切回 Material 3。
         context.settingsDataStore.edit { preferences ->
-            preferences[KEY_THEME_SELECTION] = uiStyle.name
+            preferences[KEY_THEME_SELECTION] = AppUiStyle.MIUIX.name
             preferences.remove(KEY_UI_PRESET)
             preferences.remove(KEY_ANDROID_NATIVE_VARIANT)
         }
@@ -3542,26 +3483,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     fun getSplashRandomEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SPLASH_RANDOM_ENABLED] ?: false }
 
-    fun getStartupAnimationStyle(context: Context): Flow<StartupAnimationStyle> =
-        context.settingsDataStore.data.map { StartupAnimationStyle.fromValue(it[KEY_STARTUP_ANIMATION_STYLE]) }
-
-    fun getStartupAnimationStyleSync(context: Context): StartupAnimationStyle =
-        StartupAnimationStyle.fromValue(
-            context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-                .getString(SPLASH_PREFS_KEY_ANIMATION_STYLE, null)
-        )
-
-    suspend fun setStartupAnimationStyle(context: Context, value: StartupAnimationStyle) {
-        editSettingsAndCommitPrefs(
-            context, SPLASH_PREFS,
-            editSettings = { this[KEY_STARTUP_ANIMATION_STYLE] = value.value },
-            editPrefs = { putString(SPLASH_PREFS_KEY_ANIMATION_STYLE, value.value) },
-        )
-    }
-
-    fun getSplashIconAnimationEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_SPLASH_ICON_ANIMATION_ENABLED] ?: true }
-
     suspend fun setSplashEnabled(context: Context, value: Boolean) {
         context.settingsDataStore.edit { preferences -> 
             preferences[KEY_SPLASH_ENABLED] = value 
@@ -3589,19 +3510,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     fun isSplashRandomEnabledSync(context: Context): Boolean {
         return context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
             .getBoolean(SPLASH_PREFS_KEY_RANDOM_ENABLED, false)
-    }
-
-    suspend fun setSplashIconAnimationEnabled(context: Context, value: Boolean) {
-        editSettingsAndCommitPrefs(
-            context, SPLASH_PREFS,
-            editSettings = { this[KEY_SPLASH_ICON_ANIMATION_ENABLED] = value },
-            editPrefs = { putBoolean(SPLASH_PREFS_KEY_ICON_ANIMATION_ENABLED, value) },
-        )
-    }
-
-    fun isSplashIconAnimationEnabledSync(context: Context): Boolean {
-        return context.getSharedPreferences(SPLASH_PREFS, Context.MODE_PRIVATE)
-            .getBoolean(SPLASH_PREFS_KEY_ICON_ANIMATION_ENABLED, true)
     }
 
     fun getSplashAlignment(context: Context, isTablet: Boolean): Flow<Float> = context.settingsDataStore.data
@@ -3649,24 +3557,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     }
 
     //  [新增] --- 底部栏样式 ---
-    fun getBottomBarFloating(context: Context): Flow<Boolean> = context.settingsDataStore.data
-        .map { preferences -> preferences[KEY_BOTTOM_BAR_FLOATING] ?: true }
-
-    suspend fun setBottomBarFloating(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences -> preferences[KEY_BOTTOM_BAR_FLOATING] = value }
-    }
-
-    fun getNavigationIconCrossScaleEnabled(context: Context): Flow<Boolean> =
-        context.settingsDataStore.data.map { preferences ->
-            preferences[KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED] ?: false
-        }
-
-    suspend fun setNavigationIconCrossScaleEnabled(context: Context, value: Boolean) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED] = value
-        }
-    }
-
     fun getSearchHotSectionEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_SEARCH_HOT_SECTION_ENABLED] ?: true }
 
@@ -4153,19 +4043,15 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     fun getAndroidNativeLiquidGlassEnabled(context: Context): Flow<Boolean> =
         context.settingsDataStore.data
-            .map { preferences ->
-                preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED]
-                    ?: true
-            }
+            .map { true }
 
-    suspend fun setAndroidNativeLiquidGlassEnabled(context: Context, value: Boolean) {
+    suspend fun setAndroidNativeLiquidGlassEnabled(context: Context, @Suppress("UNUSED_PARAMETER") value: Boolean) {
         context.settingsDataStore.edit { preferences ->
-            preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED] = value
-            if (value) {
-                preferences[KEY_BOTTOM_BAR_BLUR_ENABLED] = false
-                preferences[KEY_HEADER_BLUR_ENABLED] = false
-                preferences[KEY_HOME_HEADER_BLUR_MODE] = HomeHeaderBlurMode.ALWAYS_OFF.value
-            }
+            // 保留旧调用边界，但不允许旧引导或外部调用关闭液态玻璃。
+            preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED] = true
+            preferences[KEY_BOTTOM_BAR_BLUR_ENABLED] = false
+            preferences[KEY_HEADER_BLUR_ENABLED] = false
+            preferences[KEY_HOME_HEADER_BLUR_MODE] = HomeHeaderBlurMode.ALWAYS_OFF.value
         }
     }
 
@@ -5477,7 +5363,7 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     /**
      * 启动时一次性迁移首页视觉默认值（仅在版本未迁移时覆盖）。
-     * 目标：默认开启底栏悬浮、导航图标交叉缩放、顶/底液态玻璃、顶部模糊，
+     * 目标：默认开启顶/底液态玻璃、顶部模糊，
      * 并覆盖底栏项目，确保“推荐”（HOME）恢复为第一项。版本标记写入后不再重复覆盖。
      */
     suspend fun ensureHomeVisualDefaults(context: Context) {
@@ -5485,7 +5371,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             val currentVersion = preferences[KEY_HOME_VISUAL_DEFAULTS_VERSION] ?: 0
             if (currentVersion < HOME_VISUAL_DEFAULTS_VERSION) {
                 if (currentVersion < 3) {
-                    preferences[KEY_BOTTOM_BAR_FLOATING] = true
                     preferences[KEY_LIQUID_GLASS_ENABLED] = true
                     preferences[KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED] = true
                     preferences[KEY_TOP_BAR_LIQUID_GLASS_ENABLED] = true
@@ -5494,7 +5379,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                     preferences[KEY_BOTTOM_BAR_ORDER] = DEFAULT_BOTTOM_BAR_ORDER
                     preferences[KEY_BOTTOM_BAR_VISIBLE_TABS] = DEFAULT_BOTTOM_BAR_VISIBLE_TABS
                 }
-                preferences[KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED] = true
                 preferences[KEY_HOME_VISUAL_DEFAULTS_VERSION] = HOME_VISUAL_DEFAULTS_VERSION
             }
         }
@@ -6534,17 +6418,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
     suspend fun setVideoArgueMsgShown(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->
             preferences[KEY_VIDEO_ARGUE_MSG_SHOWN] = enabled
-        }
-    }
-
-    fun getVideoTagSizePreset(context: Context): Flow<AppTagChipSize> = context.settingsDataStore.data
-        .map { preferences ->
-            AppTagChipSize.fromValue(preferences[KEY_VIDEO_TAG_SIZE_PRESET] ?: AppTagChipSize.STANDARD.value)
-        }
-
-    suspend fun setVideoTagSizePreset(context: Context, size: AppTagChipSize) {
-        context.settingsDataStore.edit { preferences ->
-            preferences[KEY_VIDEO_TAG_SIZE_PRESET] = size.value
         }
     }
 
@@ -7826,20 +7699,11 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             StringShareablePreferenceDefinition(KEY_THEME_DARK_CONTROL_ACCENT, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_THEME_COLOR_STYLE, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_THEME_COLOR_SPEC, SettingsShareSection.APPEARANCE),
-            StringShareablePreferenceDefinition(
-                KEY_SINGLE_CHOICE_PRESENTATION,
-                SettingsShareSection.APPEARANCE,
-            ),
             IntShareablePreferenceDefinition(KEY_THEME_COLOR_INDEX, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_APP_ICON, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_APP_ICON_APPEARANCE, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_APP_ICON_STYLE, SettingsShareSection.APPEARANCE),
             StringShareablePreferenceDefinition(KEY_APP_LIST_ITEM_STYLE, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(KEY_BOTTOM_BAR_FLOATING, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(
-                KEY_NAVIGATION_ICON_CROSS_SCALE_ENABLED,
-                SettingsShareSection.APPEARANCE,
-            ),
             IntShareablePreferenceDefinition(KEY_BOTTOM_BAR_LABEL_MODE, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_TOP_TAB_LABEL_MODE, SettingsShareSection.APPEARANCE),
             BooleanShareablePreferenceDefinition(KEY_HIDE_TOP_TABS, SettingsShareSection.APPEARANCE),
@@ -7858,10 +7722,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
                 SettingsShareSection.APPEARANCE,
             ),
             BooleanShareablePreferenceDefinition(KEY_BOTTOM_BAR_LIQUID_GLASS_ENABLED, SettingsShareSection.APPEARANCE),
-            BooleanShareablePreferenceDefinition(
-                KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED,
-                SettingsShareSection.APPEARANCE
-            ),
             BooleanShareablePreferenceDefinition(KEY_LIQUID_GLASS_ENABLED, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_LIQUID_GLASS_STYLE, SettingsShareSection.APPEARANCE),
             IntShareablePreferenceDefinition(KEY_LIQUID_GLASS_MODE, SettingsShareSection.APPEARANCE),
@@ -7987,7 +7847,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             BooleanShareablePreferenceDefinition(KEY_VIDEO_AI_SUMMARY_ENTRY_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_VIDEO_NOTE_ENABLED, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(KEY_VIDEO_ARGUE_MSG_SHOWN, SettingsShareSection.PLAYBACK),
-            IntShareablePreferenceDefinition(KEY_VIDEO_TAG_SIZE_PRESET, SettingsShareSection.PLAYBACK),
             BooleanShareablePreferenceDefinition(
                 KEY_VIDEO_DETAIL_CHROME_SCROLL_HIDE_ENABLED,
                 SettingsShareSection.PLAYBACK,
@@ -8153,7 +8012,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
 
     private val liquidGlassShareableStorageKeys: Set<String> by lazy {
         setOf(
-            KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED.name,
             KEY_LIQUID_GLASS_ENABLED.name,
             KEY_TOP_BAR_LIQUID_GLASS_ENABLED.name,
             KEY_HOME_SEARCH_LIQUID_GLASS_ENABLED.name,
@@ -8216,9 +8074,6 @@ private val KEY_APP_FONT_WEIGHT = intPreferencesKey("app_font_weight")
             contentDistortion = preferences[KEY_LIQUID_GLASS_CONTENT_DISTORTION],
         )
         return linkedMapOf(
-            KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED.name to JsonPrimitive(
-                preferences[KEY_ANDROID_NATIVE_LIQUID_GLASS_ENABLED] ?: true
-            ),
             KEY_LIQUID_GLASS_ENABLED.name to JsonPrimitive(bottomBarEnabled),
             KEY_TOP_BAR_LIQUID_GLASS_ENABLED.name to JsonPrimitive(topBarEnabled),
             KEY_HOME_SEARCH_LIQUID_GLASS_ENABLED.name to JsonPrimitive(homeSearchEnabled),

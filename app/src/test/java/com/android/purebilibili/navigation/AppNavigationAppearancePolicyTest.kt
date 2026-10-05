@@ -12,7 +12,6 @@ class AppNavigationAppearancePolicyTest {
     fun mapsBottomBarAndTransitionFlagsFromHomeSettings() {
         val appearance = resolveAppNavigationAppearance(
             HomeSettings(
-                isBottomBarFloating = false,
                 bottomBarLabelMode = 2,
                 isBottomBarBlurEnabled = false,
                 cardTransitionEnabled = false
@@ -22,7 +21,6 @@ class AppNavigationAppearancePolicyTest {
         assertFalse(appearance.cardTransitionEnabled)
         assertFalse(appearance.bottomBarBlurEnabled)
         kotlin.test.assertEquals(2, appearance.bottomBarLabelMode)
-        assertFalse(appearance.bottomBarFloating)
     }
 
     @Test
@@ -32,29 +30,17 @@ class AppNavigationAppearancePolicyTest {
         assertTrue(appearance.cardTransitionEnabled)
         assertFalse(appearance.bottomBarBlurEnabled)
         kotlin.test.assertEquals(0, appearance.bottomBarLabelMode)
-        assertTrue(appearance.bottomBarFloating)
     }
 
     @Test
-    fun defaultSettings_keepFloatingBottomBar() {
-        val appearance = resolveAppNavigationAppearance(HomeSettings())
-
-        assertTrue(appearance.bottomBarFloating)
-        assertFalse(appearance.bottomBarBlurEnabled)
-        kotlin.test.assertEquals(0, appearance.bottomBarLabelMode)
-    }
-
-    @Test
-    fun explicitSettings_keepDockedBottomBarBlur() {
+    fun explicitSettings_keepBottomBarBlur() {
         val appearance = resolveAppNavigationAppearance(
             homeSettings = HomeSettings(
-                isBottomBarFloating = false,
                 isBottomBarBlurEnabled = true,
                 androidNativeLiquidGlassEnabled = false,
             ),
         )
 
-        assertFalse(appearance.bottomBarFloating)
         assertTrue(appearance.bottomBarBlurEnabled)
     }
 
@@ -69,24 +55,13 @@ class AppNavigationAppearancePolicyTest {
     fun preservesExplicitBottomBarShellCustomization() {
         val appearance = resolveAppNavigationAppearance(
             homeSettings = HomeSettings(
-                isBottomBarFloating = true,
                 bottomBarLabelMode = 1,
                 isBottomBarBlurEnabled = false
             ),
         )
 
-        assertTrue(appearance.bottomBarFloating)
         assertFalse(appearance.bottomBarBlurEnabled)
         kotlin.test.assertEquals(1, appearance.bottomBarLabelMode)
-    }
-
-    @Test
-    fun shellDefaults_keepFloatingBottomBar() {
-        val appearance = resolveAppNavigationAppearance(HomeSettings())
-
-        assertTrue(appearance.bottomBarFloating)
-        assertFalse(appearance.bottomBarBlurEnabled)
-        kotlin.test.assertEquals(0, appearance.bottomBarLabelMode)
     }
 
     @Test

@@ -30,10 +30,13 @@ class SettingsSearchFocusPolicyTest {
     @Test
     fun bottomBarFocusIndex_mapsAvailableItemsSection() {
         assertEquals(0, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_START))
-        assertEquals(1, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_BEHAVIOR))
-        assertEquals(7, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_SEARCH_TABS))
-        assertEquals(9, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_TABLET))
-        assertEquals(13, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_AVAILABLE))
+        assertNull(resolveBottomBarSettingsScrollIndex("bottom_bar_behavior"))
+        assertEquals(1, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_DISPLAY))
+        assertEquals(3, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_TOP_TABS))
+        assertEquals(9, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_CURRENT))
+        assertEquals(5, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_SEARCH_TABS))
+        assertEquals(7, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_TABLET))
+        assertEquals(11, resolveBottomBarSettingsScrollIndex(SettingsSearchFocusIds.BOTTOM_BAR_AVAILABLE))
     }
 
     @Test

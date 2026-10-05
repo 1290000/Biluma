@@ -613,7 +613,7 @@ fun AnimationSettingsContent(
             item {
                 Box(modifier = Modifier.entrance()) {
                     AppPreferenceGroup {
-                        if (isLiquidGlassAvailable && state.androidNativeLiquidGlassEnabled) {
+                        if (isLiquidGlassAvailable) {
                             LiquidGlassAdjustmentPanel(
                                 persistedProgress = state.liquidGlassProgress,
                                 previewImageUri = liquidGlassPreviewImageUri,

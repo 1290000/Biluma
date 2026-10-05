@@ -30,6 +30,8 @@ class AppDialogComponentsPolicyTest {
         )
         val dialogSource = source.readText()
         assertTrue(dialogSource.contains("WindowDialog("))
+        assertFalse(dialogSource.contains("nativeMiuixPopupsEnabled"))
+        assertTrue(dialogSource.contains("HingeSafeOverlayHost("))
         assertTrue(dialogSource.contains("backgroundColor = Color.Transparent"))
         assertTrue(dialogSource.contains("insideMargin = DpSize(0.dp, 0.dp)"))
         assertTrue(dialogSource.contains("cornerRadius = 0.dp"))
@@ -71,7 +73,7 @@ class AppDialogComponentsPolicyTest {
     }
 
     @Test
-    fun `popup facades delegate their visual surface to the injected renderer`() {
+    fun `dialogs retain shared surfaces while menus always use native windows`() {
         val popupSurface = java.io.File(
             "src/main/java/com/android/purebilibili/core/ui/AppPopupSurface.kt"
         ).readText()
@@ -92,8 +94,13 @@ class AppDialogComponentsPolicyTest {
         assertTrue(popupSurface.contains("renderer.Render("))
         assertTrue(sheet.contains("type = AppPopupSurfaceType.SHEET"))
         assertTrue(selection.contains("type = AppPopupSurfaceType.DIALOG"))
-        assertTrue(selection.contains("AppSingleChoicePresentation.CENTERED_DIALOG"))
-        assertTrue(primitives.contains("type = com.android.purebilibili.core.ui.AppPopupSurfaceType.MENU"))
+        assertFalse(selection.contains("AppSingleChoicePresentation"))
+        assertTrue(primitives.contains("WindowListPopup("))
+        assertFalse(primitives.contains("nativeMiuixPopupsEnabled"))
+        assertFalse(primitives.contains("import androidx.compose.material3.DropdownMenu\n"))
+        assertTrue(actionMenu.contains("WindowListPopup("))
+        assertFalse(actionMenu.contains("nativeMiuixPopupsEnabled"))
+        assertFalse(actionMenu.contains("AppDropdownMenu("))
         assertTrue(actionMenu.contains("parentActions = parentActions + action"))
         assertTrue(actionMenu.contains("action.onClick?.invoke()"))
     }

@@ -67,7 +67,7 @@ class AppSelectionPreferencePolicyTest {
     }
 
     @Test
-    fun singleChoicePreference_keepsMiuixSpinnerOnlyForMiuixStyleAndSharedRowOtherwise() {
+    fun singleChoicePreference_usesAnchoredMenusWithoutCenteredDialogAlternative() {
         val source = listOf(
             java.io.File(
                 "design-system/src/main/java/com/android/purebilibili/core/ui/components/AppSelectionPreferenceComponents.kt"
@@ -80,12 +80,13 @@ class AppSelectionPreferencePolicyTest {
             ),
         ).first { it.exists() }.readText()
         val start = source.indexOf("fun <T> AppSingleChoicePreference(")
-        val end = source.indexOf("fun <T> AppSingleChoiceDialog(")
+        val end = source.indexOf("fun AppSliderDialogPreference(")
         assertTrue(start >= 0 && end > start, "AppSingleChoicePreference section markers missing")
         val section = source.substring(start, end)
 
-        // WindowSpinner 仅限 MIUIX 预设的跟随弹出分支
-        assertTrue(section.contains("presentation == AppSingleChoicePresentation.WINDOW_POPUP &&"))
+        assertFalse(source.contains("AppSingleChoicePresentation"))
+        assertFalse(source.contains("AppSingleChoiceDialog"))
+        assertFalse(section.contains("dialogVisible"))
         assertTrue(section.contains("LocalAppUiStyle.current == AppUiStyle.MIUIX"))
         assertTrue(section.contains("WindowSpinnerPreference("))
         assertTrue(section.contains("AppPreference("))

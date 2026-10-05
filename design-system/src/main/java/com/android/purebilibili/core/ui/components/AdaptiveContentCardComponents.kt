@@ -111,18 +111,9 @@ fun AppContentCard(
 /**
  * Density preset for [AppTagChip].
  */
-enum class AppTagChipSize(
-    val value: Int,
-    val label: String,
-) {
-    STANDARD(0, "标准"),
-    COMPACT(1, "紧凑"),
-    SMALL(2, "更小");
-
-    companion object {
-        fun fromValue(value: Int): AppTagChipSize =
-            entries.find { it.value == value } ?: STANDARD
-    }
+enum class AppTagChipSize {
+    STANDARD,
+    SMALL
 }
 
 data class AppTagChipMetrics(
@@ -142,14 +133,6 @@ fun resolveAppTagChipMetrics(size: AppTagChipSize): AppTagChipMetrics = when (si
         itemSpacingHorizontal = 4.dp,
         itemSpacingVertical = 4.dp,
         chipHeight = 28.dp,
-    )
-    AppTagChipSize.COMPACT -> AppTagChipMetrics(
-        fontScale = 0.82f,
-        horizontalPadding = 4.dp,
-        verticalPadding = 3.dp,
-        itemSpacingHorizontal = 3.dp,
-        itemSpacingVertical = 4.dp,
-        chipHeight = 26.dp,
     )
     AppTagChipSize.SMALL -> AppTagChipMetrics(
         fontScale = 0.75f,

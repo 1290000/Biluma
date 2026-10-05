@@ -486,9 +486,6 @@ fun BottomControlBar(
     progressPlacement: PlayerProgressPlacement = PlayerProgressPlacement.ABOVE_CONTROLS,
     onPipClick: () -> Unit = {},
     onFloatingPanelVisibilityChange: (Boolean) -> Unit = {},
-    /** 紧凑布局：控制行更贴左右边缘，并更靠近进度条。 */
-    compactPlayerChrome: Boolean = false,
-
     modifier: Modifier = Modifier,
     seekPositionProvider: (() -> Long)? = null
 ) {
@@ -511,10 +508,9 @@ fun BottomControlBar(
     val uiLayoutWidthDp = remember(configuration.screenWidthDp, viewportWidthDpOverride) {
         (viewportWidthDpOverride ?: configuration.screenWidthDp).coerceAtLeast(1)
     }
-    val layoutPolicy = remember(uiLayoutWidthDp, compactPlayerChrome) {
+    val layoutPolicy = remember(uiLayoutWidthDp) {
         resolveBottomControlBarLayoutPolicy(
             widthDp = uiLayoutWidthDp,
-            compact = compactPlayerChrome
         )
     }
     val floatingPanelMinWidthDp = remember(uiLayoutWidthDp) {

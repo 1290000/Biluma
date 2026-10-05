@@ -1,5 +1,9 @@
 package com.android.purebilibili.core.store
 
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.preferencesOf
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.android.purebilibili.core.theme.UiPreset
 import com.android.purebilibili.core.theme.AppUiStyle
 import com.android.purebilibili.core.theme.AndroidNativeVariant
@@ -91,11 +95,45 @@ class UiPresetSettingsPolicyTest {
     }
 
     @Test
+    fun retiredPopupSettings_areNotShared() {
+        val keys = SettingsManager.getShareableSettingsEntryDefinitions()
+            .mapTo(mutableSetOf()) { it.storageKey }
+
+        assertFalse("single_choice_presentation" in keys)
+        assertFalse("native_miuix_player_popups" in keys)
+    }
+
+    @Test
+    fun retiredPopupPreferences_doNotChangeAppThemeSettings() {
+        val legacyPreferences = preferencesOf(
+            stringPreferencesKey("single_choice_presentation") to "centered_dialog",
+            booleanPreferencesKey("native_miuix_player_popups") to false,
+        )
+
+        assertEquals(
+            SettingsManager.mapAppThemeSettingsFromPreferences(emptyPreferences()),
+            SettingsManager.mapAppThemeSettingsFromPreferences(legacyPreferences),
+        )
+    }
+
+    @Test
+    fun appThemeSettings_alwaysUseMiuixRegardlessOfPersistedThemeSelection() {
+        val legacyPreferences = preferencesOf(
+            stringPreferencesKey("theme_selection_v1") to "MATERIAL3",
+        )
+
+        assertEquals(
+            AppUiStyle.MIUIX,
+            SettingsManager.mapAppThemeSettingsFromPreferences(legacyPreferences).uiStyle,
+        )
+    }
+
+    @Test
     fun liquidGlassShare_includesEveryPortableGlassSetting() {
         val keys = SettingsManager.getLiquidGlassShareableSettingsEntryDefinitions()
             .mapTo(mutableSetOf()) { it.storageKey }
 
-        assertTrue("android_native_liquid_glass_enabled" in keys)
+        assertFalse("android_native_liquid_glass_enabled" in keys)
         assertTrue("top_bar_liquid_glass_enabled" in keys)
         assertTrue("home_search_liquid_glass_enabled" in keys)
         assertTrue("bottom_bar_liquid_glass_enabled" in keys)

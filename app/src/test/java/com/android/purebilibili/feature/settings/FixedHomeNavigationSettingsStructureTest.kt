@@ -20,7 +20,7 @@ class FixedHomeNavigationSettingsStructureTest {
             assertFalse(navigation.contains(title), title)
             assertFalse(search.contains(title), title)
         }
-        assertTrue(navigation.contains("setBottomBarFloating"))
+        assertFalse(navigation.contains("setBottomBarFloating"))
         assertTrue(navigation.contains("setTabletUseSidebar"))
     }
 
@@ -61,7 +61,8 @@ class FixedHomeNavigationSettingsStructureTest {
         assertFalse(navigation.contains("sidebarAccountSwitcherEnabled"))
         assertFalse(onboarding.contains("setBottomBarSearchEnabled"))
         assertTrue(navigation.contains("hasListScopedSearchEntry = isBottomPagerHosted"))
-        assertTrue(navigation.contains("!useSideNavigation && isBottomBarFloating"))
+        assertTrue(navigation.contains("!useSideNavigation &&"))
+        assertFalse(navigation.contains("&& isBottomBarFloating"))
     }
 
     private fun source(relativePath: String): String {

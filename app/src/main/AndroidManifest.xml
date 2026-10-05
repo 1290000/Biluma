@@ -199,7 +199,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaid"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -209,7 +209,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid_announcement"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_announcement_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaidAnnouncement"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -219,7 +219,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid_announcement_light"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_announcement_light_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaidAnnouncementLight"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -229,7 +229,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid_announcement_dark"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_announcement_dark_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaidAnnouncementDark"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -239,7 +239,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid_front"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_front_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaidFront"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -249,7 +249,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid_light"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_light_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaidLight"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -259,7 +259,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid_dark"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_dark_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaidDark"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -269,7 +269,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid_front_light"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_front_light_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaidFrontLight"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -279,7 +279,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_blue_snow_maid_front_dark"
             android:roundIcon="@mipmap/ic_launcher_blue_snow_maid_front_dark_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BlueSnowMaidFrontDark"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -289,7 +289,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_3d"
             android:roundIcon="@mipmap/ic_launcher_3d_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.Icon3D"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -299,7 +299,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_bilipai"
             android:roundIcon="@mipmap/ic_launcher_bilipai_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BiliPai"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -309,7 +309,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_bilipai_pink"
             android:roundIcon="@mipmap/ic_launcher_bilipai_pink_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BiliPaiPink"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -319,7 +319,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_bilipai_white"
             android:roundIcon="@mipmap/ic_launcher_bilipai_white_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BiliPaiWhite"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 
@@ -329,7 +329,7 @@
             android:enabled="true"
             android:icon="@mipmap/ic_launcher_bilipai_monet"
             android:roundIcon="@mipmap/ic_launcher_bilipai_monet_round"
-            android:theme="@style/Theme.PureBiliBili.Splash.BiliPaiMonet"
+            android:theme="@style/Theme.PureBiliBili.Splash.NoIcon"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|smallestScreenSize|uiMode"
             android:supportsPictureInPicture="true" />
 

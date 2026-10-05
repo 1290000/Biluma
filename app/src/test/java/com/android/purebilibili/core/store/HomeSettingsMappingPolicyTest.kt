@@ -18,13 +18,24 @@ import kotlin.test.assertTrue
 class HomeSettingsMappingPolicyTest {
 
     @Test
+    fun retiredNavigationPreferencesNeverChangeRuntimeSettings() {
+        val expected = mapHomeSettingsFromPreferences(mutablePreferencesOf())
+        listOf(false, true).forEach { legacyValue ->
+            val preferences = mutablePreferencesOf(
+                booleanPreferencesKey("bottom_bar_floating") to legacyValue,
+                booleanPreferencesKey("navigation_icon_cross_scale_enabled") to legacyValue,
+            )
+            assertEquals(expected, mapHomeSettingsFromPreferences(preferences))
+        }
+    }
+
+    @Test
     fun emptyPreferences_useExpectedRuntimeDefaults() {
         val prefs = mutablePreferencesOf()
 
         val result = mapHomeSettingsFromPreferences(prefs)
 
         assertEquals(0, result.displayMode)
-        assertTrue(result.isBottomBarFloating)
         assertEquals(0, result.bottomBarLabelMode)
         assertEquals(SettingsManager.TopTabLabelMode.TEXT_ONLY, result.topTabLabelMode)
         assertFalse(result.hideTopTabs)
@@ -130,7 +141,6 @@ class HomeSettingsMappingPolicyTest {
         val result = mapHomeSettingsFromPreferences(prefs)
 
         assertEquals(1, result.displayMode)
-        assertFalse(result.isBottomBarFloating)
         assertEquals(2, result.bottomBarLabelMode)
         assertEquals(1, result.topTabLabelMode)
         assertEquals(HomeTopRightAction.INBOX, result.homeTopRightAction)

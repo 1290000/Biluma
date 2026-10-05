@@ -24,10 +24,10 @@ import kotlin.test.assertFalse
 class AppThemeSettingsMappingPolicyTest {
 
     @Test
-    fun emptyPreferences_useStartupThemeDefaults() {
+    fun emptyPreferences_useMiuixStartupThemeDefaults() {
         val result = mapAppThemeSettingsFromPreferences(mutablePreferencesOf())
 
-        assertEquals(AppUiStyle.MATERIAL3, result.uiStyle)
+        assertEquals(AppUiStyle.MIUIX, result.uiStyle)
         assertEquals(AppThemeMode.FOLLOW_SYSTEM, result.themeMode)
         assertEquals(DarkThemeStyle.DEFAULT, result.darkThemeStyle)
         assertEquals(AppLanguage.FOLLOW_SYSTEM, result.appLanguage)

@@ -5,7 +5,6 @@ import com.android.purebilibili.core.ui.components.AppText
 
 import androidx.compose.runtime.collectAsState
 
-import android.animation.ValueAnimator
 import android.app.PictureInPictureParams
 import android.app.HandoffActivityData
 import android.app.HandoffActivityDataRequestInfo
@@ -14,34 +13,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.Outline
-import android.graphics.RenderEffect
-import android.graphics.Shader
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Rational
-import android.view.Gravity
-import android.view.View
-import android.view.ViewOutlineProvider
-import android.view.animation.PathInterpolator
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,12 +46,10 @@ import androidx.compose.ui.graphics.luminance
 import com.android.purebilibili.core.ui.common.ProvideAppTextSelectionHost
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -121,7 +107,6 @@ import com.android.purebilibili.core.ui.AppWindowSystemUiController
 import com.android.purebilibili.core.ui.ProvideAppThemeConfig
 import com.android.purebilibili.core.ui.components.AppCard
 import com.android.purebilibili.core.ui.components.AppCardShape
-import com.android.purebilibili.core.ui.components.LocalAppSingleChoicePresentation
 import com.android.purebilibili.core.ui.blur.BlurIntensity
 import com.android.purebilibili.core.ui.blur.ProvideUnifiedBlurIntensity
 import com.android.purebilibili.core.ui.performance.ProvideRuntimeVisualGuard
@@ -133,8 +118,6 @@ import com.android.purebilibili.core.util.rememberAppWindowAdaptiveInfo
 import com.android.purebilibili.core.util.resolveSafeAndroidPipRational
 import com.android.purebilibili.data.repository.VideoRepository
 import com.android.purebilibili.feature.cast.LocalProxyServer
-import com.android.purebilibili.feature.onboarding.USER_AGREEMENT_ACK_KEY
-import com.android.purebilibili.feature.settings.RELEASE_DISCLAIMER_ACK_KEY
 import com.android.purebilibili.feature.settings.completeAppUpdateDownload
 import com.android.purebilibili.feature.settings.downloadAppUpdateApk
 import com.android.purebilibili.feature.settings.failAppUpdateDownload
@@ -189,7 +172,6 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import kotlin.math.max
 import kotlin.math.pow
-import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.purebilibili.core.ui.AppShapes
 import com.android.purebilibili.core.ui.ContainerLevel
@@ -497,105 +479,10 @@ internal fun shouldClearPendingCrashLogAfterAction(
     action: CrashLogPromptAction
 ): Boolean = action != CrashLogPromptAction.IGNORE
 
-internal fun shouldUseRealtimeSplashBlur(
-    sdkInt: Int,
-    manufacturer: String = ""
-): Boolean {
-    // Samsung One UI 5 (Android 13 / API 33) has a known HWUI/Vulkan driver issue where dynamic
-    // RenderEffect blur creation triggers SIGSEGV (status 11) in libhwui / vulkan.adreno.so.
-    if (sdkInt == 33 && manufacturer.equals("samsung", ignoreCase = true)) {
-        return false
-    }
-    return sdkInt >= Build.VERSION_CODES.S && sdkInt < 36
-}
-
-internal fun resolveSplashIconResIdForComponentClassName(className: String?): Int {
-    return when (className?.substringAfterLast('.')) {
-        "MainActivityAliasBlueSnowMaid",
-        "MainActivityAliasBlueSnowMaidNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid
-        "MainActivitySplashBlueSnowMaid" -> R.drawable.splash_icon_blue_snow_maid
-        "MainActivityAliasBlueSnowMaidAnnouncement",
-        "MainActivityAliasBlueSnowMaidAnnouncementNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid_announcement
-        "MainActivitySplashBlueSnowMaidAnnouncement" -> R.drawable.splash_icon_blue_snow_maid_announcement
-        "MainActivityAliasBlueSnowMaidAnnouncementLight",
-        "MainActivityAliasBlueSnowMaidAnnouncementLightNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid_announcement_light
-        "MainActivitySplashBlueSnowMaidAnnouncementLight" -> R.drawable.splash_icon_blue_snow_maid_announcement_light
-        "MainActivityAliasBlueSnowMaidAnnouncementDark",
-        "MainActivityAliasBlueSnowMaidAnnouncementDarkNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid_announcement_dark
-        "MainActivitySplashBlueSnowMaidAnnouncementDark" -> R.drawable.splash_icon_blue_snow_maid_announcement_dark
-        "MainActivityAliasBlueSnowMaidLight",
-        "MainActivityAliasBlueSnowMaidLightNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid_light
-        "MainActivitySplashBlueSnowMaidLight" -> R.drawable.splash_icon_blue_snow_maid_light
-        "MainActivityAliasBlueSnowMaidDark",
-        "MainActivityAliasBlueSnowMaidDarkNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid_dark
-        "MainActivitySplashBlueSnowMaidDark" -> R.drawable.splash_icon_blue_snow_maid_dark
-        "MainActivityAliasBlueSnowMaidFront",
-        "MainActivityAliasBlueSnowMaidFrontNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid_front
-        "MainActivitySplashBlueSnowMaidFront" -> R.drawable.splash_icon_blue_snow_maid_front
-        "MainActivityAliasBlueSnowMaidFrontLight",
-        "MainActivityAliasBlueSnowMaidFrontLightNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid_front_light
-        "MainActivitySplashBlueSnowMaidFrontLight" -> R.drawable.splash_icon_blue_snow_maid_front_light
-        "MainActivityAliasBlueSnowMaidFrontDark",
-        "MainActivityAliasBlueSnowMaidFrontDarkNoIcon" -> R.mipmap.ic_launcher_blue_snow_maid_front_dark
-        "MainActivitySplashBlueSnowMaidFrontDark" -> R.drawable.splash_icon_blue_snow_maid_front_dark
-        "MainActivityAlias3DLauncher",
-        "MainActivityAlias3D",
-        "MainActivityAlias3DNoIcon",
-        "MainActivitySplashIcon3D" -> R.mipmap.ic_launcher_3d
-        "MainActivityAliasBiliPai",
-        "MainActivityAliasBiliPaiNoIcon",
-        "MainActivitySplashBiliPai" -> R.mipmap.ic_launcher_bilipai
-        "MainActivityAliasBiliPaiPink",
-        "MainActivityAliasBiliPaiPinkNoIcon",
-        "MainActivitySplashBiliPaiPink" -> R.mipmap.ic_launcher_bilipai_pink
-        "MainActivityAliasBiliPaiWhite",
-        "MainActivityAliasBiliPaiWhiteNoIcon",
-        "MainActivitySplashBiliPaiWhite" -> R.mipmap.ic_launcher_bilipai_white
-        "MainActivityAliasBiliPaiMonet",
-        "MainActivityAliasBiliPaiMonetNoIcon" -> R.mipmap.ic_launcher_bilipai_monet
-        "MainActivitySplashBiliPaiMonet" -> R.mipmap.splash_icon_bilipai_monet
-        "MainActivityAliasFlat",
-        "MainActivityAliasFlatNoIcon",
-        "MainActivityAliasTelegramBlue",
-        "MainActivityAliasTelegramBlueNoIcon",
-        "MainActivityAliasDark",
-        "MainActivityAliasDarkNoIcon",
-        "MainActivityAliasYuki",
-        "MainActivityAliasYukiNoIcon",
-        "MainActivityAliasAnime",
-        "MainActivityAliasAnimeNoIcon",
-        "MainActivityAliasHeadphone",
-        "MainActivityAliasHeadphoneNoIcon" -> R.mipmap.ic_launcher_3d
-        else -> 0
-    }
-}
-
-@Suppress("DEPRECATION")
-internal fun resolveLaunchIconResId(context: Context, launchIntent: Intent?): Int {
-    resolveSplashIconResIdForComponentClassName(context::class.java.name)
-        .takeIf { it != 0 }
-        ?.let { return it }
-
-    resolveSplashIconResIdForComponentClassName(launchIntent?.component?.className)
-        .takeIf { it != 0 }
-        ?.let { return it }
-
-    val fromLaunchComponent = runCatching {
-        launchIntent?.component
-            ?.let { context.packageManager.getActivityInfo(it, 0).getIconResource() }
-            ?: 0
-    }.getOrDefault(0)
-    if (fromLaunchComponent != 0) return fromLaunchComponent
-
-    return context.applicationInfo.icon
-}
-
 internal fun shouldShowCustomSplashOverlay(
     customSplashEnabled: Boolean,
     splashUri: String
 ): Boolean {
-    // Flyout animation and custom splash wallpaper can coexist:
-    // system splash flyout exits first, then custom wallpaper overlay fades out.
     return customSplashEnabled && splashUri.isNotEmpty()
 }
 
@@ -629,17 +516,6 @@ internal fun resolveSplashWallpaperUriForLaunch(
 
 internal fun shouldStartLocalProxyOnAppLaunch(): Boolean = false
 
-internal fun shouldEnableSplashFlyoutAnimation(
-    sdkInt: Int,
-    hasCompletedOnboarding: Boolean,
-    hasAcceptedReleaseDisclaimer: Boolean,
-    splashIconAnimationEnabled: Boolean
-): Boolean {
-    if (!splashIconAnimationEnabled) return false
-    if (sdkInt < Build.VERSION_CODES.S) return false
-    return hasCompletedOnboarding && hasAcceptedReleaseDisclaimer
-}
-
 internal fun shouldKeepSystemSplashForPreload(
     runColdStartSplash: Boolean
 ): Boolean {
@@ -648,17 +524,8 @@ internal fun shouldKeepSystemSplashForPreload(
     return runColdStartSplash
 }
 
-internal fun shouldApplySplashRealtimeBlur(
-    useRealtimeBlur: Boolean,
-    progress: Float
-): Boolean = useRealtimeBlur && splashExitBlurProgress(progress) > 0f
-
 internal fun shouldRunColdStartSplash(savedInstanceStatePresent: Boolean): Boolean = !savedInstanceStatePresent
 
-internal fun splashExitDurationMs(): Long = 920L
-internal fun splashExitTranslateYDp(): Float = 220f
-internal fun splashExitScaleEnd(): Float = 1.12f
-internal fun splashExitBlurRadiusEnd(): Float = 24f
 internal fun splashMaxKeepOnScreenMs(): Long = 1000L
 internal fun customSplashHoldDurationMs(): Long = 1900L
 internal fun customSplashFadeDurationMs(): Int = 1450
@@ -685,163 +552,6 @@ internal fun customSplashOverlayScrimAlpha(fadeProgress: Float): Float {
 internal fun customSplashExtraBlurDp(fadeProgress: Float): Float {
     val normalized = fadeProgress.coerceIn(0f, 1f)
     return (14f * normalized.pow(1.1f)).coerceAtLeast(0f)
-}
-
-internal fun splashExitTravelDistancePx(
-    splashHeightPx: Int,
-    targetSizePx: Int,
-    minTravelPx: Float
-): Float {
-    if (splashHeightPx <= 0) return minTravelPx
-    // Center icon needs to pass the top edge and leave some margin to feel like a full fly-out.
-    val dynamicTravel = (splashHeightPx / 2f) + targetSizePx + 24f
-    return max(minTravelPx, dynamicTravel)
-}
-
-internal fun splashExitBlurProgress(progress: Float): Float {
-    val normalized = progress.coerceIn(0f, 1f)
-    val sharpHoldProgress = 0.10f
-    if (normalized <= sharpHoldProgress) return 0f
-    val blurProgress = ((normalized - sharpHoldProgress) / (1f - sharpHoldProgress))
-        .coerceIn(0f, 1f)
-    return blurProgress.pow(1.45f)
-}
-
-internal fun splashExitIconAlpha(progress: Float): Float {
-    if (progress <= 0.12f) return 1f
-    val normalized = ((progress - 0.12f) / 0.88f).coerceIn(0f, 1f)
-    return (1f - normalized.pow(1.6f)).coerceIn(0f, 1f)
-}
-
-internal fun splashExitBackgroundAlpha(progress: Float): Float {
-    if (progress <= 0.18f) return 1f
-    val normalized = ((progress - 0.18f) / 0.82f).coerceIn(0f, 1f)
-    return (1f - normalized.pow(1.1f)).coerceIn(0f, 1f)
-}
-
-internal fun splashFlyoutCornerRadiusPx(sizePx: Int): Float {
-    return sizePx.coerceAtLeast(0) * 0.24f
-}
-
-internal fun resolveSplashFlyoutTargetSizePx(
-    systemIconWidthPx: Int,
-    systemIconHeightPx: Int,
-    density: Float,
-): Int {
-    val safeDensity = density.coerceAtLeast(0.1f)
-    val fallbackSizePx = (112f * safeDensity).roundToInt().coerceAtLeast(1)
-    if (systemIconWidthPx <= 0 || systemIconHeightPx <= 0) return fallbackSizePx
-
-    val shortSidePx = minOf(systemIconWidthPx, systemIconHeightPx)
-    val longSidePx = maxOf(systemIconWidthPx, systemIconHeightPx)
-    val isLauncherLikeSquare = longSidePx <= shortSidePx * 1.2f
-    val shortSideDp = shortSidePx / safeDensity
-    return if (isLauncherLikeSquare && shortSideDp in 72f..160f) {
-        shortSidePx
-    } else {
-        fallbackSizePx
-    }
-}
-
-private fun applySplashFlyoutRoundedClip(view: View) {
-    view.outlineProvider = object : ViewOutlineProvider() {
-        override fun getOutline(view: View, outline: Outline) {
-            val sizePx = minOf(view.width, view.height)
-            outline.setRoundRect(
-                0,
-                0,
-                view.width,
-                view.height,
-                splashFlyoutCornerRadiusPx(sizePx)
-            )
-        }
-    }
-    view.clipToOutline = true
-    view.invalidateOutline()
-}
-
-internal fun splashTrailPrimaryAlpha(progress: Float): Float {
-    val normalized = progress.coerceIn(0f, 1f)
-    if (normalized <= 0.08f) return 0f
-    val trailProgress = ((normalized - 0.08f) / 0.92f).coerceIn(0f, 1f)
-    return (0.34f * (1f - trailProgress).pow(1.15f)).coerceIn(0f, 1f)
-}
-
-internal fun splashTrailSecondaryAlpha(progress: Float): Float {
-    val normalized = progress.coerceIn(0f, 1f)
-    if (normalized <= 0.16f) return 0f
-    val trailProgress = ((normalized - 0.16f) / 0.84f).coerceIn(0f, 1f)
-    return (0.2f * (1f - trailProgress).pow(1.22f)).coerceIn(0f, 1f)
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-private fun applySplashRealtimeBlur(
-    animatedTarget: View,
-    primaryTrailView: View?,
-    secondaryTrailView: View?,
-    radius: Float
-) {
-    if (radius < 0.5f) return
-    if (!animatedTarget.isAttachedToWindow) return
-    animatedTarget.setRenderEffect(
-        RenderEffect.createBlurEffect(
-            radius * 0.62f,
-            radius * 0.62f,
-            Shader.TileMode.CLAMP
-        )
-    )
-    if (primaryTrailView?.isAttachedToWindow == true) {
-        primaryTrailView.setRenderEffect(
-            RenderEffect.createBlurEffect(
-                radius,
-                radius,
-                Shader.TileMode.CLAMP
-            )
-        )
-    }
-    if (secondaryTrailView?.isAttachedToWindow == true) {
-        secondaryTrailView.setRenderEffect(
-            RenderEffect.createBlurEffect(
-                radius * 1.2f,
-                radius * 1.2f,
-                Shader.TileMode.CLAMP
-            )
-        )
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-private fun clearSplashRealtimeBlur(
-    animatedTarget: View,
-    primaryTrailView: View?,
-    secondaryTrailView: View?
-) {
-    if (animatedTarget.isAttachedToWindow) {
-        animatedTarget.setRenderEffect(null)
-    }
-    if (primaryTrailView?.isAttachedToWindow == true) {
-        primaryTrailView.setRenderEffect(null)
-    }
-    if (secondaryTrailView?.isAttachedToWindow == true) {
-        secondaryTrailView.setRenderEffect(null)
-    }
-}
-
-internal enum class SplashFlyoutTargetType {
-    SYSTEM_ICON,
-    FALLBACK_ICON,
-    SPLASH_ROOT
-}
-
-internal fun resolveSplashFlyoutTargetType(
-    hasSystemIcon: Boolean,
-    hasFallbackIcon: Boolean
-): SplashFlyoutTargetType {
-    return when {
-        hasSystemIcon -> SplashFlyoutTargetType.SYSTEM_ICON
-        hasFallbackIcon -> SplashFlyoutTargetType.FALLBACK_ICON
-        else -> SplashFlyoutTargetType.SPLASH_ROOT
-    }
 }
 
 internal fun shouldLogWarmResume(
@@ -877,7 +587,6 @@ open class MainActivity : AppCompatActivity() {
     //  小窗管理器
     private lateinit var miniPlayerManager: MiniPlayerManager
     private var hasCompletedInitialResume = false
-    private var splashFlyoutEnabledAtCreate = false
     private var splashExitCallbackTriggered = false
     private var systemSplashExited by mutableStateOf(false)
 
@@ -1032,35 +741,9 @@ open class MainActivity : AppCompatActivity() {
         //  安装 SplashScreen
         val splashScreen = installSplashScreen()
         val runColdStartSplash = shouldRunColdStartSplash(savedInstanceStatePresent = savedInstanceState != null)
-        val welcomePrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val splashIconVisible = SettingsManager.isSplashIconAnimationEnabledSync(this)
-        val userAgreementAcked = welcomePrefs.getBoolean(USER_AGREEMENT_ACK_KEY, false)
-        val startupStyle = SettingsManager.getStartupAnimationStyleSync(this)
-        val maidStartupEnabled = com.android.purebilibili.core.store.shouldShowMaidStartup(
-            coldStart = runColdStartSplash,
-            agreementAccepted = userAgreementAcked,
-            iconAnimationEnabled = splashIconVisible,
-            style = startupStyle
-        )
-        val splashFlyoutEnabled = startupStyle == com.android.purebilibili.core.store.StartupAnimationStyle.ICON_FLYOUT &&
-            runColdStartSplash && shouldEnableSplashFlyoutAnimation(
-            sdkInt = Build.VERSION.SDK_INT,
-            // Flyout only after mandatory user-agreement gate (covers both new and old users).
-            hasCompletedOnboarding = userAgreementAcked,
-            hasAcceptedReleaseDisclaimer = userAgreementAcked ||
-                welcomePrefs.getBoolean(RELEASE_DISCLAIMER_ACK_KEY, false),
-            splashIconAnimationEnabled = splashIconVisible
-        )
         val keepSystemSplashForPreload = shouldKeepSystemSplashForPreload(
             runColdStartSplash = runColdStartSplash
         )
-        val splashFlyoutIconResId = resolveLaunchIconResId(this, intent)
-        splashFlyoutEnabledAtCreate = splashFlyoutEnabled
-        Logger.d(
-            TAG,
-            "🚀 Splash setup. coldStart=$runColdStartSplash, iconVisible=$splashIconVisible, keepForPreload=$keepSystemSplashForPreload, flyoutEnabled=$splashFlyoutEnabled, userAgreementAck=$userAgreementAcked, firstLaunchShown=${welcomePrefs.getBoolean(KEY_FIRST_LAUNCH, false)}, disclaimerAck=${welcomePrefs.getBoolean(RELEASE_DISCLAIMER_ACK_KEY, false)}, taskRoot=$isTaskRoot, savedState=${savedInstanceState != null}, intentFlags=0x${intent?.flags?.toString(16) ?: "0"}, launchIconResId=$splashFlyoutIconResId"
-        )
-        
         //  🚀 [启动优化] 立即开始预加载首页数据
         // 这个必须尽早调用，利用开屏动画的时间并行加载数据
         VideoRepository.preloadHomeData()
@@ -1110,169 +793,10 @@ open class MainActivity : AppCompatActivity() {
             shouldKeep
         }
 
-        if (splashFlyoutEnabled) {
-            Logger.d(TAG, "🚀 Splash flyout exit listener registered")
-            splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
-                splashExitCallbackTriggered = true
-                runCatching {
-                    val splashView = splashScreenViewProvider.view
-                    val systemIconView = splashScreenViewProvider.iconView
-                    val frameContainer = splashView as? FrameLayout
-                        ?: error("Splash root is not a FrameLayout")
-                    val targetDrawableState = (systemIconView as? ImageView)
-                        ?.drawable
-                        ?.constantState
-                    val targetSizePx = resolveSplashFlyoutTargetSizePx(
-                        systemIconWidthPx = systemIconView.width,
-                        systemIconHeightPx = systemIconView.height,
-                        density = resources.displayMetrics.density,
-                    )
-                    Logger.d(
-                        TAG,
-                        "🚀 Splash exit target metrics. system=${systemIconView.width}x${systemIconView.height}, targetSizePx=$targetSizePx, useRealtimeBlur=${shouldUseRealtimeSplashBlur(Build.VERSION.SDK_INT, Build.MANUFACTURER.orEmpty())}"
-                    )
-
-                    var nextInsertIndex = frameContainer.indexOfChild(systemIconView)
-                        .let { if (it >= 0) it + 1 else frameContainer.childCount }
-                    fun createFlyoutIconView(initialAlpha: Float): ImageView? {
-                        // Prefer the original high-density resource. The OEM iconView drawable can
-                        // already be a stretched/rasterized snapshot on customized Android builds.
-                        val drawable = if (splashFlyoutIconResId != 0) {
-                            AppCompatResources.getDrawable(
-                                this@MainActivity,
-                                splashFlyoutIconResId,
-                            )?.mutate()
-                        } else {
-                            targetDrawableState?.newDrawable(resources)?.mutate()
-                        } ?: return null
-                        return ImageView(this).apply {
-                            scaleType = ImageView.ScaleType.CENTER_INSIDE
-                            alpha = initialAlpha
-                            applySplashFlyoutRoundedClip(this)
-                            setImageDrawable(drawable)
-                            frameContainer.addView(
-                                this,
-                                nextInsertIndex++,
-                                FrameLayout.LayoutParams(
-                                    targetSizePx,
-                                    targetSizePx,
-                                    Gravity.CENTER
-                                )
-                            )
-                        }
-                    }
-                    val secondaryTrailView = createFlyoutIconView(initialAlpha = 0f)
-                    val primaryTrailView = createFlyoutIconView(initialAlpha = 0f)
-                    val animatedTarget = createFlyoutIconView(initialAlpha = 1f)
-                        ?: error("Unable to create a square splash flyout icon")
-                    // Never clip or animate the OEM iconView directly: some devices expose a
-                    // full-height rectangular container here, which produces the giant leaking
-                    // rounded card seen on first cold start.
-                    systemIconView.alpha = 0f
-                    val targetType = resolveSplashFlyoutTargetType(
-                        hasSystemIcon = false,
-                        hasFallbackIcon = true,
-                    )
-                    Logger.d(
-                        TAG,
-                        "🚀 Splash exit animation start. targetType=$targetType, dedicatedSquareIcon=true"
-                    )
-                    val minTranslateYPx = splashExitTranslateYDp() * resources.displayMetrics.density
-                    val translateYPx = splashExitTravelDistancePx(
-                        splashHeightPx = splashView.height,
-                        targetSizePx = targetSizePx,
-                        minTravelPx = minTranslateYPx
-                    )
-                    val supportsRealtimeBlur = shouldUseRealtimeSplashBlur(Build.VERSION.SDK_INT, Build.MANUFACTURER.orEmpty())
-                    var blurEffectEnabled = supportsRealtimeBlur
-                    var lastAppliedBlurRadius = -1f
-                    val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-                        duration = splashExitDurationMs()
-                        interpolator = PathInterpolator(0.12f, 0.98f, 0.2f, 1.0f)
-                        addUpdateListener { valueAnimator ->
-                            val progress = valueAnimator.animatedValue as Float
-                            val trailProgressPrimary = ((progress - 0.08f) / 0.92f).coerceIn(0f, 1f)
-                            val trailProgressSecondary = ((progress - 0.16f) / 0.84f).coerceIn(0f, 1f)
-                            animatedTarget.translationY = -translateYPx * progress
-                            animatedTarget.alpha = splashExitIconAlpha(progress)
-                            splashView.alpha = splashExitBackgroundAlpha(progress)
-
-                            val scale = 1f + (splashExitScaleEnd() - 1f) * progress
-                            animatedTarget.scaleX = scale
-                            animatedTarget.scaleY = scale
-
-                            primaryTrailView?.let { trail ->
-                                trail.translationY = -translateYPx * trailProgressPrimary
-                                trail.alpha = splashTrailPrimaryAlpha(progress)
-                                trail.scaleX = scale * 1.03f
-                                trail.scaleY = scale * 1.03f
-                            }
-
-                            secondaryTrailView?.let { trail ->
-                                trail.translationY = -translateYPx * trailProgressSecondary
-                                trail.alpha = splashTrailSecondaryAlpha(progress)
-                                trail.scaleX = scale * 1.06f
-                                trail.scaleY = scale * 1.06f
-                            }
-
-                            if (
-                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                                shouldApplySplashRealtimeBlur(blurEffectEnabled, progress)
-                            ) {
-                                val radius = splashExitBlurRadiusEnd() * splashExitBlurProgress(progress)
-                                if (radius >= 0.5f && kotlin.math.abs(radius - lastAppliedBlurRadius) >= 1.0f) {
-                                    lastAppliedBlurRadius = radius
-                                    runCatching {
-                                        applySplashRealtimeBlur(
-                                            animatedTarget = animatedTarget,
-                                            primaryTrailView = primaryTrailView,
-                                            secondaryTrailView = secondaryTrailView,
-                                            radius = radius
-                                        )
-                                    }.onFailure {
-                                        blurEffectEnabled = false
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                            clearSplashRealtimeBlur(
-                                                animatedTarget = animatedTarget,
-                                                primaryTrailView = primaryTrailView,
-                                                secondaryTrailView = secondaryTrailView
-                                            )
-                                        }
-                                        Logger.w(TAG, "⚠️ Splash realtime blur failed, fallback to non-blur flyout", it)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    animator.doOnEnd {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && supportsRealtimeBlur) {
-                            clearSplashRealtimeBlur(
-                                animatedTarget = animatedTarget,
-                                primaryTrailView = primaryTrailView,
-                                secondaryTrailView = secondaryTrailView
-                            )
-                        }
-                        frameContainer.post {
-                            frameContainer.removeView(animatedTarget)
-                            primaryTrailView?.let(frameContainer::removeView)
-                            secondaryTrailView?.let(frameContainer::removeView)
-                            splashScreenViewProvider.remove()
-                            systemSplashExited = true
-                        }
-                    }
-                    animator.start()
-                }.onFailure {
-                    Logger.e(TAG, "❌ Splash exit animation failed, removing splash immediately", it)
-                    splashScreenViewProvider.remove()
-                    systemSplashExited = true
-                }
-            }
-        } else {
-            splashScreen.setOnExitAnimationListener { provider ->
-                splashExitCallbackTriggered = true
-                provider.remove()
-                systemSplashExited = true
-            }
+        splashScreen.setOnExitAnimationListener { provider ->
+            splashExitCallbackTriggered = true
+            provider.remove()
+            systemSplashExited = true
         }
 
         //  [新增] 处理 deep link 或分享意图
@@ -1396,9 +920,6 @@ open class MainActivity : AppCompatActivity() {
             val runtimeVisualGuardEnabled by SettingsManager
                 .getRuntimeVisualGuardEnabled(context)
                 .collectAsStateWithLifecycle(initialValue = true)
-            val nativeMiuixPopupsEnabled by com.android.purebilibili.core.store.player.PlayerSettingsStore
-                .getNativeMiuixPlayerPopups(context)
-                .collectAsStateWithLifecycle(initialValue = true)
             val liquidGlassEnabled by SettingsManager.getAndroidNativeLiquidGlassEnabled(context)
                 .collectAsStateWithLifecycle(initialValue = true)
             val appThemeConfig = remember(
@@ -1412,7 +933,6 @@ open class MainActivity : AppCompatActivity() {
                 globalTextTapCopyEnabled,
                 uiEntranceAnimationEnabled,
                 runtimeVisualGuardEnabled,
-                nativeMiuixPopupsEnabled,
             ) {
                 AppThemeConfig(
                     liquidGlassEnabled = liquidGlassEnabled,
@@ -1425,7 +945,6 @@ open class MainActivity : AppCompatActivity() {
                     globalTextTapCopyEnabled = globalTextTapCopyEnabled,
                     uiEntranceAnimationEnabled = uiEntranceAnimationEnabled,
                     runtimeVisualGuardEnabled = runtimeVisualGuardEnabled,
-                    nativeMiuixPopupsEnabled = nativeMiuixPopupsEnabled,
                 )
             }
             
@@ -1544,8 +1063,6 @@ open class MainActivity : AppCompatActivity() {
                                 adaptiveInfo = appWindowAdaptiveInfo
                             ),
                         LocalDisplayMetricsSnapshot provides displayMetricsSnapshot,
-                        LocalAppSingleChoicePresentation provides
-                            appThemeSettings.singleChoicePresentation,
                     ) {
                     val isPipRenderingActive =
                         isInPipMode || miniPlayerManager.shouldKeepPlaybackForPipTransition()
@@ -1865,12 +1382,10 @@ open class MainActivity : AppCompatActivity() {
                         )
                     }
                     var showSplash by remember { mutableStateOf(showCustomSplashInitially) }
-                    var showMaidStartup by remember { mutableStateOf(maidStartupEnabled) }
-                    LaunchedEffect(showSplash, showMaidStartup) {
-                        isAppScreenshotBlockedBySplash = showSplash || showMaidStartup
+                    LaunchedEffect(showSplash) {
+                        isAppScreenshotBlockedBySplash = showSplash
                     }
                     // Start wallpaper timing only after the native splash has actually left.
-                    // Maid and wallpaper share this interval instead of adding two waits.
                     LaunchedEffect(showCustomSplashInitially, systemSplashExited) {
                         if (showCustomSplashInitially && systemSplashExited) {
                             delay(customSplashHoldDurationMs())
@@ -1991,62 +1506,10 @@ open class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = showMaidStartup,
-                        enter = androidx.compose.animation.EnterTransition.None,
-                        exit = androidx.compose.animation.fadeOut(
-                            animationSpec = com.android.purebilibili.core.ui.motion.AppMotionTokens.standardSpec()
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    if (showCustomSplashInitially) Color.Transparent
-                                    else MaterialTheme.colorScheme.background
-                                )
-                                .clickable(
-                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = {}
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val maidStartupSize = minOf(
-                                240.dp,
-                                (com.android.purebilibili.core.util.LocalAppWindowAdaptiveInfo.current
-                                    .windowSizeClass.heightDp - 96.dp).coerceAtLeast(80.dp)
-                            )
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                if (systemSplashExited) {
-                                    com.android.purebilibili.core.ui.BlueSnowMaidAnimation(
-                                        animation = com.android.purebilibili.core.ui.MaidAnimation.WELCOME,
-                                        modifier = Modifier.size(maidStartupSize),
-                                        onFinished = { showMaidStartup = false }
-                                    )
-                                } else {
-                                    Image(
-                                        painter = androidx.compose.ui.res.painterResource(R.drawable.bilipai_maid_static),
-                                        contentDescription = "蓝雪女仆",
-                                        modifier = Modifier.size(maidStartupSize)
-                                    )
-                                }
-                                AppText(
-                                    text = "BiliPai",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier
-                                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(16.dp))
-                                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                                )
-                            }
-                        }
-                    }
-
                     BrandSuccessFeedbackHost(
                         bottomContentInset = brandFeedbackBottomInset,
                         extraBottomClearance = if (showAudioNowPlaying) 64.dp else 0.dp,
-                        enabled = systemSplashExited && !showSplash && !showMaidStartup &&
+                        enabled = systemSplashExited && !showSplash &&
                             !isPipRenderingActive && !isFullscreenPlayerLocked && appScreenshotRegionBitmap == null
                     )
 
@@ -2372,7 +1835,7 @@ open class MainActivity : AppCompatActivity() {
         if (shouldLogWarmResume(hasCompletedInitialResume, isChangingConfigurations)) {
             Logger.d(
                 TAG,
-                "🔁 Warm resume path. splash flyout is not expected (Activity already created). flyoutEnabledAtCreate=$splashFlyoutEnabledAtCreate, splashExitCallbackTriggered=$splashExitCallbackTriggered"
+                "🔁 Warm resume path. splashExitCallbackTriggered=$splashExitCallbackTriggered"
             )
         }
     }

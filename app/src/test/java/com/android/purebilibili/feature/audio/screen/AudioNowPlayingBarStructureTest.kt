@@ -72,7 +72,7 @@ class AudioNowPlayingBarStructureTest {
         assertTrue(overlay.contains("BottomBarMatchedDockVisibility("))
         assertTrue(overlay.contains("videoCardTransitionChromeReveal("))
         assertTrue(overlay.contains("LinkedDockNowPlayingSlot"))
-        assertTrue(overlay.contains("{ 0f }, { 0f }, { 0f }"))
+        assertTrue(overlay.contains("dockHosted = true"))
         assertTrue(overlay.contains("showAudioNowPlayingInDock"))
         assertTrue(overlay.contains("isLandscape = isLandscapeNowPlaying"))
         assertTrue(overlay.contains("isPlayerDestination = isPlayerNowPlayingDestination"))

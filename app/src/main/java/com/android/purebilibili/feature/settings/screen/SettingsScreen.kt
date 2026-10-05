@@ -848,7 +848,6 @@ fun SettingsScreen(
                     buildFingerprintCopyValue = buildFingerprintCopyValue,
                     buildFingerprintSubtitle = buildFingerprintSubtitle,
                     cardAnimationEnabled = state.cardAnimationEnabled,
-                    isBottomBarFloating = state.isBottomBarFloating,
                     bottomBarLabelMode = state.bottomBarLabelMode,
                     feedApiType = feedApiType,
                     onFeedApiTypeChange = { type ->
@@ -1033,7 +1032,6 @@ private fun MobileSettingsNavLayout(
     buildFingerprintCopyValue: String,
     buildFingerprintSubtitle: String,
     cardAnimationEnabled: Boolean,
-    isBottomBarFloating: Boolean,
     bottomBarLabelMode: Int,
     feedApiType: SettingsManager.FeedApiType,
     onFeedApiTypeChange: (SettingsManager.FeedApiType) -> Unit,
@@ -1062,7 +1060,6 @@ private fun MobileSettingsNavLayout(
     val bottomInset = resolveSettingsContentBottomPadding(
         navigationBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
         bottomBarVisible = bottomBarVisible,
-        isBottomBarFloating = isBottomBarFloating,
         bottomBarLabelMode = bottomBarLabelMode,
         isTablet = windowSizeClass.isTablet,
     )

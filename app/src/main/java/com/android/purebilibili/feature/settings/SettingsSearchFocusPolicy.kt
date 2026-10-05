@@ -21,7 +21,6 @@ object SettingsSearchFocusIds {
     const val PLAYBACK_NETWORK = "playback_network"
     const val PLAYBACK_DATA_SAVER = "playback_data_saver"
 
-    const val BOTTOM_BAR_BEHAVIOR = "bottom_bar_behavior"
     const val BOTTOM_BAR_START = "bottom_bar_start"
     const val BOTTOM_BAR_DISPLAY = "bottom_bar_display"
     const val BOTTOM_BAR_TOP_TABS = "bottom_bar_top_tabs"
@@ -106,13 +105,12 @@ internal fun resolveBottomBarSettingsScrollIndex(
 ): Int? {
     return when (focusId) {
         SettingsSearchFocusIds.BOTTOM_BAR_START -> 0
-        SettingsSearchFocusIds.BOTTOM_BAR_BEHAVIOR -> 1
-        SettingsSearchFocusIds.BOTTOM_BAR_DISPLAY -> 3
-        SettingsSearchFocusIds.BOTTOM_BAR_TOP_TABS -> 5
-        SettingsSearchFocusIds.BOTTOM_BAR_SEARCH_TABS -> 7
-        SettingsSearchFocusIds.BOTTOM_BAR_TABLET -> 9
-        SettingsSearchFocusIds.BOTTOM_BAR_CURRENT -> 11
-        SettingsSearchFocusIds.BOTTOM_BAR_AVAILABLE -> 13
+        SettingsSearchFocusIds.BOTTOM_BAR_DISPLAY -> 1
+        SettingsSearchFocusIds.BOTTOM_BAR_TOP_TABS -> 3
+        SettingsSearchFocusIds.BOTTOM_BAR_SEARCH_TABS -> 5
+        SettingsSearchFocusIds.BOTTOM_BAR_TABLET -> 7
+        SettingsSearchFocusIds.BOTTOM_BAR_CURRENT -> 9
+        SettingsSearchFocusIds.BOTTOM_BAR_AVAILABLE -> 11
         else -> null
     }
 }
